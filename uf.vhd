@@ -7,13 +7,17 @@ use work.arithpack.all;
 
 entity uf is 
 	port (
-		opcode	: in std_logic;
-		vectors	: in std_logic_vector (12*18-1 downto 0);
+		opcode		: in std_logic;
+		v0,v1,v2,v3	: in std_logic_vector (6*18-1 downto 0);
+		cp
+		
 		clk,rst, ena : in std_logic
 	);
 end uf;
 
 architecture uf_arch of uf is 
+
+	s_prod		: signal 
 
 	s0_opcode : signal std_logic;
 	
@@ -28,6 +32,15 @@ architecture uf_arch of uf is
 begin
 
 	
+	mx : for i in 0 to 5 generate
+		mi : r_a18_b18_smul_c32_r port map (
+			aclr	=> rst,
+			clock	=> clk,
+			dataa	=> v0 (i*18+17 downto i*18);
+			datab	=> v1 (i*18+17 downto i*18);
+			
+			
+			 	
 
 
 

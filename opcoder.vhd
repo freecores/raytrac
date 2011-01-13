@@ -62,7 +62,7 @@ begin
 			when others => 
 				m0f0 <= ( others => '0');
 		end case;
-			
+				
 				 
 		
 		
@@ -70,4 +70,4 @@ begin
 	end process opcoder_;
 	
 
-end opcoder_Drch;
+end opcoder_arch;

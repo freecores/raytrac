@@ -72,6 +72,8 @@ begin
 				m3f1 <= ( others => '0');
 				m4f0 <= ( others => '0');
 				m4f1 <= ( others => '0');
+				m5f0 <= ( others => '0');
+				m5f1 <= ( others => '0');
 		end case;
 				
 				 

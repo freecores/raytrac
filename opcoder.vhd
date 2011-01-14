@@ -61,6 +61,17 @@ begin
 				m5f1 <= Dx;
 			when others => 
 				m0f0 <= ( others => '0');
+				m0f1 <= ( others => '0');
+				m1f0 <= ( others => '0');
+				m1f1 <= ( others => '0');
+				m2f0 <= ( others => '0');
+				m2f1 <= ( others => '0');
+				m3f0 <= ( others => '0');
+				m3f1 <= ( others => '0');
+				m3f0 <= ( others => '0');
+				m3f1 <= ( others => '0');
+				m4f0 <= ( others => '0');
+				m4f1 <= ( others => '0');
 		end case;
 				
 				 

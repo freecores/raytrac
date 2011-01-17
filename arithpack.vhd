@@ -5,12 +5,13 @@ use ieee.std_logic_1164.all;
 
 
 package arithpack is
+	
 	constant rstMasterValue : std_logic := '0';
 
 	component uf
 	port (
 		opcode		: in std_logic;
-		mxfx		: in std_logic_vector(12*18-1 downto 0);
+		m0f0,m0f1,m1f0m1f1,m2f0,m2f1,m3f0,m3f1,m4f0,m4f1,m5f0,m5f1 : in std_logic_vector(17 downto 0);
 		cpx,cpy,cpz,dp0,dp1 : out std_logic_vector(31 downto 0)
 		clk,rst		: in std_logic
 	);

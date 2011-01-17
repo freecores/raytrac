@@ -24,13 +24,6 @@ package arithpack is
 	);
 	end component;
 
-	component fastmux
-	generic ( w : integer := 32 );
-	port ( 
-		s : in std_logic;
-		mux0,mux1 : in std_logic_vector (w-1 downto 0);
-		muxS : out std_logic_vector (w-1 downto 0)
-	);
 	
 	component r_a18_b18_smul_c32_r
 	port (

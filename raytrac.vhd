@@ -30,7 +30,8 @@ entity raytrac is
 		A,B,C,D 		: in std_logic_vector(18*3-1 downto 0);
 		opcode,addcode	: in std_logic;
 		clk,rst,ena		: in std_logic;
-		CPX,CPY,CPZ,DP0,DP1 : out std_logic_vector(31 downto 0);
+		CPX,CPY,CPZ,DP0,DP1 : out std_logic_vector(31 downto 0)
+		
 		
 	);
 end raytrac;
@@ -54,7 +55,7 @@ begin
 	end generate notreg;
 	reg:
 	if registered="YES" generate
-		_oreg:
+		procReg:
 		process(clk,rst)
 		begin
 			if rst=rstMasterValue then 
@@ -62,8 +63,8 @@ begin
 				SB <= (others => '0');
 				SC <= (others => '0');
 				SD <= (others => '0');
-				sopcode <= (others =>'0');
-				saddcode <= (others => '0');
+				sopcode <= '0';
+				saddcode <= '0';
 			elsif clk'event and clk='1' then
 				if ena <= '1' then
 					SA <= A;
@@ -74,7 +75,7 @@ begin
 					saddcode <= addcode;
 				end if;
 			end if;
-		end process _oreg;
+		end process procReg;
 	end generate reg;
 	-- Instantiate Opcoder 
 	opcdr : opcoder

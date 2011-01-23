@@ -20,7 +20,7 @@ package arithpack is
 	component opcoder 
 	port (
 		Ax,Bx,Cx,Dx,Ay,By,Cy,Dy,Az,Bz,Cz,Dz : in std_logic_vector (17 downto 0);
-		m0f0,m0f1,m1f0m1f1,m2f0,m2f1,m3f0,m3f1,m4f0,m4f1,m5f0,m5f1 : out std_logic_vector (17 downto 0);
+		m0f0,m0f1,m1f0,m1f1,m2f0,m2f1,m3f0,m3f1,m4f0,m4f1,m5f0,m5f1 : out std_logic_vector (17 downto 0);
 		opcode,addcode : in std_logic
 	);
 	end component;
@@ -51,9 +51,9 @@ package arithpack is
 	end component;
 	component adder
 	generic ( 
-		w : integer := 4;
-		carry_logic := "CLA";
-		substractor_selector := "YES";
+		w 						: integer := 4;
+		carry_logic				: string := "CLA";
+		substractor_selector	: string := "YES"
 	);
 	port (
 		a,b		:	in std_logic_vector (w-1 downto 0);

@@ -24,7 +24,7 @@ use work.arithpack.all;
 
 entity raytrac is 
 	generic (
-		registered : string := "NO"
+		registered : string := "YES"
 	);
 	port (
 		A,B,C,D 		: in std_logic_vector(18*3-1 downto 0);

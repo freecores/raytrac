@@ -6,7 +6,7 @@ use ieee.std_logic_1164.all;
 
 package arithpack is
 	
-	constant rstMasterValue : std_logic := '0';
+	constant rstMasterValue : std_logic := '1';
 
 	component uf
 	port (

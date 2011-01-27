@@ -1,16 +1,35 @@
-library ieee;
-use ieee.std_logic_1164.all;
+-- RAYTRAC
+-- Author Julian Andres Guarin
+-- cla_logic_block.vhd
+-- This file is part of raytrac.
+-- 
+--     raytrac is free software: you can redistribute it and/or modify
+--     it under the terms of the GNU General Public License as published by
+--     the Free Software Foundation, either version 3 of the License, or
+--     (at your option) any later version.
+-- 
+--     raytrac is distributed in the hope that it will be useful,
+--     but WITHOUT ANY WARRANTY; without even the implied warranty of
+--     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+--     GNU General Public License for more details.
+-- 
+--     You should have received a copy of the GNU General Public License
+--     along with raytrac.  If not, see <http://www.gnu.org/licenses/>.library ieee;
 
+-- Check out arithpack.vhd to understand in general terms what this file describes,
+-- or checkout this file to check in detailed way what this file intends to.
+
+use ieee.std_logic_1164.all;
 entity cla_logic_block is
 	generic (
-		w : integer := 4
+		w : integer := 4							-- Carry Look Ahead Block Default Size 
 	);
 
 	port (
-		p,g : in std_logic_vector(w-1 downto 0);
-		cin : in std_logic;
+		p,g : in std_logic_vector(w-1 downto 0);	-- Propagation and Generation Inputs
+		cin : in std_logic;							-- Carry In input
 		
-		c : out std_logic_vector(w downto 1)
+		c : out std_logic_vector(w downto 1)		-- Generated Carry Out outputs
 	);
 end cla_logic_block;
 

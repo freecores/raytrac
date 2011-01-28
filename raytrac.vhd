@@ -68,7 +68,8 @@ use work.arithpack.all;
 --! - Producto Punto (opcode = 0):
 --! - Dot Product (opcode = 0):
 --! \n\n
---! \t Los resultados se encontraran en DP0 y DP1 4 clocks despues de la carga.\n 
+--! \t Los resultados se encontraran en DP0 y DP1 4 clocks despues de la carga.
+--! \n\n 
 --! <table>
 --! <tr>
 --! <th></th><th>addcode, ignorar</th> 
@@ -79,23 +80,15 @@ use work.arithpack.all;
 --! </table>
 
 
---!  - Producto Cruz  => Si opcode es 1:
---!  - AxB si addcode es 0, CxD si addcode es 1, las componentes del vector resultante apareceran en CPX,CPY,CPZ 3 clocks, despues de la carga. \n 
---! \n\n Los componentes instanciados en la descripcion conforman un pipeline de hasta 4 etapas. Por lo tanto es posible cargar vectores (A,B,C,D) y codigos de operacion (opcode y addcode) clock tras clock.   
---! \n The RayTrac entity basically takes the inputs of 4 vectors: A,B,C,D and the opcode and addcode inputs.
---! When this inputs are loaded, it will take place the following operations:
---! \n\t Dot Product   => If opcode is 0:\n\n\t A.B and C.D, the resulting values will appear in the DP0 and DP1 outputs. The time taken once the inputs are loaded to the output of the results will be of 4 clocks.
---! \n\t Cross Product => If opcode is 1:\n\n\t AxB if addcode is 0, CxD if addcode es 1. The components of the resulting vector will appear in CPX,CPY,CPZ 3 clocks, after the input loading.
---! \n\n The instantiated components in the description 	 
 entity raytrac is 
 	generic (
-		registered : string := "YES"
+		registered : string := "YES" --! Este parametro, por defecto "YES", indica si se registran o cargan en registros los vectores A,B,C,D y los codigos de operacion opcode y addcode en vez de ser conectados directamente al circuito combinatorio. \n This parameter, by default "YES", indicates if vectors A,B,C,D and operation code inputs opcode are to be loaded into a register at the beginning of the pipe rather than just connecting them to the operations decoder (opcoder). 
 	);
 	port (
-		A,B,C,D 		: in std_logic_vector(18*3-1 downto 0); -- Vectores de entrada A,B,C,D, cada uno de tamano fijo: 3 componentes x 18 bits. \n Input vectors A,B,C,D, each one of fixed size: 3 components x 18 bits. 
-		opcode,addcode	: in std_logic;							-- Opcode and addcode input bits, opcode selects what operation is going to perform one of the entities included in the design and addcode what operands are going to be involved in such. \n Opcode & addcode, opcode selecciona que operacion se va a llevar a cabo dentro de una de las entidades referenciadas dentro de la descripcion, mientras que addcode decide cuales van a ser los operandos que realizaran tal. 
-		clk,rst,ena		: in std_logic;							-- Las senales de control usual. The usual control signals.
-		CPX,CPY,CPZ,DP0,DP1 : out std_logic_vector(31 downto 0)	-- Salidas que representan los resultados del RayTrac: pueden ser dos resultados, de dos operaciones de producto punto, o un producto cruz. Por favor revisar el documento de especificacion del dispositivo para tener mas claridad.\n  Outputs representing the result of the RayTrac entity: can be the results of two parallel dot product operations or the result of a single cross product, in order to clarify refere to the entity specification documentation.
+		A,B,C,D 		: in std_logic_vector(18*3-1 downto 0); --! Vectores de entrada A,B,C,D, cada uno de tamano fijo: 3 componentes x 18 bits. \n Input vectors A,B,C,D, each one of fixed size: 3 components x 18 bits. 
+		opcode,addcode	: in std_logic;							--! Opcode and addcode input bits, opcode selects what operation is going to perform one of the entities included in the design and addcode what operands are going to be involved in such. \n Opcode & addcode, opcode selecciona que operacion se va a llevar a cabo dentro de una de las entidades referenciadas dentro de la descripcion, mientras que addcode decide cuales van a ser los operandos que realizaran tal. 
+		clk,rst,ena		: in std_logic;							--! Las senales de control usual. The usual control signals.
+		CPX,CPY,CPZ,DP0,DP1 : out std_logic_vector(31 downto 0)	--! Salidas que representan los resultados del RayTrac: pueden ser dos resultados, de dos operaciones de producto punto, o un producto cruz. Por favor revisar el documento de especificacion del dispositivo para tener mas claridad.\n  Outputs representing the result of the RayTrac entity: can be the results of two parallel dot product operations or the result of a single cross product, in order to clarify refere to the entity specification documentation.
 		
 		
 	);
@@ -106,27 +99,29 @@ end raytrac;
 --! La Arquitectura general de RayTrac se consiste en 3 componentes esenciales:
 --! - Etapa de registros para la carga de los operadores y el codigo de operacion.
 --! - Etapa combinatoria para la seleccion de operadores, dependiendo del codigo de operacion.
---! - Etapa aritmetica del calculo del producto punto o el producto cruz segun el caso. 
+--! - Etapa aritmetica del calculo del producto punto o el producto cruz segun el caso.
+--! \n\n
+--! Las senales referidas en la arquitectura simplemente son conectores asignadas en la instanciaci\ntildeon de los componentes y en la asignacion entre ellas mismas en los procesos explicitos.
+--! \n\n
+--! RayTrac general architecture is made of 3 essential components: 
+--! - Register stage to load operation code and operators.
+--! - Combinatory Stage to operator selection, depending on the operation code.
+--! - Arithmetic stage to calculate dot product or cross product, depending on the case.
+--! \n\n 
+--! Referred signals in the architecture are simple connectors assigned in the components intantiation and in the assignation among them in explicit processes.  
+ 
 
 architecture raytrac_arch of raytrac is 
-	signal SA,SB,SC,SD			: std_logic_vector(18*3-1 downto 0);
+	signal SA,SB,SC,SD			: std_logic_vector(18*3-1 downto 0); --! Signal to register or bypass the vector inputs.  
 	signal sopcode,saddcode		: std_logic;
 	signal smf00,smf01,smf10,smf11,smf20,smf21,smf30,smf31,smf40,smf41,smf50,smf51	: std_logic_vector(17 downto 0);
 	
 begin
 
-	-- Registered or unregistered inputs?
-	notreg:
-	if registered="NO" generate 
-		SA <= A;
-		SB <= B;
-		SC <= C;
-		SD <= D;
-		sopcode <= opcode;
-		saddcode <= addcode;
-	end generate notreg;
 	reg:
 	if registered="YES" generate
+
+		--! By default: the inputs are going to be registered or loaded. This process describes how the register loading is to be make. \n Por defecto: las entradas se van a registrar o cargar. Este proceso describe como la carga de los registros con los valores de las entradas se va a realizar. 
 		procReg:
 		process(clk,rst)
 		begin
@@ -149,14 +144,30 @@ begin
 			end if;
 		end process procReg;
 	end generate reg;
-	-- Instantiate Opcoder 
+	
+	notreg:
+	if registered="NO" generate 
+		--! Just bypass or connect the inputs to the opcoder.
+		procNotReg:
+		process (A,B,C,D,opcode,addcode)
+		begin
+			SA <= A;
+			SB <= B;
+			SC <= C;
+			SD <= D;
+			sopcode <= opcode;
+			saddcode <= addcode;
+		end process procNotReg;
+	end generate notreg;
+	
+	--! Instantiate Opcoder 
 	opcdr : opcoder
 	port map (
 		SA(17 downto 0),SB(17 downto 0),SC(17 downto 0),SD(17 downto 0),SA(35 downto 18),SB(35 downto 18),SC(35 downto 18),SD(35 downto 18),SA(53 downto 36),SB(53 downto 36),SC(53 downto 36),SD(53 downto 36),
 		smf00,smf01,smf10,smf11,smf20,smf21,smf30,smf31,smf40,smf41,smf50,smf51,
 		sopcode,saddcode
 	);
-	-- Instantiate uf, cross product and dot product functional unit.
+	--! Instantiate uf, cross product and dot product functional unit.
 	uf0 : uf 
 	port map (
 		sopcode,

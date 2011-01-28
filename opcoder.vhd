@@ -1,3 +1,6 @@
+--! @file opcoder.vhd
+--! @brief Operation decoder. \n Decodificador de operacion. 
+--------------------------------------------------------------
 -- RAYTRAC
 -- Author Julian Andres Guarin
 -- opcoder.vhd
@@ -15,8 +18,15 @@
 -- 
 --     You should have received a copy of the GNU General Public License
 --     along with raytrac.  If not, see <http://www.gnu.org/licenses/>.
+--! Libreria ieee. 'n Good oldie IEEE.
 library ieee;
+
+--! Paquete de manejo de logica estandard. \n Standard logic managment package.
 use ieee.std_logic_1164.all;
+
+--! The opcoder entity is the operation decoder combinatorial stage. \n La entidad opcoder es la etapa combinatoria que decodifica la operacion que se va a realizar.
+
+--! The inputs to this hardware are: A,B,C,D vectors, opcode and add code inputs. The outputs are the operands of the 6 multipliers an uf entity has. The multipliers operands, also known as factors are m0f0 and m0f1 for the multiplier 0, m1f0 and m1f1 for the multiplier 1.. and so on until the multiplier 5. Basically what operates here in this description is a mux, which selects through opcode and addcode what vector components are going to be the multipliers operands.\n So if the opcode value is 0, it means that a dot product is to be done, so the m0f0 and m0f1 are going to be Ax and Bx respectively, and so on. If opcode is 1, it means that a cross product is to be performed, but the UF has only capacity to make a single cross product at --! the same time, meaning it will perform AxB OR CxD exclusively.\n\n In order to understand check the following table:   
 
 entity opcoder is 
 	port (

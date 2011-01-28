@@ -68,7 +68,7 @@ use work.arithpack.all;
 --! - Producto Punto (opcode = 0):
 --! - Dot Product (opcode = 0):
 --! \n\n
---! \t Los resultados se encontraran en DP0 y DP1 4 clocks despues de la carga. 
+--! \t Los resultados se encontraran en DP0 y DP1 4 clocks despues de la carga.\n 
 --! <table>
 --! <tr>
 --! <th></th><th>addcode, ignorar</th> 

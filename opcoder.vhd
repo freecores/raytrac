@@ -24,10 +24,10 @@ library ieee;
 --! Paquete de manejo de logica estandard. \n Standard logic managment package.
 use ieee.std_logic_1164.all;
 
---! The opcoder entity is the operation decoder combinatorial stage. \n La entidad opcoder es la etapa combinatoria que decodifica la operacion que se va a realizar.
+--! La entidad opcoder es la etapa combinatoria que decodifica la operacion que se va a realizar.
 
---! The inputs to this hardware are: A,B,C,D vectors, opcode and add code inputs. The outputs are the operands of the 6 multipliers an uf entity has. The multipliers operands, also known as factors are m0f0 and m0f1 for the multiplier 0, m1f0 and m1f1 for the multiplier 1.. and so on until the multiplier 5. Basically what operates here in this description is a mux, which selects through opcode and addcode what vector components are going to be the multipliers operands.\n So if the opcode value is 0, it means that a dot product is to be done, so the m0f0 and m0f1 are going to be Ax and Bx respectively, and so on. If opcode is 1, it means that a cross product is to be performed, but the UF has only capacity to make a single cross product at --! the same time, meaning it will perform AxB OR CxD exclusively.\n\n In order to understand check the following table:   
-
+--! \n\n   
+--! Las entradas a esta descripci&oacute;n son: los vectores A,B,C,D, las entradas opcode y addcode. Las salidas del decodificador, estar&aacute;n conectadas a las entradas de los 6 multiplicadores de una entidad uf. Los operandos de los multiplicadores, tambi&eacute;n conocidos como factores, son las salida m0f0, m0f1 para el multiplicador 1 y as&iacute; hasta el multiplicador 5. B&aacute;sicamente lo que opera aqu&iacute; en esta descripci&oacute;n es un multiplexor, el cual selecciona a trav&eacute;s de opcode y addcode qu&eacute; componentes de los vectores se conectaran a los operandos de los multiplicadores.  
 entity opcoder is 
 	port (
 		Ax,Bx,Cx,Dx,Ay,By,Cy,Dy,Az,Bz,Cz,Dz : in std_logic_vector (17 downto 0);
@@ -37,9 +37,17 @@ entity opcoder is
 	);
 end entity;
 
+--! El bloque de arquitectura del decodificador es simplemente una cascada de multiplexores. La selecci&oacute;n se hace en funci&oacute;n de las se&ntilde;ales appcode y addcode\n
+--! La siguiente tabla describe el comportamiento de los multiplexores:\n
+--! \n\n
+
+--! 
+--! <table>
+--! <tr><th></th><th>OPCODE</th><th>ADDCODE</th><th>f0</th><th>f1</th><th>&nbsp;</th><th>OPCODE</th><th>ADDCODE</th><th>f0</th><th>f1</th><th>&nbsp;</th></tr> <tr><td>m0</td><td>0</td><td>0</td><td>Ax</td><td>Bx</td><td>&nbsp;</td><td>0</td><td>0</td><td>Cx</td><td>Dx</td><td>m3</td></tr> <tr><td>m0</td><td>0</td><td>1</td><td>Ax</td><td>Bx</td><td>&nbsp;</td><td>0</td><td>1</td><td>Cx</td><td>Dx</td><td>m3</td></tr> <tr><td>m0</td><td>1</td><td>0</td><td>Ay</td><td>Bz</td><td>&nbsp;</td><td>1</td><td>0</td><td>Ax</td><td>Bz</td><td>m3</td></tr> <tr><td>m0</td><td>1</td><td>1</td><td>Cy</td><td>Dz</td><td>&nbsp;</td><td>1</td><td>1</td><td>Cx</td><td>Dz</td><td>m3</td></tr> <tr><td>m1</td><td>0</td><td>0</td><td>Ay</td><td>By</td><td>&nbsp;</td><td>0</td><td>0</td><td>Cy</td><td>Dy</td><td>m4</td></tr> <tr><td>m1</td><td>0</td><td>1</td><td>Ay</td><td>By</td><td>&nbsp;</td><td>0</td><td>1</td><td>Cy</td><td>Dy</td><td>m4</td></tr> <tr><td>m1</td><td>1</td><td>0</td><td>Az</td><td>By</td><td>&nbsp;</td><td>1</td><td>0</td><td>Ax</td><td>By</td><td>m4</td></tr> <tr><td>m1</td><td>1</td><td>1</td><td>Cz</td><td>Dy</td><td>&nbsp;</td><td>1</td><td>1</td><td>Cx</td><td>Dy</td><td>m4</td></tr> <tr><td>m2</td><td>0</td><td>0</td><td>Az</td><td>Bz</td><td>&nbsp;</td><td>0</td><td>0</td><td>Cz</td><td>Dz</td><td>m5</td></tr> <tr><td>m2</td><td>0</td><td>1</td><td>Az</td><td>Bz</td><td>&nbsp;</td><td>0</td><td>1</td><td>Cz</td><td>Dz</td><td>m5</td></tr> <tr><td>m2</td><td>1</td><td>0</td><td>Az</td><td>Bx</td><td>&nbsp;</td><td>1</td><td>0</td><td>Ay</td><td>Bx</td><td>m5</td></tr> <tr><td>m2</td><td>1</td><td>1</td><td>Cz</td><td>Dx</td><td>&nbsp;</td><td>1</td><td>1</td><td>Cy</td><td>Dx</td><td>m5</td></tr></table>
+
+
 architecture opcoder_arch of opcoder is 
 	
-
 begin
 	
 	procOpcoder:

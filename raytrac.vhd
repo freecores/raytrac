@@ -101,7 +101,7 @@ end raytrac;
 --! - Etapa combinatoria para la seleccion de operadores, dependiendo del codigo de operacion.
 --! - Etapa aritmetica del calculo del producto punto o el producto cruz segun el caso.
 --! \n\n
---! Las senales referidas en la arquitectura simplemente son conectores asignadas en la instanciaci\ntildeon de los componentes y en la asignacion entre ellas mismas en los procesos explicitos.
+--! Las senales referidas en la arquitectura simplemente son conectores asignadas en la instanciaci&oacute;n de los componentes y en la asignacion entre ellas mismas en los procesos explicitos.
 --! \n\n
 --! RayTrac general architecture is made of 3 essential components: 
 --! - Register stage to load operation code and operators.

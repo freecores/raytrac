@@ -1,5 +1,6 @@
 --! @file opcoder.vhd
---! @brief Operation decoder. \n Decodificador de operacion. 
+--! @brief Decodificador de operacion. 
+--! @author Julián Andrés Guarín Reyes.
 --------------------------------------------------------------
 -- RAYTRAC
 -- Author Julian Andres Guarin
@@ -18,10 +19,11 @@
 -- 
 --     You should have received a copy of the GNU General Public License
 --     along with raytrac.  If not, see <http://www.gnu.org/licenses/>.
---! Libreria ieee. 'n Good oldie IEEE.
-library ieee;
 
---! Paquete de manejo de logica estandard. \n Standard logic managment package.
+
+--! Libreria de definicion de senales y tipos estandares, comportamiento de operadores aritmeticos y logicos.\n Signal and types definition library. This library also defines 
+library ieee;
+--! Paquete de definicion estandard de logica. Standard logic definition pack.
 use ieee.std_logic_1164.all;
 
 --! La entidad opcoder es la etapa combinatoria que decodifica la operacion que se va a realizar.
@@ -37,19 +39,23 @@ entity opcoder is
 	);
 end entity;
 
+--! Arquitectura del decodificador de operaci&oacute;n.
+
 --! El bloque de arquitectura del decodificador es simplemente una cascada de multiplexores. La selecci&oacute;n se hace en funci&oacute;n de las se&ntilde;ales appcode y addcode\n
 --! La siguiente tabla describe el comportamiento de los multiplexores:\n
 --! \n\n
-
 --! 
 --! <table>
 --! <tr><th></th><th>OPCODE</th><th>ADDCODE</th><th>f0</th><th>f1</th><th>&nbsp;</th><th>OPCODE</th><th>ADDCODE</th><th>f0</th><th>f1</th><th>&nbsp;</th></tr> <tr><td>m0</td><td>0</td><td>0</td><td>Ax</td><td>Bx</td><td>&nbsp;</td><td>0</td><td>0</td><td>Cx</td><td>Dx</td><td>m3</td></tr> <tr><td>m0</td><td>0</td><td>1</td><td>Ax</td><td>Bx</td><td>&nbsp;</td><td>0</td><td>1</td><td>Cx</td><td>Dx</td><td>m3</td></tr> <tr><td>m0</td><td>1</td><td>0</td><td>Ay</td><td>Bz</td><td>&nbsp;</td><td>1</td><td>0</td><td>Ax</td><td>Bz</td><td>m3</td></tr> <tr><td>m0</td><td>1</td><td>1</td><td>Cy</td><td>Dz</td><td>&nbsp;</td><td>1</td><td>1</td><td>Cx</td><td>Dz</td><td>m3</td></tr> <tr><td>m1</td><td>0</td><td>0</td><td>Ay</td><td>By</td><td>&nbsp;</td><td>0</td><td>0</td><td>Cy</td><td>Dy</td><td>m4</td></tr> <tr><td>m1</td><td>0</td><td>1</td><td>Ay</td><td>By</td><td>&nbsp;</td><td>0</td><td>1</td><td>Cy</td><td>Dy</td><td>m4</td></tr> <tr><td>m1</td><td>1</td><td>0</td><td>Az</td><td>By</td><td>&nbsp;</td><td>1</td><td>0</td><td>Ax</td><td>By</td><td>m4</td></tr> <tr><td>m1</td><td>1</td><td>1</td><td>Cz</td><td>Dy</td><td>&nbsp;</td><td>1</td><td>1</td><td>Cx</td><td>Dy</td><td>m4</td></tr> <tr><td>m2</td><td>0</td><td>0</td><td>Az</td><td>Bz</td><td>&nbsp;</td><td>0</td><td>0</td><td>Cz</td><td>Dz</td><td>m5</td></tr> <tr><td>m2</td><td>0</td><td>1</td><td>Az</td><td>Bz</td><td>&nbsp;</td><td>0</td><td>1</td><td>Cz</td><td>Dz</td><td>m5</td></tr> <tr><td>m2</td><td>1</td><td>0</td><td>Az</td><td>Bx</td><td>&nbsp;</td><td>1</td><td>0</td><td>Ay</td><td>Bx</td><td>m5</td></tr> <tr><td>m2</td><td>1</td><td>1</td><td>Cz</td><td>Dx</td><td>&nbsp;</td><td>1</td><td>1</td><td>Cy</td><td>Dx</td><td>m5</td></tr></table>
-
+--! \n\n
+--! Por ejemplo para ver la tabla de verdad del m0f0, consultar el registro (línea) m0 y el atributo (columna) f0.\n
 
 architecture opcoder_arch of opcoder is 
 	
 begin
-	
+	--! Proceso que describe las 2 etapas de multiplexores. 
+	--! Proceso que describe las 2 etapas de multiplexores. Una corresponde al selector addcode, que selecciona con que operadores realizará la operación producto cruz, es decir, seleccionará si realiza la operación AxB ó CxD. En el caso del producto punto, esta etapa de multiplexación no tendrá repercusión en el resultado de la deocdificación de la operación. La otra etapa utiliza el selector opcode, el cual decide si usa los operandos decodificados en la primera etapa de multiplexores, en el caso de que opcode sea 1, seleccionando la operación producto cruz, o por el contrario seleccionando una decodificación de operadores que lleven a cabo la operación producto punto. 
+
 	procOpcoder:
 	process (Ax,Bx,Cx,Dx,Ay,By,Cy,Dy,Az,Bz,Cz,Dz,opcode,addcode)
 		variable scoder : std_logic_vector (1 downto 0);

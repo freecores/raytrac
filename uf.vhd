@@ -1,3 +1,6 @@
+--! @file raytrac.vhd
+--! @brief Descripción del sistema aritmetico usado por raytrac.
+--! @author Julián Andrés Guarín Reyes.
 -- RAYTRAC
 -- Author Julian Andres Guarin
 -- uf.vhd
@@ -16,16 +19,28 @@
 --     You should have received a copy of the GNU General Public License
 --     along with raytrac.  If not, see <http://www.gnu.org/licenses/>.
 
+--! Libreria de definicion de senales y tipos estandares, comportamiento de operadores aritmeticos y logicos.\n Signal and types definition library. This library also defines 
 library ieee;
+--! Paquete de definicion estandard de logica. Standard logic definition pack.
 use ieee.std_logic_1164.all;
+--! Se usaran en esta descripcion los componentes del package arithpack.vhd.\n It will be used in this description the components on the arithpack.vhd package. 
 use work.arithpack.all;
+
+
+--! uf es la descripción del circuito que realiza la aritmética del Rt Engine.
+
+--! La entrada opcode indica la operación que se está realizando, en los sumadores, es la misma señal que se encuentra en la entidad opcoder, que selecciona si se está realizando un producto punto o un producto cruz. Dentro de la arquitectura de uf, la señal opcode selecciona en la primera etapa de sumadores, si la operación a realizar será una resta o una suma. 
+--! Los resultados estarán en distintas salidas dependiendo de la operación, lo cual es apenas natural: El producto cruz tiene por resultado un vector, mientras que el producto punto tiene por resultado un escalar. 
+--! Esta entidad utiliza las señales de control clk y rst.}
+--! \n\n
+--! La característica fundamental de uf, es que puede realizar 2 operaciones de producto punto al mimso tiempo ó una operación de producto cruz al mismo tiempo. La otra característica importante es que el pipe de producto punto es mas largo que el pipe de producto cruz: el producto punto tomará 3 clocks para realizarse, mientras que el procto punto tomara 4 clocks para realizarse.    
 
 entity uf is 
 	port (
-		opcode		: in std_logic;
-		m0f0,m0f1,m1f0,m1f1,m2f0,m2f1,m3f0,m3f1,m4f0,m4f1,m5f0,m5f1 : in std_logic_vector(17 downto 0);
-		cpx,cpy,cpz,dp0,dp1 : out std_logic_vector(31 downto 0);
-		clk,rst		: in std_logic
+		opcode		: in std_logic; --! Entrada que dentro de la arquitectura funciona como selector de la operación que se lleva a cabo en la primera etapa de sumadores/restadores. 
+		m0f0,m0f1,m1f0,m1f1,m2f0,m2f1,m3f0,m3f1,m4f0,m4f1,m5f0,m5f1 : in std_logic_vector(17 downto 0); --! Entradas que van conectadas a los multiplicadores en la primera etapa de la descripción.  
+		cpx,cpy,cpz,dp0,dp1 : out std_logic_vector(31 downto 0); --! Salidas donde se registran los resultados de las operaciones aritméticas: cpx,cpy,cpz serán los componentes del vector que da por resultado el producto cruz entre los vectores AxB ó CxD.  
+		clk,rst		: in std_logic --! Las entradas de control usuales.  
 	);
 end uf;
 
@@ -33,30 +48,29 @@ architecture uf_arch of uf is
 
 	-- Stage 0 signals
 	
-	signal stage0mf00,stage0mf01,stage0mf10,stage0mf11,stage0mf20,stage0mf21,stage0mf30,stage0mf31,stage0mf40,stage0mf41,stage0mf50,stage0mf51 : std_logic_vector(17 downto 0); 
-	signal stage0p0,stage0p1, stage0p2, stage0p3, stage0p4, stage0p5 : std_logic_vector(31 downto 0);
-	signal stage0opcode : std_logic;
+	signal stage0mf00,stage0mf01,stage0mf10,stage0mf11,stage0mf20,stage0mf21,stage0mf30,stage0mf31,stage0mf40,stage0mf41,stage0mf50,stage0mf51 : std_logic_vector(17 downto 0); --! Señales que conectan los operandos seleccionados en opcode a las entradas de los multiplicadores.
+	signal stage0p0,stage0p1, stage0p2, stage0p3, stage0p4, stage0p5 : std_logic_vector(31 downto 0); --! Señales / buses, con los productos de los multiplicadores. 
+	signal stage0opcode : std_logic; --! Señal de atraso del opcode. Revisar el diagrama de bloques para mayor claridad.
 	
 	--Stage 1 signals 
 	
-	signal stage1p0, stage1p1, stage1p2, stage1p3, stage1p4, stage1p5 : std_logic_vector (31 downto 0);
-	signal stage1a0, stage1a1, stage1a2 : std_logic_vector (31 downto 0);
-	signal stage1opcode : std_logic;
+	signal stage1p0, stage1p1, stage1p2, stage1p3, stage1p4, stage1p5 : std_logic_vector (31 downto 0); --! Señales provenientes de los productos de la etapa previa de multiplicadores.
+	signal stage1a0, stage1a1, stage1a2 : std_logic_vector (31 downto 0); --! Señales / buses, con los resultados de los sumadores. 
+	signal stage1opcode : std_logic; --! Señal proveniente del opcode que selecciona si los sumadores deben ejecutar una resta o una suma dependiendo de la operación que se ejecute en ese momento del pipe.  
 	
 	-- Some support signals
-	signal stage1_internalCarry	: std_logic_vector(2 downto 0);
-	signal stage2_internalCarry : std_logic_vector(1 downto 0);
+	signal stage1_internalCarry	: std_logic_vector(2 downto 0); --! Cada uno de los 3 sumadores de la etapa de sumadores está compuesto de una cascada de 2 sumadores Carry Look Ahead: aXhigh y aXlow. El carry out del componente low y el carry in del componente high, se conectará a través de las señales internal carry.   
+	signal stage2_internalCarry : std_logic_vector(1 downto 0); --! Cada uno de los 2 sumadores de la última etapa de sumadores está compuesto de una cascada de 2 sumadores Carry Look AheadÑ: aXhigh y aXlow. El carry out del componente low y el carry in del componente high, se conectará a través de las señales internal carry.  
 	
-	--Stage 2 signals
-	
-	signal stage2a0, stage2a2, stage2a3, stage2a4, stage2p2, stage2p3 : std_logic_vector (31 downto 0);
+	--Stage 2 signals	
+	signal stage2a0, stage2a2, stage2a3, stage2a4, stage2p2, stage2p3 : std_logic_vector (31 downto 0); --! Estas señales corresponden a los sumandos derivados de la primera etapa de multiplicadores (stage2p2, stage2p3) y a los sumandos derivados del resultado de las sumas en la primera etapa de sumadores. 
 	
 	  	
 	
 begin
 
 	-- Multiplicator Instantiation (StAgE 0)
-	
+	--! Multiplicador 0 
 	m0 : r_a18_b18_smul_c32_r 
 	port map (
 		aclr	=> rst,
@@ -65,6 +79,8 @@ begin
 		datab	=> stage0mf01,
 		result	=> stage0p0
 	);
+	
+	--! Multiplicador 1
 	m1 : r_a18_b18_smul_c32_r 
 	port map (
 		aclr	=> rst,
@@ -73,6 +89,8 @@ begin
 		datab	=> stage0mf11,
 		result	=> stage0p1
 	);
+	
+	--! Multiplicador 2
 	m2 : r_a18_b18_smul_c32_r 
 	port map (
 		aclr	=> rst,
@@ -81,6 +99,8 @@ begin
 		datab	=> stage0mf21,
 		result	=> stage0p2
 	);
+	
+	--! Multiplicador 3
 	m3 : r_a18_b18_smul_c32_r 
 	port map (
 		aclr	=> rst,
@@ -89,6 +109,8 @@ begin
 		datab	=> stage0mf31,
 		result	=> stage0p3
 	);
+	
+	--! Multiplicador 4
 	m4 : r_a18_b18_smul_c32_r 
 	port map (
 		aclr	=> rst,
@@ -97,6 +119,8 @@ begin
 		datab	=> stage0mf41,
 		result	=> stage0p4
 	);
+	
+	--! Multiplicador 5
 	m5 : r_a18_b18_smul_c32_r 
 	port map (
 		aclr	=> rst,
@@ -108,11 +132,11 @@ begin
 	
 	-- Adder Instantiation (sTaGe 1)
 	
-	--Adder 0, low adder 
+	--! Adder 0, 16 bit carry lookahead low adder. 
 	a0low : adder 
 	generic map (
-		16,"CLA","YES"	--Carry Look Ahead Logic (More Gates Used, But Less Time)
-						--Yes instantiate Xor gates stage in the adder so we can substract on the opcode signal command.
+		16,"CLA","YES"	-- Carry Look Ahead Logic (More Gates Used, But Less Time)
+						-- Yes instantiate Xor gates stage in the adder so we can substract on the opcode signal command.
 	)
 	port map	(
 		a => stage1p0(15 downto 0),
@@ -122,12 +146,12 @@ begin
 		result => stage1a0(15 downto 0),
 		cout =>	stage1_internalCarry(0)
 	);
-	--Adder 0, high adder
+	--Adder 0, 16 bit carry lookahead high adder.
 	a0high : adder 
 	generic map (
 		w => 16,
-		carry_logic 		=> "CLA",	--Carry Look Ahead Logic (More Gates Used, But Less Time)
-		substractor_selector	=> "YES"	--Yes instantiate Xor gates stage in the adder so we can substract on the opcode signal command.
+		carry_logic 		=> "CLA",	-- Carry Look Ahead Logic (More Gates Used, But Less Time)
+		substractor_selector	=> "YES"	-- Yes instantiate Xor gates stage in the adder so we can substract on the opcode signal command.
 	)
 	port map	(
 		a => stage1p0(31 downto 16),
@@ -137,12 +161,12 @@ begin
 		result => stage1a0(31 downto 16),
 		cout =>	open
 	);
-	--Adder 1, low adder 
+	--! Adder 1, 16 bit carry lookahead low adder. 
 	a1low : adder 
 	generic map (
 		w => 16,
-		carry_logic 		=> "CLA",	--Carry Look Ahead Logic (More Gates Used, But Less Time)
-		substractor_selector	=> "YES"	--Yes instantiate Xor gates stage in the adder so we can substract on the opcode signal command.
+		carry_logic 		=> "CLA",	-- Carry Look Ahead Logic (More Gates Used, But Less Time)
+		substractor_selector	=> "YES"	-- Yes instantiate Xor gates stage in the adder so we can substract on the opcode signal command.
 	)
 	port map	(
 		a => stage1p2(15 downto 0),
@@ -152,12 +176,12 @@ begin
 		result => stage1a1(15 downto 0),
 		cout =>	stage1_internalCarry(1)
 	);
-	--Adder 1, high adder
+	--! Adder 1, 16 bit carry lookahead high adder.
 	a1high : adder 
 	generic map (
 		w => 16,
-		carry_logic 		=> "CLA",	--Carry Look Ahead Logic (More Gates Used, But Less Time)
-		substractor_selector	=> "YES"	--Yes instantiate Xor gates stage in the adder so we can substract on the opcode signal command.
+		carry_logic 		=> "CLA",	-- Carry Look Ahead Logic (More Gates Used, But Less Time)
+		substractor_selector	=> "YES"	-- Yes instantiate Xor gates stage in the adder so we can substract on the opcode signal command.
 	)
 	port map	(
 		a => stage1p2(31 downto 16),
@@ -167,12 +191,12 @@ begin
 		result => stage1a1(31 downto 16),
 		cout =>	open
 	);	
-	--Adder 2, low adder 
+	--! Adder 2, 16 bit carry lookahead low adder. 
 	a2low : adder 
 	generic map (
 		w => 16,
-		carry_logic 		=> "CLA",	--Carry Look Ahead Logic (More Gates Used, But Less Time)
-		substractor_selector	=> "YES"	--Yes instantiate Xor gates stage in the adder so we can substract on the opcode signal command.
+		carry_logic 		=> "CLA",	-- Carry Look Ahead Logic (More Gates Used, But Less Time)
+		substractor_selector	=> "YES"	-- Yes instantiate Xor gates stage in the adder so we can substract on the opcode signal command.
 	)
 	port map	(
 		a => stage1p4(15 downto 0),
@@ -182,12 +206,12 @@ begin
 		result => stage1a2(15 downto 0),
 		cout =>	stage1_internalCarry(2)
 	);
-	--Adder 2, high adder
+	--! Adder 2, 16 bit carry lookahead high adder.
 	a2high : adder 
 	generic map (
 		w => 16,
-		carry_logic 		=> "CLA",	--Carry Look Ahead Logic (More Gates Used, But Less Time)
-		substractor_selector	=> "YES"	--Yes instantiate Xor gates stage in the adder so we can substract on the opcode signal command.
+		carry_logic 		=> "CLA",	-- Carry Look Ahead Logic (More Gates Used, But Less Time)
+		substractor_selector	=> "YES"	-- Yes instantiate Xor gates stage in the adder so we can substract on the opcode signal command.
 	)
 	port map	(
 		a => stage1p4(31 downto 16),
@@ -200,12 +224,12 @@ begin
 	
 	
 	-- Adder Instantiation (Stage 2)
-	--Adder 3, low adder 
+	--! Adder 3, 16 bit carry lookahead low adder. 
 	a3low : adder 
 	generic map (
 		w => 16,
-		carry_logic 		=> "CLA",	--Carry Look Ahead Logic (More Gates Used, But Less Time)
-		substractor_selector	=> "NO"		--No Just Add.
+		carry_logic 		=> "CLA",	-- Carry Look Ahead Logic (More Gates Used, But Less Time)
+		substractor_selector	=> "NO"		-- No Just Add.
 	)
 	port map	(
 		a => stage2a0(15 downto 0),
@@ -215,12 +239,12 @@ begin
 		result => stage2a3(15 downto 0),
 		cout =>	stage2_internalCarry(0)
 	);
-	--Adder 3, high adder
+	--Adder 3, 16 bit carry lookahead high adder.
 	a3high : adder 
 	generic map (
 		w => 16,
-		carry_logic 		=> "CLA",	--Carry Look Ahead Logic (More Gates Used, But Less Time)
-		substractor_selector	=> "NO"		--No Just Add.
+		carry_logic 		=> "CLA",	-- Carry Look Ahead Logic (More Gates Used, But Less Time)
+		substractor_selector	=> "NO"		-- No Just Add.
 	)
 	port map	(
 		a => stage2a0(31 downto 16),
@@ -230,12 +254,12 @@ begin
 		result => stage2a3(31 downto 16),
 		cout =>	open
 	);
-	--Adder 4, low adder 
+	--! Adder 4, 16 bit carry lookahead low adder. 
 	a4low : adder 
 	generic map (
 		w => 16,
-		carry_logic 		=> "CLA",	--Carry Look Ahead Logic (More Gates Used, But Less Time)
-		substractor_selector	=> "NO"		--No Just Add.
+		carry_logic 		=> "CLA",	-- Carry Look Ahead Logic (More Gates Used, But Less Time)
+		substractor_selector	=> "NO"		-- No Just Add.
 	)
 	port map	(
 		a => stage2p3(15 downto 0),
@@ -245,12 +269,12 @@ begin
 		result => stage2a4(15 downto 0),
 		cout =>	stage2_internalCarry(1)
 	);
-	--Adder 4, high adder
+	--! Adder 4, 16 bit carry lookahead high adder.
 	a4high : adder 
 	generic map (
 		w => 16,
-		carry_logic 		=> "CLA",	--Carry Look Ahead Logic (More Gates Used, But Less Time)
-		substractor_selector	=> "NO"		--No Just Add.
+		carry_logic 		=> "CLA",	-- Carry Look Ahead Logic (More Gates Used, But Less Time)
+		substractor_selector	=> "NO"		-- No Just Add.
 	)
 	port map	(
 		a => stage2p3(31 downto 16),
@@ -293,7 +317,10 @@ begin
 	dp1 <= stage2a4;
 	
 	-- Looking into the design the stage 1 to stage 2 are the sequences pipe stages that must be controlled in this particular HDL.
-	uf_seq: process (clk,rst,opcode)
+	--! Este proceso describe la manera en que se organizan las etapas de pipe.
+	--! Todas las señales internas en las etapas de pipe, en el momento en que la entrada rst alcanza el nivel rstMasterValue, se colocan en '0'. Nótese que, salvo stage0opcode<=stage1opcode, las señales que vienen desde la entrada hacia los multiplicadores en la etapa 0 y desde la salida de los multiplicadores desde la etapa0 hacia la etapa 1, no están siendo descritas en este proceso, la explicación de es simple: Los multiplicadores que se están instanciado tienen registros a la entrada y la salida, permitiendo así, registrar las entradas y registrar los productos o salidas de los  multiplicadores, hacia la etapa 1 o etapa de sumadores/restadores. 
+	
+	uf_seq: process (clk,rst)
 	begin
 		
 		if rst=rstMasterValue then 
@@ -318,18 +345,6 @@ begin
 					
 		end if;
 	end process uf_seq;
-	uf_seq2: process (clk,rst,stage0opcode)
-	begin
-		
-		if rst=rstMasterValue then
-		
-		
-		elsif clk'event and clk='1' then
-			
-		
-		end if;
-		
-	end process uf_seq2;
 	
 	
 	

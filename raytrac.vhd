@@ -1,6 +1,7 @@
 ------------------------------------------------
 --! @file
 --! @brief Entidad top del Rt Engine \n Rt Engine's top hierarchy.
+--! @author Julián Andrés Guarín Reyes
 --------------------------------------------------
 
 

@@ -18,7 +18,9 @@
 --     along with raytrac.  If not, see <http://www.gnu.org/licenses/>.library ieee;
 
 
-
+--! Libreria de definicion de senales y tipos estandares, comportamiento de operadores aritmeticos y logicos.\n Signal and types definition library. This library also defines 
+library ieee;
+--! Paquete de definicion estandard de logica. Standard logic definition pack.
 use ieee.std_logic_1164.all;
 
 

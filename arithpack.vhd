@@ -53,7 +53,18 @@ package arithpack is
 		opcode,addcode : in std_logic
 	);
 	end component;
-
+	
+	--! Multiplexor estructural.
+	entity fastmux is 
+	generic (
+		width : integer := 18
+	)
+	port (
+		a,b:in std_logic_vector(w-1 downto 0);
+		s:in std_logic;
+		c: out std_logic_vector(w-1 downto 0)
+	)
+end entity;
 	--! Esta entidad corresponde al multiplicador que se instanciar’a dentro de la unidad funcional. El multiplicador registra los operandos a la entrada y el respectivo producto de la multiplicaci—n a la salida. 
 	component r_a18_b18_smul_c32_r
 	port (

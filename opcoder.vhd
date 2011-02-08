@@ -33,12 +33,13 @@ use work.arithpack.all;
 --! \n\n   
 --! Las entradas a esta descripci&oacute;n son: los vectores A,B,C,D, las entradas opcode y addcode. Las salidas del decodificador, estar&aacute;n conectadas a las entradas de los 6 multiplicadores de una entidad uf. Los operandos de los multiplicadores, tambi&eacute;n conocidos como factores, son las salida m0f0, m0f1 para el multiplicador 1 y as&iacute; hasta el multiplicador 5. B&aacute;sicamente lo que opera aqu&iacute; en esta descripci&oacute;n es un multiplexor, el cual selecciona a trav&eacute;s de opcode y addcode qu&eacute; componentes de los vectores se conectaran a los operandos de los multiplicadores.  
 entity opcoder is 
-	generic ( 
-		fastmux : string:= "NO"
+	generic (
+		width : integer := 18;
+		structuralDescription : string:= "NO"
 	)
 	port (
-		Ax,Bx,Cx,Dx,Ay,By,Cy,Dy,Az,Bz,Cz,Dz : in std_logic_vector (17 downto 0);
-		m0f0,m0f1,m1f0,m1f1,m2f0,m2f1,m3f0,m3f1,m4f0,m4f1,m5f0,m5f1 : out std_logic_vector (17 downto 0);
+		Ax,Bx,Cx,Dx,Ay,By,Cy,Dy,Az,Bz,Cz,Dz : in std_logic_vector (width-1 downto 0);
+		m0f0,m0f1,m1f0,m1f1,m2f0,m2f1,m3f0,m3f1,m4f0,m4f1,m5f0,m5f1 : out std_logic_vector (width-1 downto 0);
 		
 		opcode,addcode : in std_logic
 	);
@@ -57,47 +58,49 @@ end entity;
 
 architecture opcoder_arch of opcoder is 
 	
-	signal aycy,bzdz,azcz,bydy,bxdx,axcx: std_logic_vector(17 downto 0);
+	signal aycy,bzdz,azcz,bydy,bxdx,axcx: std_logic_vector(width-1 downto 0);
 	
 begin
 	--! Proceso que describe las 2 etapas de multiplexores. 
 	--! Proceso que describe las 2 etapas de multiplexores. Una corresponde al selector addcode, que selecciona con que operadores realizará la operación producto cruz, es decir, seleccionará si realiza la operación AxB ó CxD. En el caso del producto punto, esta etapa de multiplexación no tendrá repercusión en el resultado de la deocdificación de la operación. La otra etapa utiliza el selector opcode, el cual decide si usa los operandos decodificados en la primera etapa de multiplexores, en el caso de que opcode sea 1, seleccionando la operación producto cruz, o por el contrario seleccionando una decodificación de operadores que lleven a cabo la operación producto punto. 
 
 	originalMuxGen:
-	if fastmux="NO" generate
+	if behavioralDescription="NO" generate
 	
 		procOpcoder:
 		process (Ax,Bx,Cx,Dx,Ay,By,Cy,Dy,Az,Bz,Cz,Dz,opcode,addcode)
 			variable scoder : std_logic_vector (1 downto 0);
-		begin 
-			scoder := opcode & addcode;
-			case (scoder) is
-				when "10" =>
-					m0f0 <= Ay;
-					m0f1 <= Bz;
-					m1f0 <= Az;
-					m1f1 <= By;
-					m2f0 <= Az;
-					m2f1 <= Bx;
-					m3f0 <= Ax;
-					m3f1 <= Bz;
-					m4f0 <= Ax;
-					m4f1 <= By;
-					m5f0 <= Ay;
-					m5f1 <= Bx;
-				when "11" =>
-					m0f0 <= Cy;
-					m0f1 <= Dz;
-					m1f0 <= Cz;
-					m1f1 <= Dy;
-					m2f0 <= Cz;
-					m2f1 <= Dx;
-					m3f0 <= Cx;
-					m3f1 <= Dz;
-					m4f0 <= Cx;
-					m4f1 <= Dy;
-					m5f0 <= Cy;
-					m5f1 <= Dx;
+		begin
+			case (addcode) is
+				when "1" =>
+					aycy <= Cy;
+					bzdz <= Dz;
+					azcz <= Cz;
+					bydy <= Dy;
+					axcx <= Cx;
+					bxdx <= Dx;
+				when others =>
+					aycy <= Ay;
+					bzdz <= Bz;
+					azcz <= Az;
+					bydy <= By;
+					axcx <= Ax;
+					bxdx <= Bx;
+			end case;
+			case (opcode) is
+				when "1" => 
+					m0f0 <= aycy;
+					m0f1 <= bzdz;
+					m1f0 <= azcz;
+					m1f1 <= bydy;
+					m2f0 <= axcx;
+					m2f1 <= bzdz;
+					m3f0 <= azcz;
+					m3f1 <= bxdx;
+					m4f0 <= axcx;
+					m4f1 <= bydy;
+					m5f0 <= aycy;
+					m5f1 <= bxdx;
 				when others => 
 					m0f0 <= Ax;
 					m0f1 <= Bx;
@@ -111,17 +114,11 @@ begin
 					m4f1 <= Dy;
 					m5f0 <= Cz;
 					m5f1 <= Dz;
-
 			end case;
-					
-					 
-			
-			
-		
 		end process procOpcoder;
 	end generate originalMuxGen;
 	fastMuxGen:
-	if fastmux="YES" generate
+	if structuralDescription="YES" generate
 		mux0 : fastmux (ay,cy,addcode,aycy);
 		mux1 : fastmux (bz,dz,addcode,bzdz);
 		mux2 : fastmux (az,cz,addcode,azcz);

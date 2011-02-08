@@ -47,6 +47,10 @@ package arithpack is
 		
 	--! Entidad opcoder: opcoder decodifica la operaci—n que se va a realizar. Para tal fin coloca en la entrada de uf (unidad funcional), cuales van a ser los operandos de los multiplicadores con los que uf cuenta y adem‡s escribe en el selector de operaci—n de uf, el tipo de operaci—n a realizar.
 	component opcoder 
+	generic (
+		width : integer := 18;
+		structuralDescription : string:= "NO"
+	)
 	port (
 		Ax,Bx,Cx,Dx,Ay,By,Cy,Dy,Az,Bz,Cz,Dz : in std_logic_vector (17 downto 0);
 		m0f0,m0f1,m1f0,m1f1,m2f0,m2f1,m3f0,m3f1,m4f0,m4f1,m5f0,m5f1 : out std_logic_vector (17 downto 0);

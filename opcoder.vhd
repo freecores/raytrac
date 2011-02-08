@@ -36,7 +36,7 @@ entity opcoder is
 	generic (
 		width : integer := 18;
 		structuralDescription : string:= "NO"
-	)
+	);
 	port (
 		Ax,Bx,Cx,Dx,Ay,By,Cy,Dy,Az,Bz,Cz,Dz : in std_logic_vector (width-1 downto 0);
 		m0f0,m0f1,m1f0,m1f1,m2f0,m2f1,m3f0,m3f1,m4f0,m4f1,m5f0,m5f1 : out std_logic_vector (width-1 downto 0);
@@ -58,21 +58,21 @@ end entity;
 
 architecture opcoder_arch of opcoder is 
 	
-	signal aycy,bzdz,azcz,bydy,bxdx,axcx: std_logic_vector(width-1 downto 0);
+	variable aycy,bzdz,azcz,bydy,bxdx,axcx: std_logic_vector(width-1 downto 0);
 	
 begin
 	--! Proceso que describe las 2 etapas de multiplexores. 
 	--! Proceso que describe las 2 etapas de multiplexores. Una corresponde al selector addcode, que selecciona con que operadores realizará la operación producto cruz, es decir, seleccionará si realiza la operación AxB ó CxD. En el caso del producto punto, esta etapa de multiplexación no tendrá repercusión en el resultado de la deocdificación de la operación. La otra etapa utiliza el selector opcode, el cual decide si usa los operandos decodificados en la primera etapa de multiplexores, en el caso de que opcode sea 1, seleccionando la operación producto cruz, o por el contrario seleccionando una decodificación de operadores que lleven a cabo la operación producto punto. 
 
 	originalMuxGen:
-	if behavioralDescription="NO" generate
+	if structuralDescription="NO" generate
 	
 		procOpcoder:
-		process (Ax,Bx,Cx,Dx,Ay,By,Cy,Dy,Az,Bz,Cz,Dz,opcode,addcode)
-			variable scoder : std_logic_vector (1 downto 0);
+		process (Ax,Bx,Cx,Dx,Ay,By,Cy,Dy,Az,Bz,Cz,Dz,aycy,bzdz,azcz,bydy,bxdx,axcx,opcode,addcode)
 		begin
 			case (addcode) is
-				when "1" =>
+				-- Estamos ejecutando CxD
+				when '1'=>
 					aycy <= Cy;
 					bzdz <= Dz;
 					azcz <= Cz;
@@ -80,6 +80,7 @@ begin
 					axcx <= Cx;
 					bxdx <= Dx;
 				when others =>
+				-- Estamos ejecutando AxB
 					aycy <= Ay;
 					bzdz <= Bz;
 					azcz <= Az;
@@ -88,7 +89,8 @@ begin
 					bxdx <= Bx;
 			end case;
 			case (opcode) is
-				when "1" => 
+				-- Estamos ejecutando Producto Cruz
+				when '1' => 
 					m0f0 <= aycy;
 					m0f1 <= bzdz;
 					m1f0 <= azcz;
@@ -102,6 +104,7 @@ begin
 					m5f0 <= aycy;
 					m5f1 <= bxdx;
 				when others => 
+				-- Estamos ejecutando Producto Punto
 					m0f0 <= Ax;
 					m0f1 <= Bx;
 					m1f0 <= Ay;
@@ -119,27 +122,28 @@ begin
 	end generate originalMuxGen;
 	fastMuxGen:
 	if structuralDescription="YES" generate
-		mux0 : fastmux (ay,cy,addcode,aycy);
-		mux1 : fastmux (bz,dz,addcode,bzdz);
-		mux2 : fastmux (az,cz,addcode,azcz);
-		mux3 : fastmux (by,dy,addcode,bydy);
-		mux4 : fastmux (bx,dx,addcode,bxdx);
-		mux5 : fastmux (ax,cx,addcode,axcx);
+		mux0 : fastmux port map (ay,cy,addcode,aycy);
+		mux1 : fastmux port map (bz,dz,addcode,bzdz);
+		mux2 : fastmux port map (az,cz,addcode,azcz);
+		mux3 : fastmux port map (by,dy,addcode,bydy);
+		mux4 : fastmux port map (bx,dx,addcode,bxdx);
+		mux5 : fastmux port map (ax,cx,addcode,axcx);
 		
 		-- Segunda etapa de multiplexores 
-		muxa : fastmux (ax,aycy,opcode,m0f0);
-		muxb : fastmux (bx,bzdz,opcode,m0f1);
-		muxc : fastmux (ay,azcz,opcode,m1f0);
-		muxd : fastmux (by,bydy,opcode,m1f1);
-		muxe : fastmux (az,azcz,opcode,m2f0);
-		muxf : fastmux (bz,bxdx,opcode,m2f1);
-		muxg : fastmux (cx,axcx,opcode,m3f0);
-		muxh : fastmux (dx,bzdz,opcode,m3f1);
-		muxi : fastmux (cy,axcx,opcode,m4f0);
-		muxj : fastmux (dy,bydy,opcode,m4f1);
-		muxk : fastmux (cz,aycy,opcode,m5f0);
-		muxl : fastmux (dz,bxdx,opcode,m5f1);
-	end generate 
+		muxa : fastmux port map (ax,aycy,opcode,m0f0);
+		muxb : fastmux port map (bx,bzdz,opcode,m0f1);
+		muxc : fastmux port map (ay,azcz,opcode,m1f0);
+		muxd : fastmux port map (by,bydy,opcode,m1f1);
+		muxe : fastmux port map (az,azcz,opcode,m2f0);
+		muxf : fastmux port map (bz,bxdx,opcode,m2f1);
+		muxg : fastmux port map (cx,axcx,opcode,m3f0);
+		muxh : fastmux port map (dx,bzdz,opcode,m3f1);
+		muxi : fastmux port map (cy,axcx,opcode,m4f0);
+		muxj : fastmux port map (dy,bydy,opcode,m4f1);
+		muxk : fastmux port map (cz,aycy,opcode,m5f0);
+		muxl : fastmux port map (dz,bxdx,opcode,m5f1);
+	
+	end generate fastMuxGen;
 	
 
 end opcoder_arch;

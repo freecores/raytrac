@@ -25,20 +25,20 @@ use ieee.std_logic_1164.all;
 entity fastmux is 
 	generic (
 		width : integer := 18
-	)
+	);
 	port (
-		a,b:in std_logic_vector(w-1 downto 0);
+		a,b:in std_logic_vector(width-1 downto 0);
 		s:in std_logic;
-		c: out std_logic_vector(w-1 downto 0)
-	)
+		c: out std_logic_vector(width-1 downto 0)
+	);
 end entity;
 
 architecture fastmux_arch of fastmux is
 begin
 
 	muxgen:
-	for i in 0 to w-1 generate
-		c(i) <= (a(i) and not(s(i))) or (b(i) and s(i));
+	for i in 0 to width-1 generate
+		c(i) <= (a(i) and not(s)) or (b(i) and s);
 	end generate muxgen;
 
 

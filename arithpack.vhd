@@ -37,6 +37,9 @@ package arithpack is
 
 	--! Entidad uf: sus siglas significan undidad funcional. La unidad funcional se encarga de realizar las diferentes operaciones vectoriales (producto cruz — producto punto). 
 	component uf
+	generic (
+			use_std_logic_signed	: string := "NO"
+	);
 	port (
 		opcode		: in std_logic;
 		m0f0,m0f1,m1f0,m1f1,m2f0,m2f1,m3f0,m3f1,m4f0,m4f1,m5f0,m5f1 : in std_logic_vector(17 downto 0);
@@ -80,35 +83,35 @@ package arithpack is
 	
 	--! cla_logic_block corresponde a un bloque de l—gica Carry look Ahead. Se instancia y utiliza dentro de un sumador cualquiera, pues sirve para calcular los carry out de la operaci—n. 
 	component cla_logic_block 
-	generic ( w: integer:=4);
+	generic ( width: integer:=4);
 	port (
-		p,g:in std_logic_vector(w-1 downto 0);
+		p,g:in std_logic_vector(width-1 downto 0);
 		cin:in std_logic;
-		c:out std_logic_vector(w downto 1)
+		c:out std_logic_vector(width downto 1)
 	);
 	end component;
 	
 	--! rca_logic_block corresponde a un bloque de l—gica Ripple Carry Adder. Se instancia y utiliza dentro de un sumador cualquiera, pues sirve para calcular los carry out de la operaci—n.
 	component rca_logic_block
-	generic ( w : integer := 4);
+	generic ( width : integer := 4);
 	port (
-		p,g: in std_logic_vector(w-1 downto 0);
+		p,g: in std_logic_vector(width-1 downto 0);
 		cin: in std_logic;
-		c: out std_logic_vector(w downto 1)
+		c: out std_logic_vector(width downto 1)
 	);
 	end component;
 	
 	--! Entidad sumador. Esta entidad tiene un proposito bien claro: sumar. Es altamente parametrizable. Hay 3 cosas que se pueden parametrizar: el ancho del sumador, el tipo de circuito que queremos realice la suma y si el sumador estar‡ en capacidad de realizar mediante un selector restas.
 	component adder
 	generic ( 
-		w 						: integer := 4;
+		width 					: integer := 4;
 		carry_logic				: string := "CLA";
 		substractor_selector	: string := "YES"
 	);
 	port (
-		a,b		:	in std_logic_vector (w-1 downto 0);
+		a,b		:	in std_logic_vector (width-1 downto 0);
 		s,ci	:	in	std_logic;
-		result	:	out std_logic_vector (w-1 downto 0);
+		result	:	out std_logic_vector (width-1 downto 0);
 		cout	:	out std_logic
 	);	 		
 	end component;

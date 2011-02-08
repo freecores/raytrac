@@ -31,13 +31,13 @@ use ieee.std_logic_1164.all;
 
 entity rca_logic_block is
 	generic (
-		w : integer := 8 --! Tamaño estandar del bloque Ripple Carry Adder.
+		width : integer := 8 --! Tamaño estandar del bloque Ripple Carry Adder.
 	);
 	port (
-		p,g: in std_logic_vector(w-1 downto 0); --! Señales de Propagación y Generación del carry.
+		p,g: in std_logic_vector(width-1 downto 0); --! Señales de Propagación y Generación del carry.
 		cin : in std_logic;						--! Señal de entrada Carry In.
 		
-		c : out std_logic_vector(w downto 1)	--! Señales Carry Out Cálculadas. 
+		c : out std_logic_vector(width downto 1)	--! Señales Carry Out Cálculadas. 
 	);
 end rca_logic_block;
 
@@ -60,14 +60,14 @@ begin
 	rcaProc:		-- rcaProc instancia funciones combinatorias en sCarry(i) haciendo uso de los resultados intermedios obtenidos
 				-- en sCarry(i-1), por lo que se crea un delay path en el calculo del Cout del circuito
 	process (p,g,cin)
-		variable i:			integer range 0 to 2*w;
-		variable sCarry:	std_logic_vector(w downto 1);
+		variable i:			integer range 0 to 2*width;
+		variable sCarry:	std_logic_vector(width downto 1);
 	begin
 		
-		sCarry(w downto 1) := g(w-1 downto 0);
+		sCarry(width downto 1) := g(width-1 downto 0);
 		sCarry(1) := sCarry(1) or (p(0) and cin);
 		 
-		for i in 1 to w-1 loop
+		for i in 1 to width-1 loop
 			sCarry(i+1) := sCarry(i+1) or (p(i) and sCarry(i));
 		end loop;
 

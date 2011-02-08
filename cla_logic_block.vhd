@@ -32,14 +32,14 @@ use ieee.std_logic_1164.all;
 
 entity cla_logic_block is
 	generic (
-		w : integer := 4							--! Tamaño por defecto de un bloque Carry Look Ahead.  
+		width : integer := 4							--! Tamaño por defecto de un bloque Carry Look Ahead.  
 	);
 
 	port (
-		p,g : in std_logic_vector(w-1 downto 0);	--! Señales de Propagación y Generación. 
+		p,g : in std_logic_vector(width-1 downto 0);	--! Señales de Propagación y Generación. 
 		cin : in std_logic;							--! Señal de Carry de entrada. 
 		
-		c : out std_logic_vector(w downto 1)		--! Carry Out.
+		c : out std_logic_vector(width downto 1)		--! Carry Out.
 	);
 end cla_logic_block;
 
@@ -60,15 +60,15 @@ begin
 				-- pero notese que los valores de iCarry(i) no dependen jamas de iCarry(i-1) a diferencia de rcaProc.
 	process(p,g,cin)
 
-		variable i,j,k :	integer range 0 to w;				-- Variables de control de loop
-		variable iCarry:	std_logic_vector(w downto 1);			-- Carry Interno
-		variable iResults:	std_logic_vector(((w+w**2)/2)-1 downto 0);	-- Resultados intermedios			
+		variable i,j,k :	integer range 0 to width;				-- Variables de control de loop
+		variable iCarry:	std_logic_vector(width downto 1);			-- Carry Interno
+		variable iResults:	std_logic_vector(((width+width**2)/2)-1 downto 0);	-- Resultados intermedios			
 		variable index:		integer;
 	begin
 
-		iCarry(w downto 1) := g(w-1 downto 0);
+		iCarry(width downto 1) := g(width-1 downto 0);
 		index := 0; 
-		for j in 0 to w-1 loop
+		for j in 0 to width-1 loop
 			for i in 1 to j+1 loop
 				iResults(index) := '1'; 
 				for k in j-i+1 to j loop

@@ -28,6 +28,8 @@ library ieee;
 --! Paquete de definicion estandard de logica. Standard logic definition pack.
 use ieee.std_logic_1164.all;
 
+
+
 --! Se usaran en esta descripcion los componentes del package arithpack.vhd.\n It will be used in this description the components on the arithpack.vhd package. 
 use work.arithpack.all;
 
@@ -83,6 +85,7 @@ use work.arithpack.all;
 
 entity raytrac is 
 	generic (
+		
 		registered : string := "YES" --! Este parametro, por defecto "YES", indica si se registran o cargan en registros los vectores A,B,C,D y los codigos de operacion opcode y addcode en vez de ser conectados directamente al circuito combinatorio. \n This parameter, by default "YES", indicates if vectors A,B,C,D and operation code inputs opcode are to be loaded into a register at the beginning of the pipe rather than just connecting them to the operations decoder (opcoder). 
 	);
 	port (

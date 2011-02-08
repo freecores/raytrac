@@ -35,7 +35,7 @@ use work.arithpack.all;
 entity opcoder is 
 	generic (
 		width : integer := 18;
-		structuralDescription : string:= "NO"
+		structuralDescription : string:= "YES"
 	);
 	port (
 		Ax,Bx,Cx,Dx,Ay,By,Cy,Dy,Az,Bz,Cz,Dz : in std_logic_vector (width-1 downto 0);
@@ -58,7 +58,7 @@ end entity;
 
 architecture opcoder_arch of opcoder is 
 	
-	variable aycy,bzdz,azcz,bydy,bxdx,axcx: std_logic_vector(width-1 downto 0);
+	signal aycy,bzdz,azcz,bydy,bxdx,axcx: std_logic_vector(width-1 downto 0);
 	
 begin
 	--! Proceso que describe las 2 etapas de multiplexores. 
@@ -122,26 +122,26 @@ begin
 	end generate originalMuxGen;
 	fastMuxGen:
 	if structuralDescription="YES" generate
-		mux0 : fastmux port map (ay,cy,addcode,aycy);
-		mux1 : fastmux port map (bz,dz,addcode,bzdz);
-		mux2 : fastmux port map (az,cz,addcode,azcz);
-		mux3 : fastmux port map (by,dy,addcode,bydy);
-		mux4 : fastmux port map (bx,dx,addcode,bxdx);
-		mux5 : fastmux port map (ax,cx,addcode,axcx);
+		mux0 : fastmux generic map (width) port map (ay,cy,addcode,aycy);
+		mux1 : fastmux generic map (width) port map (bz,dz,addcode,bzdz);
+		mux2 : fastmux generic map (width) port map (az,cz,addcode,azcz);
+		mux3 : fastmux generic map (width) port map (by,dy,addcode,bydy);
+		mux4 : fastmux generic map (width) port map (bx,dx,addcode,bxdx);
+		mux5 : fastmux generic map (width) port map (ax,cx,addcode,axcx);
 		
 		-- Segunda etapa de multiplexores 
-		muxa : fastmux port map (ax,aycy,opcode,m0f0);
-		muxb : fastmux port map (bx,bzdz,opcode,m0f1);
-		muxc : fastmux port map (ay,azcz,opcode,m1f0);
-		muxd : fastmux port map (by,bydy,opcode,m1f1);
-		muxe : fastmux port map (az,azcz,opcode,m2f0);
-		muxf : fastmux port map (bz,bxdx,opcode,m2f1);
-		muxg : fastmux port map (cx,axcx,opcode,m3f0);
-		muxh : fastmux port map (dx,bzdz,opcode,m3f1);
-		muxi : fastmux port map (cy,axcx,opcode,m4f0);
-		muxj : fastmux port map (dy,bydy,opcode,m4f1);
-		muxk : fastmux port map (cz,aycy,opcode,m5f0);
-		muxl : fastmux port map (dz,bxdx,opcode,m5f1);
+		muxa : fastmux generic map (width) port map (ax,aycy,opcode,m0f0);
+		muxb : fastmux generic map (width) port map (bx,bzdz,opcode,m0f1);
+		muxc : fastmux generic map (width) port map (ay,azcz,opcode,m1f0);
+		muxd : fastmux generic map (width) port map (by,bydy,opcode,m1f1);
+		muxe : fastmux generic map (width) port map (az,azcz,opcode,m2f0);
+		muxf : fastmux generic map (width) port map (bz,bxdx,opcode,m2f1);
+		muxg : fastmux generic map (width) port map (cx,axcx,opcode,m3f0);
+		muxh : fastmux generic map (width) port map (dx,bzdz,opcode,m3f1);
+		muxi : fastmux generic map (width) port map (cy,axcx,opcode,m4f0);
+		muxj : fastmux generic map (width) port map (dy,bydy,opcode,m4f1);
+		muxk : fastmux generic map (width) port map (cz,aycy,opcode,m5f0);
+		muxl : fastmux generic map (width) port map (dz,bxdx,opcode,m5f1);
 	
 	end generate fastMuxGen;
 	

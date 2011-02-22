@@ -172,7 +172,8 @@ begin
 		sopcode,saddcode
 	);
 	--! Instantiate uf, cross product and dot product functional unit.
-	uf0 : uf 
+	uf0 : uf
+	generic map ("YES","RCA") 
 	port map (
 		sopcode,
 		smf00,smf01,smf10,smf11,smf20,smf21,smf30,smf31,smf40,smf41,smf50,smf51,

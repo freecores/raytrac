@@ -41,7 +41,8 @@ use work.arithpack.all;
 
 entity uf is
 	generic (
-			use_std_logic_signed : string := "NO"
+			use_std_logic_signed : string := "NO";
+			carry_logic : string := "CLA"
 	);
 	port (
 		opcode		: in std_logic; --! Entrada que dentro de la arquitectura funciona como selector de la operación que se lleva a cabo en la primera etapa de sumadores/restadores. 
@@ -164,53 +165,53 @@ begin
 	if use_std_logic_signed="NO" generate
 		--! Adder 0, 16 bit carry lookahead low adder.
 		a0low : adder
-		generic map (16,"CLA","YES")	-- Carry Look Ahead Logic (More Gates Used, But Less Time)
+		generic map (16,carry_logic,"YES")	-- Carry Look Ahead Logic (More Gates Used, But Less Time)
 										-- Yes instantiate Xor gates stage in the adder so we can substract on the opcode signal command.
 		port map	(stage1p0(15 downto 0),stage1p1(15 downto 0),stageSRopcode,'0',stage1a0(15 downto 0),stage1_internalCarry(0));
 		--Adder 0, 16 bit carry lookahead high adder.
 		a0high : adder 
-		generic map (16,"CLA","YES")	-- Carry Look Ahead Logic (More Gates Used, But Less Time)
+		generic map (16,carry_logic,"YES")	-- Carry Look Ahead Logic (More Gates Used, But Less Time)
 										-- Yes instantiate Xor gates stage in the adder so we can substract on the opcode signal command.
 		port map	(stage1p0(31 downto 16),stage1p1(31 downto 16),stageSRopcode,stage1_internalCarry(0),stage1a0(31 downto 16),open);
 		--! Adder 1, 16 bit carry lookahead low adder. 
 		a1low : adder 
-		generic map (16,"CLA","YES")	-- Carry Look Ahead Logic (More Gates Used, But Less Time)
+		generic map (16,carry_logic,"YES")	-- Carry Look Ahead Logic (More Gates Used, But Less Time)
 										-- Yes instantiate Xor gates stage in the adder so we can substract on the opcode signal command.
 		port map	(stage1p2(15 downto 0),stage1p3(15 downto 0),'1','0',stage1a1(15 downto 0),stage1_internalCarry(1));
 		--! Adder 1, 16 bit carry lookahead high adder.
 		a1high : adder 
-		generic map (16,"CLA","YES")	-- Carry Look Ahead Logic (More Gates Used, But Less Time)
+		generic map (16,carry_logic,"YES")	-- Carry Look Ahead Logic (More Gates Used, But Less Time)
 										-- Yes instantiate Xor gates stage in the adder so we can substract on the opcode signal command.
 		port map	(stage1p2(31 downto 16),stage1p3(31 downto 16),'1',stage1_internalCarry(1),stage1a1(31 downto 16),open);	
 		--! Adder 2, 16 bit carry lookahead low adder. 
 		a2low : adder 
-		generic map (16,"CLA","YES")	-- Carry Look Ahead Logic (More Gates Used, But Less Time)
+		generic map (16,carry_logic,"YES")	-- Carry Look Ahead Logic (More Gates Used, But Less Time)
 										-- Yes instantiate Xor gates stage in the adder so we can substract on the opcode signal command.
 		port map	(stage1p4(15 downto 0),stage1p5(15 downto 0),stageSRopcode,'0',stage1a2(15 downto 0),stage1_internalCarry(2));
 		--! Adder 2, 16 bit carry lookahead high adder.
 		a2high : adder 
-		generic map (16,"CLA","YES")	-- Carry Look Ahead Logic (More Gates Used, But Less Time)
+		generic map (16,carry_logic,"YES")	-- Carry Look Ahead Logic (More Gates Used, But Less Time)
 										-- Yes instantiate Xor gates stage in the adder so we can substract on the opcode signal command.
 		port map	(stage1p4(31 downto 16),stage1p5(31 downto 16),stageSRopcode,stage1_internalCarry(2),stage1a2(31 downto 16),open);
 		-- Adder Instantiation (Stage 2)
 		--! Adder 3, 16 bit carry lookahead low adder. 
 		a3low : adder 
-		generic map (16,"CLA","NO")		-- Carry Look Ahead Logic (More Gates Used, But Less Time)
+		generic map (16,carry_logic,"NO")		-- Carry Look Ahead Logic (More Gates Used, But Less Time)
 										-- Dont instantiate Xor gates stage in the adder.
 		port map	(stage2a0(15 downto 0),stage2p2(15 downto 0),'0','0',stage2a3(15 downto 0),stage2_internalCarry(0));
 		--Adder 3, 16 bit carry lookahead high adder.
 		a3high : adder 
-		generic map (16,"CLA","NO")		-- Carry Look Ahead Logic (More Gates Used, But Less Time)
+		generic map (16,carry_logic,"NO")		-- Carry Look Ahead Logic (More Gates Used, But Less Time)
 										-- Dont instantiate Xor gates stage in the adder.
 		port map	(stage2a0(31 downto 16),stage2p2(31 downto 16),'0',stage2_internalCarry(0),stage2a3(31 downto 16),open);
 		--! Adder 4, 16 bit carry lookahead low adder. 
 		a4low : adder 
-		generic map (16,"CLA","NO")		-- Carry Look Ahead Logic (More Gates Used, But Less Time)
+		generic map (16,carry_logic,"NO")		-- Carry Look Ahead Logic (More Gates Used, But Less Time)
 										-- Dont instantiate Xor gates stage in the adder.
 		port map	(stage2p3(15 downto 0),stage2a2(15 downto 0),'0','0',stage2a4(15 downto 0),stage2_internalCarry(1));
 		--! Adder 4, 16 bit carry lookahead high adder.
 		a4high : adder 
-		generic map (16,"CLA","NO")		-- Carry Look Ahead Logic (More Gates Used, But Less Time)
+		generic map (16,carry_logic,"NO")		-- Carry Look Ahead Logic (More Gates Used, But Less Time)
 										-- Dont instantiate Xor gates stage in the adder.
 		port map	(stage2p3(31 downto 16),stage2a2(31 downto 16),'0',stage2_internalCarry(1),stage2a4(31 downto 16),open);
 			

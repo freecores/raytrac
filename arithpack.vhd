@@ -38,7 +38,8 @@ package arithpack is
 	--! Entidad uf: sus siglas significan undidad funcional. La unidad funcional se encarga de realizar las diferentes operaciones vectoriales (producto cruz — producto punto). 
 	component uf
 	generic (
-			use_std_logic_signed	: string := "NO"
+			use_std_logic_signed	: string := "NO";
+			carry_logic	: string := "CLA"
 	);
 	port (
 		opcode		: in std_logic;

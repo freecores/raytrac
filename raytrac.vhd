@@ -137,7 +137,7 @@ begin
 				sopcode <= '0';
 				saddcode <= '0';
 			elsif clk'event and clk='1' then
-				if ena <= '1' then
+				if ena = '1' then
 					SA <= A;
 					SB <= B;
 					SC <= C;

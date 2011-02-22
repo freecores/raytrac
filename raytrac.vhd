@@ -91,7 +91,7 @@ entity raytrac is
 	port (
 		A,B,C,D 		: in std_logic_vector(18*3-1 downto 0); --! Vectores de entrada A,B,C,D, cada uno de tamano fijo: 3 componentes x 18 bits. \n Input vectors A,B,C,D, each one of fixed size: 3 components x 18 bits. 
 		opcode,addcode	: in std_logic;							--! Opcode and addcode input bits, opcode selects what operation is going to perform one of the entities included in the design and addcode what operands are going to be involved in such. \n Opcode & addcode, opcode selecciona que operacion se va a llevar a cabo dentro de una de las entidades referenciadas dentro de la descripcion, mientras que addcode decide cuales van a ser los operandos que realizaran tal. 
-		clk,rst,ena		: in std_logic;							--! Las senales de control usual. The usual control signals.
+		clk,rst			: in std_logic;							--! Las senales de control usual. The usual control signals.
 		CPX,CPY,CPZ,DP0,DP1 : out std_logic_vector(31 downto 0)	--! Salidas que representan los resultados del RayTrac: pueden ser dos resultados, de dos operaciones de producto punto, o un producto cruz. Por favor revisar el documento de especificacion del dispositivo para tener mas claridad.\n  Outputs representing the result of the RayTrac entity: can be the results of two parallel dot product operations or the result of a single cross product, in order to clarify refere to the entity specification documentation.
 		
 		

@@ -41,7 +41,7 @@ use work.arithpack.all;
 
 entity uf is
 	generic (
-			use_std_logic_signed : string := "YES"
+			use_std_logic_signed : string := "NO"
 	);
 	port (
 		opcode		: in std_logic; --! Entrada que dentro de la arquitectura funciona como selector de la operación que se lleva a cabo en la primera etapa de sumadores/restadores. 
@@ -57,13 +57,13 @@ architecture uf_arch of uf is
 	
 	signal stage0mf00,stage0mf01,stage0mf10,stage0mf11,stage0mf20,stage0mf21,stage0mf30,stage0mf31,stage0mf40,stage0mf41,stage0mf50,stage0mf51 : std_logic_vector(17 downto 0); --! Señales que conectan los operandos seleccionados en opcode a las entradas de los multiplicadores.
 	signal stage0p0,stage0p1, stage0p2, stage0p3, stage0p4, stage0p5 : std_logic_vector(31 downto 0); --! Señales / buses, con los productos de los multiplicadores. 
-	signal stage0opcode : std_logic; --! Señal de atraso del opcode. Revisar el diagrama de bloques para mayor claridad.
+	signal stageMopcode : std_logic; --! Señal de atraso del opcode. Revisar el diagrama de bloques para mayor claridad.
 	
 	--Stage 1 signals 
 	
 	signal stage1p0, stage1p1, stage1p2, stage1p3, stage1p4, stage1p5 : std_logic_vector (31 downto 0); --! Señales provenientes de los productos de la etapa previa de multiplicadores.
 	signal stage1a0, stage1a1, stage1a2 : std_logic_vector (31 downto 0); --! Señales / buses, con los resultados de los sumadores. 
-	signal stage1opcode : std_logic; --! Señal proveniente del opcode que selecciona si los sumadores deben ejecutar una resta o una suma dependiendo de la operación que se ejecute en ese momento del pipe.  
+	signal stageSRopcode : std_logic; --! Señal proveniente del opcode que selecciona si los sumadores deben ejecutar una resta o una suma dependiendo de la operación que se ejecute en ese momento del pipe.  
 	
 	-- Some support signals
 	signal stage1_internalCarry	: std_logic_vector(2 downto 0); --! Cada uno de los 3 sumadores de la etapa de sumadores está compuesto de una cascada de 2 sumadores Carry Look Ahead: aXhigh y aXlow. El carry out del componente low y el carry in del componente high, se conectará a través de las señales internal carry.   
@@ -143,9 +143,9 @@ begin
 	if use_std_logic_signed="YES" generate
 		-- Adder Instantiation (sTaGe 1)
 		stage1adderProc: 
-		process (stage1p0,stage1p1,stage1p2,stage1p3,stage1p4,stage1p5,stage1opcode)
+		process (stage1p0,stage1p1,stage1p2,stage1p3,stage1p4,stage1p5,stageSRopcode)
 		begin
-			case (stage1opcode) is
+			case (stageSRopcode) is
 				when '1' =>		-- Cross Product
 					stage1a0 <= stage1p0-stage1p1;
 					stage1a2 <= stage1p4-stage1p5;
@@ -166,12 +166,12 @@ begin
 		a0low : adder
 		generic map (16,"CLA","YES")	-- Carry Look Ahead Logic (More Gates Used, But Less Time)
 										-- Yes instantiate Xor gates stage in the adder so we can substract on the opcode signal command.
-		port map	(stage1p0(15 downto 0),stage1p1(15 downto 0),stage1opcode,'0',stage1a0(15 downto 0),stage1_internalCarry(0));
+		port map	(stage1p0(15 downto 0),stage1p1(15 downto 0),stageSRopcode,'0',stage1a0(15 downto 0),stage1_internalCarry(0));
 		--Adder 0, 16 bit carry lookahead high adder.
 		a0high : adder 
 		generic map (16,"CLA","YES")	-- Carry Look Ahead Logic (More Gates Used, But Less Time)
 										-- Yes instantiate Xor gates stage in the adder so we can substract on the opcode signal command.
-		port map	(stage1p0(31 downto 16),stage1p1(31 downto 16),stage1opcode,stage1_internalCarry(0),stage1a0(31 downto 16),open);
+		port map	(stage1p0(31 downto 16),stage1p1(31 downto 16),stageSRopcode,stage1_internalCarry(0),stage1a0(31 downto 16),open);
 		--! Adder 1, 16 bit carry lookahead low adder. 
 		a1low : adder 
 		generic map (16,"CLA","YES")	-- Carry Look Ahead Logic (More Gates Used, But Less Time)
@@ -186,12 +186,12 @@ begin
 		a2low : adder 
 		generic map (16,"CLA","YES")	-- Carry Look Ahead Logic (More Gates Used, But Less Time)
 										-- Yes instantiate Xor gates stage in the adder so we can substract on the opcode signal command.
-		port map	(stage1p4(15 downto 0),stage1p5(15 downto 0),stage1opcode,'0',stage1a2(15 downto 0),stage1_internalCarry(2));
+		port map	(stage1p4(15 downto 0),stage1p5(15 downto 0),stageSRopcode,'0',stage1a2(15 downto 0),stage1_internalCarry(2));
 		--! Adder 2, 16 bit carry lookahead high adder.
 		a2high : adder 
 		generic map (16,"CLA","YES")	-- Carry Look Ahead Logic (More Gates Used, But Less Time)
 										-- Yes instantiate Xor gates stage in the adder so we can substract on the opcode signal command.
-		port map	(stage1p4(31 downto 16),stage1p5(31 downto 16),stage1opcode,stage1_internalCarry(2),stage1a2(31 downto 16),open);
+		port map	(stage1p4(31 downto 16),stage1p5(31 downto 16),stageSRopcode,stage1_internalCarry(2),stage1a2(31 downto 16),open);
 		-- Adder Instantiation (Stage 2)
 		--! Adder 3, 16 bit carry lookahead low adder. 
 		a3low : adder 
@@ -248,14 +248,14 @@ begin
 	
 	-- Looking into the design the stage 1 to stage 2 are the sequences pipe stages that must be controlled in this particular HDL.
 	--! Este proceso describe la manera en que se organizan las etapas de pipe.
-	--! Todas las señales internas en las etapas de pipe, en el momento en que la entrada rst alcanza el nivel rstMasterValue, se colocan en '0'. Nótese que, salvo stage0opcode<=stage1opcode, las señales que vienen desde la entrada hacia los multiplicadores en la etapa 0 y desde la salida de los multiplicadores desde la etapa0 hacia la etapa 1, no están siendo descritas en este proceso, la explicación de es simple: Los multiplicadores que se están instanciado tienen registros a la entrada y la salida, permitiendo así, registrar las entradas y registrar los productos o salidas de los  multiplicadores, hacia la etapa 1 o etapa de sumadores/restadores. 
+	--! Todas las señales internas en las etapas de pipe, en el momento en que la entrada rst alcanza el nivel rstMasterValue, se colocan en '0'. Nótese que, salvo stageMopcode<=stageSRopcode, las señales que vienen desde la entrada hacia los multiplicadores en la etapa 0 y desde la salida de los multiplicadores desde la etapa0 hacia la etapa 1, no están siendo descritas en este proceso, la explicación de es simple: Los multiplicadores que se están instanciado tienen registros a la entrada y la salida, permitiendo así, registrar las entradas y registrar los productos o salidas de los  multiplicadores, hacia la etapa 1 o etapa de sumadores/restadores. 
 	
 	uf_seq: process (clk,rst)
 	begin
 		
 		if rst=rstMasterValue then 
-			stage0opcode	<= '0';
-			stage1opcode	<= '0';
+			stageMopcode	<= '0';
+			stageSRopcode	<= '0';
 			
 			stage2a2 <= (others => '0');
 			stage2p3 <= (others => '0');
@@ -270,8 +270,8 @@ begin
 			stage2a0 <= stage1a0;
 			
 			-- Opcode control sequence
-			stage0opcode <= opcode;
-			stage1opcode <= stage0opcode;
+			stageMopcode <= opcode;
+			stageSRopcode <= stageMopcode;
 					
 		end if;
 	end process uf_seq;

@@ -16,6 +16,12 @@
 #include <time.h>
 #include <string.h>
 
+#ifdef __MINGW32__
+#define random() ((((long int)rand())<<17)|rand())
+#define srandom srand
+#endif
+
+
 char australia[]="DEPTH = %03d;\nWIDTH = %02d;\nADDRESS_RADIX=HEX;\nDATA_RADIX=HEX;\nCONTENT\nBEGIN\n\n\0";
 char canada[]="END;\n\0";
 struct {
@@ -40,7 +46,7 @@ void optParser(int argc, char ** argv){
 		switch(a){
 			case 't':
 				if (t){
-					fprintf (stderr, "error:Doble parametro t...\n");
+					fprintf (stdout, "error:Doble parametro t...\n");
 					exit(-1);
 				}
 				t++;
@@ -48,7 +54,7 @@ void optParser(int argc, char ** argv){
 				break;
 			case 'e':
 				if (e){
-					fprintf (stderr, "error:Doble parametro e...\n");
+					fprintf (stdout, "error:Doble parametro e...\n");
 					exit(-1);
 				}
 				e++;
@@ -56,7 +62,7 @@ void optParser(int argc, char ** argv){
 				break;
 			case 'd':
 				if (d){
-					fprintf (stderr,"error:Doble parametro d...\n");
+					fprintf (stdout,"error:Doble parametro d...\n");
 					exit(-1);
 				}
 				d++;
@@ -65,17 +71,17 @@ void optParser(int argc, char ** argv){
 				
 				break;
 			case '?':
-				fprintf(stderr,"error: WTF! %c !?\n",optopt);
+				fprintf(stdout,"error: WTF! %c !?\n",optopt);
 				exit(-1);
 				break;
 		}
 	}
 	if (!e || !d || !t){
-		fprintf(stderr,"uso: memMaker -t numeroDePosicionesDeMemoria -e numeroDeBitsParaLaRepresentacionEntera -d numeroDeBitsParaLaRepresentacionDecimal\n");
+		fprintf(stdout,"uso: memMaker -t numeroDePosicionesDeMemoria -e numeroDeBitsParaLaRepresentacionEntera -d numeroDeBitsParaLaRepresentacionDecimal\n");
 		exit(-1);
 	}
 	if ((e+d)>31){
-		fprintf(stderr,"enteros + decimales no puede ser mayor a 31 bits!\n");
+		fprintf(stdout,"enteros + decimales no puede ser mayor a 31 bits!\n");
 		exit(-1);
 	}
 }
@@ -110,18 +116,26 @@ void generatenums(void){
 				factor&(int)(pow(2,memparam.dec)-1),
 				sign,
 				ffactor);
-		fprintf(stderr,buff,index,factor);
+		fprintf(stdout,buff,index,factor);
 	}
 
 }		
 void printmem(void){
-	fprintf (stderr,memparam.initialheader,memparam.depth,memparam.width);
+	fprintf (stdout,memparam.initialheader,memparam.depth,memparam.width);
 	generatenums();
-	fprintf (stderr,memparam.end);
+	fprintf (stdout,memparam.end);
 
 }
 
 int main (int argc, char **argv){
+	
+	fprintf (stdout,"--RAND MAX: 0x%x\n", RAND_MAX);
+#ifdef __MINGW32__
+	fprintf (stdout,"--MINGW32 VERSION\n");
+#else 
+	fprintf (stdout,"--UNIX BASED VERSION\n");
+#endif
+	
 	optParser(argc,argv);
 	printmem();		
 }	

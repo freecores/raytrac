@@ -6,7 +6,7 @@ use ieee.std_logic_1164.all;
 library altera_mf;
 use altera_mf.all;
 
-entity mema is
+entity tb is
 	port
 	(
 		address		: in STD_LOGIC_VECTOR (3 downto 0);

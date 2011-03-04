@@ -34,7 +34,20 @@ package arithpack is
 	
 	--! Constante con el nivel l—gico de reset.
 	constant rstMasterValue : std_logic := '1';
-
+	
+	--! Memoria Rom Para Realizar TestBench
+	component tbRom
+	generic (
+		tbRom_init_file : string := "X:/Tesis/Workspace/hw/rt_lib/arith/bin/mema.mif"
+	);		
+	port
+	(
+		address			: in std_logic_vector (3 downto 0);
+		addressstall_a	: in std_logic;
+		clock			: in std_logic;
+		q				: out std_logic_vector (17 downto 0)
+	);
+	end component;
 	--! Entidad uf: sus siglas significan undidad funcional. La unidad funcional se encarga de realizar las diferentes operaciones vectoriales (producto cruz — producto punto). 
 	component uf
 	generic (
@@ -45,7 +58,7 @@ package arithpack is
 		opcode		: in std_logic;
 		m0f0,m0f1,m1f0,m1f1,m2f0,m2f1,m3f0,m3f1,m4f0,m4f1,m5f0,m5f1 : in std_logic_vector(17 downto 0);
 		cpx,cpy,cpz,dp0,dp1 : out std_logic_vector(31 downto 0);
-		clk,rst		: in std_logic
+			clk,rst		: in std_logic
 	);
 	end component;
 		

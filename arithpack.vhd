@@ -35,6 +35,13 @@ package arithpack is
 	--! Constante con el nivel l—gico de reset.
 	constant rstMasterValue : std_logic := '1';
 	
+	--! Generacion de Clock y de Reset.
+	component clock_gen 
+		generic	(tclk : time := 20 ns);
+		port	(clk,rst : out std_logic);
+	end component;
+	
+	
 	--! Memoria Rom Para Realizar TestBench
 	component tbRom
 	generic (

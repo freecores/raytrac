@@ -9,24 +9,24 @@ use altera_mf.all;
 entity rtRam is
 	port
 	(
-		aclr		: in STD_LOGIC  := '0';
-		address_a		: in STD_LOGIC_VECTOR (4 downto 0);
-		address_b		: in STD_LOGIC_VECTOR (4 downto 0);
-		clock		: in STD_LOGIC  := '1';
-		data_a		: in STD_LOGIC_VECTOR (17 downto 0);
-		data_b		: in STD_LOGIC_VECTOR (17 downto 0);
-		wren_a		: in STD_LOGIC  := '0';
-		wren_b		: in STD_LOGIC  := '0';
-		q_a		: out STD_LOGIC_VECTOR (17 downto 0);
-		q_b		: out STD_LOGIC_VECTOR (17 downto 0)
+		aclr		: in std_logic  := '0';
+		address_a		: in std_logic_vector (6 downto 0);
+		address_b		: in std_logic_vector (6 downto 0);
+		clock		: in std_logic  := '1';
+		data_a		: in std_logic_vector (17 downto 0);
+		data_b		: in std_logic_vector (17 downto 0);
+		wren_a		: in std_logic  := '0';
+		wren_b		: in std_logic  := '0';
+		q_a		: out std_logic_vector (17 downto 0);
+		q_b		: out std_logic_vector (17 downto 0)
 	);
 end rtRam;
 
 
 architecture rtRam_arch of rtRam is
 
-	signal sub_wire0	: STD_LOGIC_VECTOR (17 downto 0);
-	signal sub_wire1	: STD_LOGIC_VECTOR (17 downto 0);
+	signal sub_wire0	: std_logic_vector (17 downto 0);
+	signal sub_wire1	: std_logic_vector (17 downto 0);
 
 
 
@@ -61,16 +61,16 @@ architecture rtRam_arch of rtRam is
 		wrcontrol_wraddress_reg_b		: STRING
 	);
 	port (
-			clock0	: in STD_LOGIC ;
-			wren_a	: in STD_LOGIC ;
-			address_b	: in STD_LOGIC_VECTOR (4 downto 0);
-			data_b	: in STD_LOGIC_VECTOR (17 downto 0);
-			q_a	: out STD_LOGIC_VECTOR (17 downto 0);
-			wren_b	: in STD_LOGIC ;
-			aclr0	: in STD_LOGIC ;
-			address_a	: in STD_LOGIC_VECTOR (4 downto 0);
-			data_a	: in STD_LOGIC_VECTOR (17 downto 0);
-			q_b	: out STD_LOGIC_VECTOR (17 downto 0)
+			clock0	: in std_logic ;
+			wren_a	: in std_logic ;
+			address_b	: in std_logic_vector (4 downto 0);
+			data_b	: in std_logic_vector (17 downto 0);
+			q_a	: out std_logic_vector (17 downto 0);
+			wren_b	: in std_logic ;
+			aclr0	: in std_logic ;
+			address_a	: in std_logic_vector (4 downto 0);
+			data_a	: in std_logic_vector (17 downto 0);
+			q_b	: out std_logic_vector (17 downto 0)
 	);
 	end component;
 
@@ -88,8 +88,8 @@ begin
 		indata_reg_b => "CLOCK0",
 		intended_device_family => "Cyclone III",
 		lpm_type => "altsyncram",
-		numwords_a => 32,
-		numwords_b => 32,
+		numwords_a => 128,
+		numwords_b => 128,
 		operation_mode => "BIDIR_DUAL_PORT",
 		outdata_aclr_a => "CLEAR0",
 		outdata_aclr_b => "CLEAR0",
@@ -109,16 +109,24 @@ begin
 		wrcontrol_wraddress_reg_b => "CLOCK0"
 	)
 	port map (
+
 		clock0 => clock,
-		wren_a => wren_a,
-		address_b => address_b,
-		data_b => data_b,
-		wren_b => wren_b,
 		aclr0 => aclr,
+		
+		wren_a => wren_a,
+		wren_b => '0',
+		
 		address_a => address_a,
+		address_b => address_b,
+		
 		data_a => data_a,
+		data_b => data_b,
+
 		q_a => sub_wire0,
 		q_b => sub_wire1
+		
+		
+	
 	);
 
 

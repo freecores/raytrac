@@ -29,7 +29,6 @@ end entity clock_gen;
 
 architecture clock_gen_arch of clock_gen is
 
-	constant 
 
 begin
 	resetproc: process
@@ -38,8 +37,21 @@ begin
 		wait for 50 ns;
 		rst<= '0';
 		wait;
-	end process;
+	end process resetproc;
 	clockproc: process
+	begin
+		
+		clk<='1';
+		clock_loop:
+		loop
+			wait for tclk/2;
+			clk<='0';
+			wait for tclk/2;
+			clk <= '1';
+		end loop clock_loop;
+	end process clockproc;
+end clock_gen_arch;
+	
 	
 		
 

@@ -105,7 +105,7 @@ void generatenums(void){
 		ffactor=(factor&(1<<memparam.width))?(factor^(int)(pow(2,memparam.width+1)-1))+1:factor;
 		ffactor/=pow(2,memparam.dec);
 		memset(buff,0,1024);
-		sprintf(buff,"%c0%dx : %c0%dx -- FIXED => %x . %x (%d . %d) FLOAT %c%f\n",
+		sprintf(buff,"%c0%dx : %c0%dx; -- FIXED => %x . %x (%d . %d) FLOAT %c%f\n",
 				'%',
 				depthpfw,
 				'%',
@@ -121,7 +121,7 @@ void generatenums(void){
 
 }		
 void printmem(void){
-	fprintf (stdout,memparam.initialheader,memparam.depth,memparam.width);
+	fprintf (stdout,memparam.initialheader,memparam.depth,memparam.width+1);
 	generatenums();
 	fprintf (stdout,memparam.end);
 

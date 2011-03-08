@@ -1,6 +1,6 @@
 --! @file arithpack.vhd
---! @author Julián Andrés Guarín Reyes
---! @brief Este package contiene la descripcíon de los parametros y los puertos de las entidades: uf, opcoder, multiplicador, sumador, cla_logic_block y rca_logic_block.
+--! @author Julian Andres Guarin Reyes
+--! @brief Este package contiene la descripcion de los parametros y los puertos de las entidades: uf, opcoder, multiplicador, sumador, cla_logic_block y rca_logic_block.
 -- RAYTRAC
 -- Author Julian Andres Guarin
 -- arithpack.vhd
@@ -25,9 +25,12 @@ library ieee;
 --! Paquete de definicion estandard de logica.
 use ieee.std_logic_1164.all;
 
+--! Biblioteca de definicion de memorias de altera
+library altera_mf;
 
+--! Paquete para manejar memorias internas tipo M9K
 
---! Package con las definiciones de constantes y entidades, que conformarían el Rt Engine.
+--! Package con las definiciones de constantes y entidades, que conformaran el Rt Engine. Tambien con algunas descripciones para realizar test bench.
 
 --! En general el package cuenta con entidades para instanciar, multiplicadores, sumadores/restadores y un decodificador de operaciones. 
 package arithpack is
@@ -42,20 +45,31 @@ package arithpack is
 	end component;
 	
 	
-	--! Memoria Rom Para Realizar TestBench
-	component tbRom
+	component altsyncram
 	generic (
-		tbRom_init_file : string := "X:/Tesis/Workspace/hw/rt_lib/arith/bin/mema.mif"
-	);		
-	port
-	(
-		address			: in std_logic_vector (3 downto 0);
-		addressstall_a	: in std_logic;
-		clock			: in std_logic;
-		q				: out std_logic_vector (17 downto 0)
+		address_aclr_a		: string;
+		clock_enable_input_a		: string;
+		clock_enable_output_a		: string;
+		init_file		: string;
+		intended_device_family		: string;
+		lpm_hint		: string;
+		lpm_type		: string;
+		numwords_a		: natural;
+		operation_mode		: string;
+		outdata_aclr_a		: string;
+		outdata_reg_a		: string;
+		ram_block_type		: string;
+		widthad_a		: natural;
+		width_a		: natural;
+		width_byteena_a		: natural
 	);
-	end component;
-	--! Entidad uf: sus siglas significan undidad funcional. La unidad funcional se encarga de realizar las diferentes operaciones vectoriales (producto cruz ó producto punto). 
+	port (
+			clock0	: in std_logic ;
+			address_a	: in std_logic_vector (8 downto 0);
+			q_a	: out std_logic_vector (17 downto 0)
+	);
+	end component;	--! Entidad uf: sus siglas significan undidad funcional. La unidad funcional se encarga de realizar las diferentes operaciones vectoriales (producto cruz ó producto punto). 
+	
 	component uf
 	generic (
 			use_std_logic_signed	: string := "NO";

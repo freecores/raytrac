@@ -1,5 +1,5 @@
 ------------------------------------------------
---! @file
+--! @file tb.vhd
 --! @brief RayTrac TestBench
 --! @author Julián Andrés Guarín Reyes
 --------------------------------------------------
@@ -40,12 +40,28 @@ ARCHITECTURE tb_arch OF tb IS
 	signal qb	: std_logic_vector (53 downto 0);
 	signal qc	: std_logic_vector (53 downto 0);
 	signal qd	: std_logic_vector (53 downto 0);
-	signal clock: std_logic;
-	signal address: std_logic_vector (8 downto 0);
+	signal clock,rst,ena: std_logic;
+	signal opcode,addcode:std_logic;
+	signal dp0,dp1,cpx,cpy,cpz : std_logic_vector(31 downto 0);
+	signal address: std_logic_vector (8 downto 0)
 	
 BEGIN
-	
+	--! Generador de clock.
+	clk: clock_gen
+	port map (clock,rst); -- Instanciacion simple.
 
+	--! Device Under Test
+	dude: raytrac
+	generic map ("YES"); -- Entrada registrada, pues la ROM no tiene salida registrada.
+	generic port(qa,qb,qc,qd,opcode,addcode,clk,rst,ena,cpx,cpy,cpz,dp0,dp1);
+	
+	--! Descripcion del test: 512 x (2/clock) productos punto y 1024 x (1/clock) productos cruz.
+	thetest:
+	process (clk,rst)
+	begin
+	end process thetest;
+	
+	--! 512x18 rom con los componentes ax.
 	AX : altsyncram
 	GENERIC MAP (
 		address_aclr_a => "NONE",
@@ -70,6 +86,7 @@ BEGIN
 		q_a => qa (17 downto 0)
 	);
 
+	--! 512x18 rom con los componentes ay.
 	AY : altsyncram
 	GENERIC MAP (
 		address_aclr_a => "NONE",
@@ -94,6 +111,7 @@ BEGIN
 		q_a => qa (35 downto 18) 
 	);
 
+	--! 512x18 rom con los componentes az.
 	AZ : altsyncram
 	GENERIC MAP (
 		address_aclr_a => "NONE",
@@ -118,6 +136,7 @@ BEGIN
 		q_a => qa (53 downto 36) 
 	);
 	
+	--! 512x18 rom con los componentes bx.
 	BX : altsyncram
 	GENERIC MAP (
 		address_aclr_a => "NONE",
@@ -142,6 +161,7 @@ BEGIN
 		q_a => qb (17 downto 0)
 	);
 
+	--! 512x18 rom con los componentes by.
 	BY : altsyncram
 	GENERIC MAP (
 		address_aclr_a => "NONE",
@@ -166,6 +186,7 @@ BEGIN
 		q_a => qb (35 downto 18) 
 	);
 
+	--! 512x18 rom con los componentes bz.
 	BZ : altsyncram
 	GENERIC MAP (
 		address_aclr_a => "NONE",
@@ -190,6 +211,7 @@ BEGIN
 		q_a => qb (53 downto 36) 
 	);	
 
+	--! 512x18 rom con los componentes cx.
 	CX : altsyncram
 	GENERIC MAP (
 		address_aclr_a => "NONE",
@@ -214,6 +236,7 @@ BEGIN
 		q_a => qc (17 downto 0)
 	);
 
+	--! 512x18 rom con los componentes cy.
 	CY : altsyncram
 	GENERIC MAP (
 		address_aclr_a => "NONE",
@@ -238,6 +261,7 @@ BEGIN
 		q_a => qc (35 downto 18) 
 	);
 
+	--! 512x18 rom con los componentes cz.
 	CZ : altsyncram
 	GENERIC MAP (
 		address_aclr_a => "NONE",
@@ -262,6 +286,7 @@ BEGIN
 		q_a => qc (53 downto 36) 
 	);
 	
+	--! 512x18 rom con los componentes dx.
 	DX : altsyncram
 	GENERIC MAP (
 		address_aclr_a => "NONE",
@@ -286,6 +311,7 @@ BEGIN
 		q_a => qd (17 downto 0)
 	);
 
+	--! 512x18 rom con los componentes dy.
 	DY : altsyncram
 	GENERIC MAP (
 		address_aclr_a => "NONE",
@@ -310,6 +336,7 @@ BEGIN
 		q_a => qd (35 downto 18) 
 	);
 
+	--! 512x18 rom con los componentes dz.
 	DZ : altsyncram
 	GENERIC MAP (
 		address_aclr_a => "NONE",

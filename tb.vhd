@@ -26,6 +26,7 @@
 
 library ieee;
 use ieee.std_logic_1164.all;
+use ieee.std_logic_unsigned.all;
 use work.arithpack.all;
 
 
@@ -58,7 +59,40 @@ BEGIN
 	--! Descripcion del test: 512 x (2/clock) productos punto y 1024 x (1/clock) productos cruz.
 	thetest:
 	process (clk,rst)
+		variable addressCounter : integer := 0;
+		variable tbs : tbState;
 	begin
+
+		if rst=rstMasterValue then
+			addressCounter := 0;
+			opcode  <= '0';
+			addcode <= '1';
+			tbs := abcd;
+			ena <= '1';
+		elsif clk'event and clk = '1' then
+			-- Register States when clock went up ...
+			
+			case tbs is
+				when abcd  => 
+					address <= address + 1;
+					if address = X"000" then
+						tbs := axb;
+						opcode <= '1';
+						addcode <= not(addcode);
+					end if;
+				when axb => 
+					tbs := cxd;
+					addcode <= not(addcode);
+				when cxd => 
+					address  <= address + 1;
+					addcode <= not(addcode);
+					if address X"000" then 
+						wait;
+					end if;
+				when others =>
+			end case;		  
+					
+		end if;
 	end process thetest;
 	
 	--! 512x18 rom con los componentes ax.

@@ -35,6 +35,9 @@ library altera_mf;
 --! En general el package cuenta con entidades para instanciar, multiplicadores, sumadores/restadores y un decodificador de operaciones. 
 package arithpack is
 	
+	--! TestBenchState
+	type tbState is (abcd,axb,cxd,stop);
+	
 	--! Constante con el nivel l—gico de reset.
 	constant rstMasterValue : std_logic := '1';
 	

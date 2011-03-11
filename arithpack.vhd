@@ -27,9 +27,12 @@ use ieee.std_logic_1164.all;
 
 --! Biblioteca de definicion de memorias de altera
 library altera_mf;
-
 --! Paquete para manejar memorias internas tipo M9K
+use altera_mf.all;
 
+--! Biblioteca de modulos parametrizados.
+library lpm;
+use lpm.all;
 --! Package con las definiciones de constantes y entidades, que conformaran el Rt Engine. Tambien con algunas descripciones para realizar test bench.
 
 --! En general el package cuenta con entidades para instanciar, multiplicadores, sumadores/restadores y un decodificador de operaciones. 
@@ -63,7 +66,7 @@ package arithpack is
 	);
 	end component;
 	
-	--! Componente memoria instanciado mediante la biblioteca de altera
+	--! componente memoria instanciado mediante la biblioteca de altera
 	component altsyncram
 	generic (
 		address_aclr_a		: string;
@@ -128,6 +131,15 @@ package arithpack is
 	end component;
 	--! Esta entidad corresponde al multiplicador que se instanciar’a dentro de la unidad funcional. El multiplicador registra los operandos a la entrada y el respectivo producto de la multiplicaci—n a la salida. 
 	component r_a18_b18_smul_c32_r
+	generic (
+		lpm_hint		: string := "DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9";
+		lpm_pipeline	: natural:= 2;
+		lpm_representation : string:="SIGNED";
+		lpm_type		: string:="LPM_MULT";
+		lpm_widtha		: natural:=18;
+		lpm_widthb		: natural:=18;
+		lpm_widthp		: natural:=32
+	);
 	port (
 		aclr,clock:in std_logic;
 		dataa,datab:in std_logic_vector (17 downto 0);

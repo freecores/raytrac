@@ -35,7 +35,7 @@ entity tb is
 end tb;
 
 
-ARCHITECTURE tb_arch OF tb IS
+architecture tb_arch of tb is
 
 	signal qa	: std_logic_vector (53 downto 0);
 	signal qb	: std_logic_vector (53 downto 0);
@@ -44,21 +44,21 @@ ARCHITECTURE tb_arch OF tb IS
 	signal clock,rst,ena: std_logic;
 	signal opcode,addcode:std_logic;
 	signal dp0,dp1,cpx,cpy,cpz : std_logic_vector(31 downto 0);
-	signal address: std_logic_vector (8 downto 0)
+	signal address: std_logic_vector (8 downto 0);
 	
-BEGIN
+begin
 	--! Generador de clock.
-	clk: clock_gen
+	clk_inst: clock_gen
 	port map (clock,rst); -- Instanciacion simple.
 
 	--! Device Under Test
 	dude: raytrac
-	generic map ("YES"); -- Entrada registrada, pues la ROM no tiene salida registrada.
-	generic port(qa,qb,qc,qd,opcode,addcode,clk,rst,ena,cpx,cpy,cpz,dp0,dp1);
+	generic map ("YES")	-- Entrada registrada, pues la ROM no tiene salida registrada.
+	port map(qa,qb,qc,qd,opcode,addcode,clock,rst,ena,cpx,cpy,cpz,dp0,dp1);
 	
 	--! Descripcion del test: 512 x (2/clock) productos punto y 1024 x (1/clock) productos cruz.
 	thetest:
-	process (clk,rst)
+	process (clock,rst)
 		variable addressCounter : integer := 0;
 		variable tbs : tbState;
 	begin
@@ -69,7 +69,7 @@ BEGIN
 			addcode <= '1';
 			tbs := abcd;
 			ena <= '1';
-		elsif clk'event and clk = '1' then
+		elsif clock'event and clock = '1' then
 			-- Register States when clock went up ...
 			
 			case tbs is
@@ -86,8 +86,8 @@ BEGIN
 				when cxd => 
 					address  <= address + 1;
 					addcode <= not(addcode);
-					if address X"000" then 
-						wait;
+					if address=X"000" then 
+						null;
 					end if;
 				when others =>
 			end case;		  
@@ -97,7 +97,7 @@ BEGIN
 	
 	--! 512x18 rom con los componentes ax.
 	AX : altsyncram
-	GENERIC MAP (
+	generic map (
 		address_aclr_a => "NONE",
 		clock_enable_input_a => "BYPASS",
 		clock_enable_output_a => "BYPASS",
@@ -114,7 +114,7 @@ BEGIN
 		width_a => 18,
 		width_byteena_a => 1
 	)
-	PORT MAP (
+	port map (
 		clock0 => clock,
 		address_a => address,
 		q_a => qa (17 downto 0)
@@ -122,7 +122,7 @@ BEGIN
 
 	--! 512x18 rom con los componentes ay.
 	AY : altsyncram
-	GENERIC MAP (
+	generic map (
 		address_aclr_a => "NONE",
 		clock_enable_input_a => "BYPASS",
 		clock_enable_output_a => "BYPASS",
@@ -139,7 +139,7 @@ BEGIN
 		width_a => 18,
 		width_byteena_a => 1
 	)
-	PORT MAP (
+	port map (
 		clock0 => clock,
 		address_a => address,
 		q_a => qa (35 downto 18) 
@@ -147,7 +147,7 @@ BEGIN
 
 	--! 512x18 rom con los componentes az.
 	AZ : altsyncram
-	GENERIC MAP (
+	generic map (
 		address_aclr_a => "NONE",
 		clock_enable_input_a => "BYPASS",
 		clock_enable_output_a => "BYPASS",
@@ -164,7 +164,7 @@ BEGIN
 		width_a => 18,
 		width_byteena_a => 1
 	)
-	PORT MAP (
+	port map (
 		clock0 => clock,
 		address_a => address,
 		q_a => qa (53 downto 36) 
@@ -172,7 +172,7 @@ BEGIN
 	
 	--! 512x18 rom con los componentes bx.
 	BX : altsyncram
-	GENERIC MAP (
+	generic map (
 		address_aclr_a => "NONE",
 		clock_enable_input_a => "BYPASS",
 		clock_enable_output_a => "BYPASS",
@@ -189,7 +189,7 @@ BEGIN
 		width_a => 18,
 		width_byteena_a => 1
 	)
-	PORT MAP (
+	port map (
 		clock0 => clock,
 		address_a => address,
 		q_a => qb (17 downto 0)
@@ -197,7 +197,7 @@ BEGIN
 
 	--! 512x18 rom con los componentes by.
 	BY : altsyncram
-	GENERIC MAP (
+	generic map (
 		address_aclr_a => "NONE",
 		clock_enable_input_a => "BYPASS",
 		clock_enable_output_a => "BYPASS",
@@ -214,7 +214,7 @@ BEGIN
 		width_a => 18,
 		width_byteena_a => 1
 	)
-	PORT MAP (
+	port map (
 		clock0 => clock,
 		address_a => address,
 		q_a => qb (35 downto 18) 
@@ -222,7 +222,7 @@ BEGIN
 
 	--! 512x18 rom con los componentes bz.
 	BZ : altsyncram
-	GENERIC MAP (
+	generic map (
 		address_aclr_a => "NONE",
 		clock_enable_input_a => "BYPASS",
 		clock_enable_output_a => "BYPASS",
@@ -239,7 +239,7 @@ BEGIN
 		width_a => 18,
 		width_byteena_a => 1
 	)
-	PORT MAP (
+	port map (
 		clock0 => clock,
 		address_a => address,
 		q_a => qb (53 downto 36) 
@@ -247,7 +247,7 @@ BEGIN
 
 	--! 512x18 rom con los componentes cx.
 	CX : altsyncram
-	GENERIC MAP (
+	generic map (
 		address_aclr_a => "NONE",
 		clock_enable_input_a => "BYPASS",
 		clock_enable_output_a => "BYPASS",
@@ -264,7 +264,7 @@ BEGIN
 		width_a => 18,
 		width_byteena_a => 1
 	)
-	PORT MAP (
+	port map (
 		clock0 => clock,
 		address_a => address,
 		q_a => qc (17 downto 0)
@@ -272,7 +272,7 @@ BEGIN
 
 	--! 512x18 rom con los componentes cy.
 	CY : altsyncram
-	GENERIC MAP (
+	generic map (
 		address_aclr_a => "NONE",
 		clock_enable_input_a => "BYPASS",
 		clock_enable_output_a => "BYPASS",
@@ -289,7 +289,7 @@ BEGIN
 		width_a => 18,
 		width_byteena_a => 1
 	)
-	PORT MAP (
+	port map (
 		clock0 => clock,
 		address_a => address,
 		q_a => qc (35 downto 18) 
@@ -297,7 +297,7 @@ BEGIN
 
 	--! 512x18 rom con los componentes cz.
 	CZ : altsyncram
-	GENERIC MAP (
+	generic map (
 		address_aclr_a => "NONE",
 		clock_enable_input_a => "BYPASS",
 		clock_enable_output_a => "BYPASS",
@@ -314,7 +314,7 @@ BEGIN
 		width_a => 18,
 		width_byteena_a => 1
 	)
-	PORT MAP (
+	port map (
 		clock0 => clock,
 		address_a => address,
 		q_a => qc (53 downto 36) 
@@ -322,7 +322,7 @@ BEGIN
 	
 	--! 512x18 rom con los componentes dx.
 	DX : altsyncram
-	GENERIC MAP (
+	generic map (
 		address_aclr_a => "NONE",
 		clock_enable_input_a => "BYPASS",
 		clock_enable_output_a => "BYPASS",
@@ -339,7 +339,7 @@ BEGIN
 		width_a => 18,
 		width_byteena_a => 1
 	)
-	PORT MAP (
+	port map (
 		clock0 => clock,
 		address_a => address,
 		q_a => qd (17 downto 0)
@@ -347,7 +347,7 @@ BEGIN
 
 	--! 512x18 rom con los componentes dy.
 	DY : altsyncram
-	GENERIC MAP (
+	generic map (
 		address_aclr_a => "NONE",
 		clock_enable_input_a => "BYPASS",
 		clock_enable_output_a => "BYPASS",
@@ -364,7 +364,7 @@ BEGIN
 		width_a => 18,
 		width_byteena_a => 1
 	)
-	PORT MAP (
+	port map (
 		clock0 => clock,
 		address_a => address,
 		q_a => qd (35 downto 18) 
@@ -372,7 +372,7 @@ BEGIN
 
 	--! 512x18 rom con los componentes dz.
 	DZ : altsyncram
-	GENERIC MAP (
+	generic map (
 		address_aclr_a => "NONE",
 		clock_enable_input_a => "BYPASS",
 		clock_enable_output_a => "BYPASS",
@@ -389,11 +389,11 @@ BEGIN
 		width_a => 18,
 		width_byteena_a => 1
 	)
-	PORT MAP (
+	port map (
 		clock0 => clock,
 		address_a => address,
 		q_a => qd (53 downto 36) 
 	);	
 
-END tb_arch;
+end tb_arch;
 

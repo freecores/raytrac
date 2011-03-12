@@ -27,6 +27,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
+use std.textio.all;
 use work.arithpack.all;
 
 
@@ -61,6 +62,8 @@ begin
 	process (clock,rst)
 		variable addressCounter : integer := 0;
 		variable tbs : tbState;
+		variable tline  : line;
+		file log : text open write_mode is "TRACE_proc_thetest";	
 	begin
 
 		if rst=rstMasterValue then
@@ -69,17 +72,28 @@ begin
 			addcode <= '1';
 			tbs := abcd;
 			ena <= '1';
+			address <= (others => '0');
 		elsif clock'event and clock = '1' then
 			-- Register States when clock went up ...
-			
+			write (tline,now);
+			write (tline,string'(" "));
+			write (tline,to_bitvector(address));
+			write (tline,string'(" "));
+			writeline(log,tline);
 			case tbs is
 				when abcd  => 
-					address <= address + 1;
+					
+					
 					if address = X"000" then
+						write(tline,now);
+						write(tline,string'(" : Se fue esta vaina"));
+						writeline(log,tline);
 						tbs := axb;
 						opcode <= '1';
 						addcode <= not(addcode);
 					end if;
+					address <= address + 1;
+					
 				when axb => 
 					tbs := cxd;
 					addcode <= not(addcode);
@@ -90,6 +104,7 @@ begin
 						null;
 					end if;
 				when others =>
+					null;
 			end case;		  
 					
 		end if;

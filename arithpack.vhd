@@ -25,6 +25,9 @@ library ieee;
 --! Paquete de definicion estandard de logica.
 use ieee.std_logic_1164.all;
 
+--use ieee.std_logic_unsigned.conv_integer;
+
+
 --! Biblioteca de definicion de memorias de altera
 library altera_mf;
 --! Paquete para manejar memorias internas tipo M9K
@@ -33,6 +36,12 @@ use altera_mf.all;
 --! Biblioteca de modulos parametrizados.
 library lpm;
 use lpm.all;
+
+--! Package de entrada y salida de texto.
+use std.textio.all;
+
+
+
 --! Package con las definiciones de constantes y entidades, que conformaran el Rt Engine. Tambien con algunas descripciones para realizar test bench.
 
 --! En general el package cuenta con entidades para instanciar, multiplicadores, sumadores/restadores y un decodificador de operaciones. 
@@ -44,9 +53,15 @@ package arithpack is
 	--! Constante con el nivel l—gico de reset.
 	constant rstMasterValue : std_logic := '1';
 	
+	--! Constante: periodo del reloj;
+	constant tclk : time := 20 ns;
+	constant tclk2: time := tclk/2;
+	constant tclk4: time := tclk/4;
+	
+	
 	--! Generacion de Clock y de Reset.
 	component clock_gen 
-		generic	(tclk : time := 20 ns);
+		generic	(tclk : time := tclk);
 		port	(clk,rst : out std_logic);
 	end component;
 	
@@ -181,5 +196,27 @@ package arithpack is
 		cout	:	out std_logic
 	);	 		
 	end component;
-		
+	
+	
+	procedure hexwrite_0(l:inout line; h: in std_logic_vector);
+	 	
 end package; 
+
+package body arithpack is
+	--! Funciones utilitarias, relacionadas sobre todo con el testbench
+	constant hexchars : string (1 to 16) := "0123456789ABCDEF";
+	
+	procedure hexwrite_0(l:inout line;h:in std_logic_vector) is
+		variable index_high,index_low,acc : integer;
+	begin 
+		for i in (h'high)/4 downto 0 loop
+			index_low:=i*4;
+			if (index_low+3)>h'high then
+				index_high := h'high;
+			else
+				index_high := i*4+3;
+			end if;
+			write(l,hexchars(1+ieee.std_logic_unsigned.conv_integer(h(index_high downto index_low))));
+		end loop; 
+	end procedure;	
+end package body arithpack;

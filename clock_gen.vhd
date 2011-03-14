@@ -23,7 +23,7 @@ use ieee.std_logic_1164.all;
 use work.arithpack.all;
 
 entity clock_gen is
-	generic	(tclk : time := 20 ns);
+	generic	(tclk : time := tclk);
 	port	(clk,rst : out std_logic);
 end entity clock_gen;
 
@@ -33,9 +33,11 @@ architecture clock_gen_arch of clock_gen is
 begin
 	resetproc: process
 	begin
-		rst<= '1';
-		wait for 50 ns;
-		rst<= '0';
+		rst<= not(rstMasterValue);
+		wait for 1 ns;
+		rst<= rstMasterValue;
+		wait for 52 ns;
+		rst<= not(rstMasterValue);
 		wait;
 	end process resetproc;
 	clockproc: process
@@ -44,12 +46,13 @@ begin
 		clk<='1';
 		clock_loop:
 		loop
-			wait for tclk/2;
+			wait for tclk2;
 			clk<='0';
-			wait for tclk/2;
+			wait for tclk2;
 			clk <= '1';
 		end loop clock_loop;
 	end process clockproc;
+	
 end clock_gen_arch;
 	
 	

@@ -23,10 +23,10 @@
 --     You should have received a copy of the GNU General Public License
 --     along with raytrac.  If not, see <http://www.gnu.org/licenses/>
 
-
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
+
 use std.textio.all;
 use work.arithpack.all;
 
@@ -57,13 +57,37 @@ begin
 	generic map ("YES")	-- Entrada registrada, pues la ROM no tiene salida registrada.
 	port map(qa,qb,qc,qd,opcode,addcode,clock,rst,ena,cpx,cpy,cpz,dp0,dp1);
 	
+	--! Procedimiento para escribir los resultados del testbench
+	sampleproc: process 
+		variable buff : line;
+		file rombuff : text open write_mode is "TRACE_rom_content";
+		
+	begin
+		write(buff,string'("ROM memories test benching"));
+		writeline(rombuff, buff);
+		wait for 5 ns; 
+		wait until rst=not(rstMasterValue);
+		wait until clock='1';
+		wait for tclk2+tclk4; --! Garantizar la estabilidad de los datos que se van a observar en la salida.
+		displayRom:
+		loop
+			write (buff,now,unit =>ns);
+			write (buff,string'(" "));
+			hexwrite_0 (buff,address(7 downto 0));
+			write (buff,string'(" "));
+			hexwrite_0 (buff,qa(17 downto 0));
+			writeline(rombuff,buff);
+			wait for tclk;
+		end loop displayRom;	
+			
+	end process sampleproc;
+	
+	
 	--! Descripcion del test: 512 x (2/clock) productos punto y 1024 x (1/clock) productos cruz.
 	thetest:
 	process (clock,rst)
 		variable addressCounter : integer := 0;
 		variable tbs : tbState;
-		variable tline  : line;
-		file log : text open write_mode is "TRACE_proc_thetest";	
 	begin
 
 		if rst=rstMasterValue then
@@ -74,20 +98,10 @@ begin
 			ena <= '1';
 			address <= (others => '0');
 		elsif clock'event and clock = '1' then
-			-- Register States when clock went up ...
-			write (tline,now);
-			write (tline,string'(" "));
-			write (tline,to_bitvector(address));
-			write (tline,string'(" "));
-			writeline(log,tline);
+			
 			case tbs is
 				when abcd  => 
-					
-					
-					if address = X"000" then
-						write(tline,now);
-						write(tline,string'(" : Se fue esta vaina"));
-						writeline(log,tline);
+					if address = X"1FF" then
 						tbs := axb;
 						opcode <= '1';
 						addcode <= not(addcode);
@@ -116,14 +130,14 @@ begin
 		address_aclr_a => "NONE",
 		clock_enable_input_a => "BYPASS",
 		clock_enable_output_a => "BYPASS",
-		init_file => ".\memax.mif",
+		init_file => "memax.mif",
 		intended_device_family => "Cyclone III",
 		lpm_hint => "ENABLE_RUNTIME_MOD=NO",
 		lpm_type => "altsyncram",
 		numwords_a => 512,
 		operation_mode => "ROM",
 		outdata_aclr_a => "NONE",
-		outdata_reg_a => "CLOCK0",
+		outdata_reg_a => "UNREGISTERED",
 		ram_block_type => "M9K",
 		widthad_a => 9,
 		width_a => 18,
@@ -273,7 +287,7 @@ begin
 		numwords_a => 512,
 		operation_mode => "ROM",
 		outdata_aclr_a => "NONE",
-		outdata_reg_a => "CLOCK0",
+		outdata_reg_a => "UNREGISTERED",
 		ram_block_type => "M9K",
 		widthad_a => 9,
 		width_a => 18,

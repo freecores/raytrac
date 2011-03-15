@@ -68,7 +68,7 @@ package arithpack is
 	--! Ray Trac: Implementacion del Rt Engine
 	component raytrac
 	generic (
-		
+		testbench_generation : string := "NO";
 		registered : string := "NO" --! Este parametro, por defecto "YES", indica si se registran o cargan en registros los vectores A,B,C,D y los codigos de operacion opcode y addcode en vez de ser conectados directamente al circuito combinatorio. \n This parameter, by default "YES", indicates if vectors A,B,C,D and operation code inputs opcode are to be loaded into a register at the beginning of the pipe rather than just connecting them to the operations decoder (opcoder). 
 	);
 	port (
@@ -110,6 +110,7 @@ package arithpack is
 	component uf
 	generic (
 			use_std_logic_signed	: string := "NO";
+			testbench_generation	: string := "NO";
 			carry_logic	: string := "CLA"
 	);
 	port (
@@ -144,23 +145,30 @@ package arithpack is
 		c: out std_logic_vector(width-1 downto 0)
 	);
 	end component;
+	
+	
 	--! Esta entidad corresponde al multiplicador que se instanciar’a dentro de la unidad funcional. El multiplicador registra los operandos a la entrada y el respectivo producto de la multiplicaci—n a la salida. 
-	component r_a18_b18_smul_c32_r
+	component lpm_mult
 	generic (
-		lpm_hint		: string := "DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9";
-		lpm_pipeline	: natural:= 2;
-		lpm_representation : string:="SIGNED";
-		lpm_type		: string:="LPM_MULT";
-		lpm_widtha		: natural:=18;
-		lpm_widthb		: natural:=18;
-		lpm_widthp		: natural:=32
+		lpm_hint		: string;
+		lpm_pipeline		: natural;
+		lpm_representation		: string;
+		lpm_type		: string;
+		lpm_widtha		: natural;
+		lpm_widthb		: natural;
+		lpm_widthp		: natural
 	);
 	port (
-		aclr,clock:in std_logic;
-		dataa,datab:in std_logic_vector (17 downto 0);
-		result: out std_logic_vector(31 downto 0)
+			aclr	: in std_logic ;
+			clock	: in std_logic ;
+			datab	: in std_logic_vector (17 downto 0);
+			dataa	: in std_logic_vector (17 downto 0);
+			result	: out std_logic_vector (31 downto 0)
 	);
 	end component;
+
+	
+	
 	
 	--! cla_logic_block corresponde a un bloque de l—gica Carry look Ahead. Se instancia y utiliza dentro de un sumador cualquiera, pues sirve para calcular los carry out de la operaci—n. 
 	component cla_logic_block 
@@ -207,16 +215,18 @@ package body arithpack is
 	constant hexchars : string (1 to 16) := "0123456789ABCDEF";
 	
 	procedure hexwrite_0(l:inout line;h:in std_logic_vector) is
-		variable index_high,index_low,acc : integer;
+		variable index_high,index_low,highone : integer;
+		
 	begin 
-		for i in (h'high)/4 downto 0 loop
+		highone := h'high-h'low;
+		for i in (highone)/4 downto 0 loop
 			index_low:=i*4;
-			if (index_low+3)>h'high then
-				index_high := h'high;
+			if (index_low+3)>highone then
+				index_high := highone;
 			else
 				index_high := i*4+3;
 			end if;
-			write(l,hexchars(1+ieee.std_logic_unsigned.conv_integer(h(index_high downto index_low))));
+			write(l,hexchars(1+ieee.std_logic_unsigned.conv_integer(h(index_high+h'low downto index_low+h'low))));
 		end loop; 
 	end procedure;	
 end package body arithpack;

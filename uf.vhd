@@ -27,6 +27,9 @@ use ieee.std_logic_1164.all;
 --! Paquete para el manejo de aritmŽtica con signo sobre el tipo std_logic_vector 
 use ieee.std_logic_signed.all;
 
+--! Paquete estandar de texto
+use std.textio.all;
+
 --! Se usaran en esta descripcion los componentes del package arithpack.vhd.\n It will be used in this description the components on the arithpack.vhd package. 
 use work.arithpack.all;
 
@@ -42,6 +45,7 @@ use work.arithpack.all;
 entity uf is
 	generic (
 			use_std_logic_signed : string := "NO";
+			testbench_generation : string := "NO";
 			carry_logic : string := "CLA"
 	);
 	port (
@@ -79,7 +83,16 @@ begin
 
 	-- Multiplicator Instantiation (StAgE 0)
 	--! Multiplicador 0 
-	m0 : r_a18_b18_smul_c32_r 
+	m0 : lpm_mult
+	generic map (
+		lpm_hint =>  "DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9",
+		lpm_pipeline =>  2,
+		lpm_representation => "SIGNED",
+		lpm_type => "LPM_MULT",
+		lpm_widtha => 18,
+		lpm_widthb => 18,
+		lpm_widthp => 32
+	)
 	port map (
 		aclr	=> rst,
 		clock	=> clk,
@@ -89,7 +102,16 @@ begin
 	);
 	
 	--! Multiplicador 1
-	m1 : r_a18_b18_smul_c32_r 
+	m1 : lpm_mult 
+	generic map (
+		lpm_hint =>  "DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9",
+		lpm_pipeline =>  2,
+		lpm_representation => "SIGNED",
+		lpm_type => "LPM_MULT",
+		lpm_widtha => 18,
+		lpm_widthb => 18,
+		lpm_widthp => 32
+	)
 	port map (
 		aclr	=> rst,
 		clock	=> clk,
@@ -99,7 +121,16 @@ begin
 	);
 	
 	--! Multiplicador 2
-	m2 : r_a18_b18_smul_c32_r 
+	m2 : lpm_mult 
+	generic map (
+		lpm_hint =>  "DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9",
+		lpm_pipeline =>  2,
+		lpm_representation => "SIGNED",
+		lpm_type => "LPM_MULT",
+		lpm_widtha => 18,
+		lpm_widthb => 18,
+		lpm_widthp => 32
+	)
 	port map (
 		aclr	=> rst,
 		clock	=> clk,
@@ -109,7 +140,16 @@ begin
 	);
 	
 	--! Multiplicador 3
-	m3 : r_a18_b18_smul_c32_r 
+	m3 : lpm_mult 
+	generic map (
+		lpm_hint =>  "DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9",
+		lpm_pipeline =>  2,
+		lpm_representation => "SIGNED",
+		lpm_type => "LPM_MULT",
+		lpm_widtha => 18,
+		lpm_widthb => 18,
+		lpm_widthp => 32
+	)
 	port map (
 		aclr	=> rst,
 		clock	=> clk,
@@ -119,7 +159,16 @@ begin
 	);
 	
 	--! Multiplicador 4
-	m4 : r_a18_b18_smul_c32_r 
+	m4 : lpm_mult 
+	generic map (
+		lpm_hint =>  "DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9",
+		lpm_pipeline =>  2,
+		lpm_representation => "SIGNED",
+		lpm_type => "LPM_MULT",
+		lpm_widtha => 18,
+		lpm_widthb => 18,
+		lpm_widthp => 32
+	)
 	port map (
 		aclr	=> rst,
 		clock	=> clk,
@@ -129,7 +178,16 @@ begin
 	);
 	
 	--! Multiplicador 5
-	m5 : r_a18_b18_smul_c32_r 
+	m5 : lpm_mult 
+	generic map (
+		lpm_hint =>  "DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9",
+		lpm_pipeline =>  2,
+		lpm_representation => "SIGNED",
+		lpm_type => "LPM_MULT",
+		lpm_widtha => 18,
+		lpm_widthb => 18,
+		lpm_widthp => 32
+	)
 	port map (
 		aclr	=> rst,
 		clock	=> clk,
@@ -276,6 +334,112 @@ begin
 					
 		end if;
 	end process uf_seq;
+	
+	--! Codigo generado para realizar test bench
+	tbgen:
+	if testbench_generation="YES" generate
+		tbproc0:
+		process
+			variable buff : line;
+			file mbuff : text open write_mode is "TRACE_multiplier_content";
+		begin
+		write(buff,string'("UF multipliers test benching"));
+		writeline(mbuff, buff);
+		wait for 5 ns; 
+		wait until rst=not(rstMasterValue);
+		wait until clk='1';
+		wait for tclk2+tclk4; --! Garantizar la estabilidad de los datos que se van a observar en la salida.
+		displayRom:
+		loop
+			write (buff,now,unit =>ns);
+			write (buff,string'(" "));
+			hexwrite_0 (buff,stage1p0(31 downto 0));
+			write (buff,string'(" "));
+			hexwrite_0 (buff,stage1p1(31 downto 0));
+			write (buff,string'(" "));
+			hexwrite_0 (buff,stage1p2(31 downto 0));
+			write (buff,string'(" "));
+			hexwrite_0 (buff,stage1p1(31 downto 0));
+			write (buff,string'(" "));
+			hexwrite_0 (buff,stage1p4(31 downto 0));
+			write (buff,string'(" "));
+			hexwrite_0 (buff,stage1p5(31 downto 0));
+			writeline(mbuff,buff);
+			wait for tclk;
+		end loop displayRom;
+		end process tbproc0;
+		tbproc1:
+		process
+			variable buff : line;
+			file fbuff : text open write_mode is "TRACE_decoded_factors_content";
+		begin
+			
+			write(buff,string'("UF factors decoded test benching"));
+			writeline(fbuff, buff);
+			wait for 5 ns; 
+			wait until rst=not(rstMasterValue);
+			wait until clk='1';
+			wait for tclk2+tclk4; --! Garantizar la estabilidad de los datos que se van a observar en la salida.
+			displayRom:
+			loop
+				write (buff,now,unit =>ns);				
+				write (buff,string'(" {"));
+				hexwrite_0 (buff,m0f0(17 downto 0));
+				hexwrite_0 (buff,m0f1(17 downto 0));
+				write (buff,string'("} {"));
+				hexwrite_0 (buff,m1f0(17 downto 0));
+				hexwrite_0 (buff,m1f1(17 downto 0));
+				write (buff,string'("} {"));
+				hexwrite_0 (buff,m2f0(17 downto 0));
+				hexwrite_0 (buff,m2f1(17 downto 0));
+				write (buff,string'("} {"));
+				hexwrite_0 (buff,m3f0(17 downto 0));
+				hexwrite_0 (buff,m3f1(17 downto 0));
+				write (buff,string'("} {"));
+				hexwrite_0 (buff,m4f0(17 downto 0));
+				hexwrite_0 (buff,m4f1(17 downto 0));
+				write (buff,string'("} {"));
+				hexwrite_0 (buff,m5f0(17 downto 0));
+				hexwrite_0 (buff,m5f1(17 downto 0));
+				write (buff,string'("}"));				
+				writeline(fbuff,buff);
+				wait for tclk;
+			end loop displayRom;			
+		end process tbproc1;
+		
+		tbproc2:
+		process
+			variable buff : line;
+			file rbuff : text open write_mode is "TRACE_results_content";
+		begin
+			
+			write(buff,string'("UF results test benching"));
+			writeline(rbuff, buff);
+			wait for 5 ns; 
+			wait until rst=not(rstMasterValue);
+			wait until clk='1';
+			wait for tclk2+tclk4; --! Garantizar la estabilidad de los datos que se van a observar en la salida.
+			displayRom:
+			loop
+				write (buff,now,unit =>ns);				
+				write (buff,string'(" {"));
+				hexwrite_0 (buff,stage1a0(31 downto 0));
+				write (buff,string'(" "));
+				hexwrite_0 (buff,stage1a1(31 downto 0));
+				write (buff,string'(" "));
+				hexwrite_0 (buff,stage1a2(31 downto 0));
+				write (buff,string'("} {dp0: "));
+				hexwrite_0 (buff,stage2a3(31 downto 0));
+				write (buff,string'(",dp1: "));
+				hexwrite_0 (buff,stage2a4(31 downto 0));
+				write (buff,string'("}"));				
+				writeline(rbuff,buff);
+				wait for tclk;
+			end loop displayRom;			
+		end process tbproc2;	
+
+	end generate tbgen;
+	
 	
 	
 	

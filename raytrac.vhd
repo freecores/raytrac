@@ -85,7 +85,7 @@ use work.arithpack.all;
 
 entity raytrac is 
 	generic (
-		
+		testbench_generation : string := "NO";
 		registered : string := "NO" --! Este parametro, por defecto "YES", indica si se registran o cargan en registros los vectores A,B,C,D y los codigos de operacion opcode y addcode en vez de ser conectados directamente al circuito combinatorio. \n This parameter, by default "YES", indicates if vectors A,B,C,D and operation code inputs opcode are to be loaded into a register at the beginning of the pipe rather than just connecting them to the operations decoder (opcoder). 
 	);
 	port (
@@ -166,6 +166,7 @@ begin
 	
 	--! Instantiate Opcoder 
 	opcdr : opcoder
+	
 	port map (
 		SA(17 downto 0),SB(17 downto 0),SC(17 downto 0),SD(17 downto 0),SA(35 downto 18),SB(35 downto 18),SC(35 downto 18),SD(35 downto 18),SA(53 downto 36),SB(53 downto 36),SC(53 downto 36),SD(53 downto 36),
 		smf00,smf01,smf10,smf11,smf20,smf21,smf30,smf31,smf40,smf41,smf50,smf51,
@@ -173,7 +174,7 @@ begin
 	);
 	--! Instantiate uf, cross product and dot product functional unit.
 	uf0 : uf
-	generic map ("YES","RCA") 
+	generic map ("YES",testbench_generation,"RCA") 
 	port map (
 		sopcode,
 		smf00,smf01,smf10,smf11,smf20,smf21,smf30,smf31,smf40,smf41,smf50,smf51,

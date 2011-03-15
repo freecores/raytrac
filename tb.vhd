@@ -54,7 +54,7 @@ begin
 
 	--! Device Under Test
 	dude: raytrac
-	generic map ("YES")	-- Entrada registrada, pues la ROM no tiene salida registrada.
+	generic map ("YES","YES")	-- Test bench y Entrada registrada, pues la ROM no tiene salida registrada.
 	port map(qa,qb,qc,qd,opcode,addcode,clock,rst,ena,cpx,cpy,cpz,dp0,dp1);
 	
 	--! Procedimiento para escribir los resultados del testbench
@@ -74,13 +74,40 @@ begin
 			write (buff,now,unit =>ns);
 			write (buff,string'(" "));
 			hexwrite_0 (buff,address(7 downto 0));
-			write (buff,string'(" "));
+			write (buff,string'(" {"));
 			hexwrite_0 (buff,qa(17 downto 0));
+			write (buff,string'(" "));
+			hexwrite_0 (buff,qa(35 downto 18));
+			write (buff,string'(" "));
+			hexwrite_0 (buff,qa(53 downto 36));
+			write (buff,string'("} "));
+			write (buff,string'(" {"));
+			hexwrite_0 (buff,qb(17 downto 0));
+			write (buff,string'(" "));
+			hexwrite_0 (buff,qb(35 downto 18));
+			write (buff,string'(" "));
+			hexwrite_0 (buff,qb(53 downto 36));
+			write (buff,string'("} "));
+			write (buff,string'(" {"));
+			hexwrite_0 (buff,qc(17 downto 0));
+			write (buff,string'(" "));
+			hexwrite_0 (buff,qc(35 downto 18));
+			write (buff,string'(" "));
+			hexwrite_0 (buff,qc(53 downto 36));
+			write (buff,string'("} "));
+			write (buff,string'(" {"));
+			hexwrite_0 (buff,qd(17 downto 0));
+			write (buff,string'(" "));
+			hexwrite_0 (buff,qd(35 downto 18));
+			write (buff,string'(" "));
+			hexwrite_0 (buff,qd(53 downto 36));
+			write (buff,string'("} "));
 			writeline(rombuff,buff);
 			wait for tclk;
 		end loop displayRom;	
 			
 	end process sampleproc;
+	
 	
 	
 	--! Descripcion del test: 512 x (2/clock) productos punto y 1024 x (1/clock) productos cruz.
@@ -162,7 +189,7 @@ begin
 		numwords_a => 512,
 		operation_mode => "ROM",
 		outdata_aclr_a => "NONE",
-		outdata_reg_a => "CLOCK0",
+		outdata_reg_a => "UNREGISTERED",
 		ram_block_type => "M9K",
 		widthad_a => 9,
 		width_a => 18,
@@ -187,7 +214,7 @@ begin
 		numwords_a => 512,
 		operation_mode => "ROM",
 		outdata_aclr_a => "NONE",
-		outdata_reg_a => "CLOCK0",
+		outdata_reg_a => "UNREGISTERED",
 		ram_block_type => "M9K",
 		widthad_a => 9,
 		width_a => 18,
@@ -212,7 +239,7 @@ begin
 		numwords_a => 512,
 		operation_mode => "ROM",
 		outdata_aclr_a => "NONE",
-		outdata_reg_a => "CLOCK0",
+		outdata_reg_a => "UNREGISTERED",
 		ram_block_type => "M9K",
 		widthad_a => 9,
 		width_a => 18,
@@ -237,7 +264,7 @@ begin
 		numwords_a => 512,
 		operation_mode => "ROM",
 		outdata_aclr_a => "NONE",
-		outdata_reg_a => "CLOCK0",
+		outdata_reg_a => "UNREGISTERED",
 		ram_block_type => "M9K",
 		widthad_a => 9,
 		width_a => 18,
@@ -262,7 +289,7 @@ begin
 		numwords_a => 512,
 		operation_mode => "ROM",
 		outdata_aclr_a => "NONE",
-		outdata_reg_a => "CLOCK0",
+		outdata_reg_a => "UNREGISTERED",
 		ram_block_type => "M9K",
 		widthad_a => 9,
 		width_a => 18,
@@ -312,7 +339,7 @@ begin
 		numwords_a => 512,
 		operation_mode => "ROM",
 		outdata_aclr_a => "NONE",
-		outdata_reg_a => "CLOCK0",
+		outdata_reg_a => "UNREGISTERED",
 		ram_block_type => "M9K",
 		widthad_a => 9,
 		width_a => 18,
@@ -337,7 +364,7 @@ begin
 		numwords_a => 512,
 		operation_mode => "ROM",
 		outdata_aclr_a => "NONE",
-		outdata_reg_a => "CLOCK0",
+		outdata_reg_a => "UNREGISTERED",
 		ram_block_type => "M9K",
 		widthad_a => 9,
 		width_a => 18,
@@ -362,7 +389,7 @@ begin
 		numwords_a => 512,
 		operation_mode => "ROM",
 		outdata_aclr_a => "NONE",
-		outdata_reg_a => "CLOCK0",
+		outdata_reg_a => "UNREGISTERED",
 		ram_block_type => "M9K",
 		widthad_a => 9,
 		width_a => 18,
@@ -387,7 +414,7 @@ begin
 		numwords_a => 512,
 		operation_mode => "ROM",
 		outdata_aclr_a => "NONE",
-		outdata_reg_a => "CLOCK0",
+		outdata_reg_a => "UNREGISTERED",
 		ram_block_type => "M9K",
 		widthad_a => 9,
 		width_a => 18,
@@ -412,7 +439,7 @@ begin
 		numwords_a => 512,
 		operation_mode => "ROM",
 		outdata_aclr_a => "NONE",
-		outdata_reg_a => "CLOCK0",
+		outdata_reg_a => "UNREGISTERED",
 		ram_block_type => "M9K",
 		widthad_a => 9,
 		width_a => 18,

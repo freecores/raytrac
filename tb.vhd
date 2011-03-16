@@ -46,8 +46,10 @@ architecture tb_arch of tb is
 	signal opcode,addcode:std_logic;
 	signal dp0,dp1,cpx,cpy,cpz : std_logic_vector(31 downto 0);
 	signal address: std_logic_vector (8 downto 0);
+	signal opadd : std_logic_vector(1 downto 0);
 	
 begin
+	
 	--! Generador de clock.
 	clk_inst: clock_gen
 	port map (clock,rst); -- Instanciacion simple.
@@ -55,7 +57,7 @@ begin
 	--! Device Under Test
 	dude: raytrac
 	generic map ("YES","YES")	-- Test bench y Entrada registrada, pues la ROM no tiene salida registrada.
-	port map(qa,qb,qc,qd,opcode,addcode,clock,rst,ena,cpx,cpy,cpz,dp0,dp1);
+	port map(qa,qb,qc,qd,opadd(1),opadd(0),clock,rst,ena,cpx,cpy,cpz,dp0,dp1);
 	
 	--! Procedimiento para escribir los resultados del testbench
 	sampleproc: process 
@@ -63,18 +65,25 @@ begin
 		file rombuff : text open write_mode is "TRACE_rom_content";
 		
 	begin
+		
 		write(buff,string'("ROM memories test benching"));
 		writeline(rombuff, buff);
 		wait for 5 ns; 
 		wait until rst=not(rstMasterValue);
+		write (buff,now,unit =>ns);
+		write (buff,string'(" "));
+		hexwrite_0 (buff,address(8 downto 0));
+		writeline(rombuff,buff);
 		wait until clock='1';
 		wait for tclk2+tclk4; --! Garantizar la estabilidad de los datos que se van a observar en la salida.
 		displayRom:
 		loop
 			write (buff,now,unit =>ns);
 			write (buff,string'(" "));
-			hexwrite_0 (buff,address(7 downto 0));
-			write (buff,string'(" {"));
+			hexwrite_0 (buff,address(8 downto 0));
+			write (buff,string'(" (opcode addcode):("));
+			hexwrite_0 (buff,opadd);
+			write (buff,string'(") {"));
 			hexwrite_0 (buff,qa(17 downto 0));
 			write (buff,string'(" "));
 			hexwrite_0 (buff,qa(35 downto 18));
@@ -113,12 +122,13 @@ begin
 	--! Descripcion del test: 512 x (2/clock) productos punto y 1024 x (1/clock) productos cruz.
 	thetest:
 	process (clock,rst)
-		variable addressCounter : integer := 0;
+		variable buff : line;
+		file rombuff : text open write_mode is "TRACE_state_content";
 		variable tbs : tbState;
 	begin
 
 		if rst=rstMasterValue then
-			addressCounter := 0;
+			
 			opcode  <= '0';
 			addcode <= '1';
 			tbs := abcd;
@@ -126,24 +136,43 @@ begin
 			address <= (others => '0');
 		elsif clock'event and clock = '1' then
 			
+			opadd <= opcode & addcode;
+			
 			case tbs is
 				when abcd  => 
 					if address = X"1FF" then
+						write (buff,now,unit => ns);
+						write (buff,string'(" S: abcd => axb"));
+						writeline (rombuff,buff);
 						tbs := axb;
 						opcode <= '1';
 						addcode <= not(addcode);
 					end if;
 					address <= address + 1;
 					
-				when axb => 
+				when axb =>
+					write (buff,now,unit => ns);
+					write (buff,string'(" S: axb => cxd"));
+					writeline (rombuff,buff);
+						 
 					tbs := cxd;
 					addcode <= not(addcode);
 				when cxd => 
-					address  <= address + 1;
+					
 					addcode <= not(addcode);
-					if address=X"000" then 
-						null;
+					if address=X"1FF" then 
+						write (buff,now,unit => ns);
+						write (buff,string'(" S: cxd => stop"));
+						writeline (rombuff,buff);
+						tbs := stop;
+					else
+						write (buff,now,unit => ns);
+						write (buff,string'(" S: cxd => axb"));
+						writeline (rombuff,buff);
+
+						tbs := axb;				
 					end if;
+					address  <= address + 1;
 				when others =>
 					null;
 			end case;		  

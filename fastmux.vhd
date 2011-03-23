@@ -1,6 +1,6 @@
 --! @file fastmux.vhd
 --! @brief Multiplexor.
---! @author Julián Andrés Guarín Reyes.
+--! @author Juli&aacute;n Andr&eacute;s Guar&iacute;n Reyes.
 -- RAYTRAC
 -- Author Julian Andres Guarin
 -- fastmux.vhd
@@ -19,7 +19,9 @@
 --     You should have received a copy of the GNU General Public License
 --     along with raytrac.  If not, see <http://www.gnu.org/licenses/>.
 
+--! Libreria de definicion de senales y tipos estandares, comportamiento de operadores aritmeticos y logicos.
 library ieee;
+--! Paquete de definicion estandard de logica. 
 use ieee.std_logic_1164.all;
 
 entity fastmux is 
@@ -33,6 +35,9 @@ entity fastmux is
 	);
 end entity;
 
+
+--! @brief Definicion arquitectura del mux
+--! @details El Mux esta descrito de manera estructural, instanciado bit por bit en la salida, multiplexores de un solo bit.
 architecture fastmux_arch of fastmux is
 begin
 

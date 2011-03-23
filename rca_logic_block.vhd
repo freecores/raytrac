@@ -1,6 +1,6 @@
 --! @file rca_logic_block.vhd
 --! @author Julian Andres Guarin
---! @brief Bloque de lógica Carry Look Ahead. 
+--! @brief Bloque de l&oacute;gica Carry Look Ahead. 
 -- rca_logic_block.vhd
 -- This file is part of raytrac.
 -- 
@@ -31,21 +31,21 @@ use ieee.std_logic_1164.all;
 
 entity rca_logic_block is
 	generic (
-		width : integer := 8 --! Tamaño estandar del bloque Ripple Carry Adder.
+		width : integer := 8 --! Tama&ntilde;o estandar del bloque Ripple Carry Adder.
 	);
 	port (
-		p,g: in std_logic_vector(width-1 downto 0); --! Señales de Propagación y Generación del carry.
-		cin : in std_logic;						--! Señal de entrada Carry In.
+		p,g: in std_logic_vector(width-1 downto 0); --! Se&ntilde;ales de Propagacin y Generaci&oacute;n del carry.
+		cin : in std_logic;						--! Señ\&ntilde;al de entrada Carry In.
 		
-		c : out std_logic_vector(width downto 1)	--! Señales Carry Out Cálculadas. 
+		c : out std_logic_vector(width downto 1)	--! Se&ntilde;ales Carry Out Calculadas. 
 	);
 end rca_logic_block;
 
 
 --! Arquitectura del bloque Ripple Carry Adder.
 
---! El bloque de lógica de Ripple Carry Adder, se sintetiza a partir de un código comportamental.
---! Para cada Couti, se instancia una función combinatoria. 
+--! El bloque de logica de Ripple Carry Adder, se sintetiza a partir de un c&oacute;digo comportamental.
+--! Para cada Couti, se instancia una funci&oacute;n combinatoria. 
 
 
 architecture rca_logic_block_arch of rca_logic_block is
@@ -55,7 +55,7 @@ architecture rca_logic_block_arch of rca_logic_block is
 begin
 	--! El siguiente proceso instancia funciones combinatorias para CADA UNO de los valores de Couti a calcular. En TODO momemnto se utiliza el resultado de los Cout antrerioes a Couti, optimizando en uso de recursos. 
 
-	--! La razón principal para realizar la instanciación de las funciones combinatorias necesarias con un process en vez de un generate, rádica en utilizar un conjunto de variables que afecte unicamente al proceso comportamental descrito y no a la arquitectura entera. 
+	--! La razon principal para realizar la instanciación de las funciones combinatorias necesarias con un process en vez de un generate, radica en utilizar un conjunto de variables que afecte unicamente al proceso comportamental descrito y no a la arquitectura entera. 
 	
 	rcaProc:		-- rcaProc instancia funciones combinatorias en sCarry(i) haciendo uso de los resultados intermedios obtenidos
 				-- en sCarry(i-1), por lo que se crea un delay path en el calculo del Cout del circuito

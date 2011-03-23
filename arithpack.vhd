@@ -30,6 +30,7 @@ use ieee.std_logic_1164.all;
 
 --! Biblioteca de definicion de memorias de altera
 library altera_mf;
+
 --! Paquete para manejar memorias internas tipo M9K
 use altera_mf.all;
 
@@ -50,12 +51,16 @@ package arithpack is
 	--! TestBenchState
 	type tbState is (abcd,axb,cxd,stop);
 	
-	--! Constante con el nivel l—gico de reset.
+	--! Constante con el nivel l&oacute;gico de reset.
 	constant rstMasterValue : std_logic := '1';
 	
-	--! Constante: periodo del reloj;
+	--! Constante: periodo del reloj, para una frecuencia de 50 MHz 
 	constant tclk : time := 20 ns;
+	
+	--! Constante: medio periodo de reloj.
 	constant tclk2: time := tclk/2;
+	
+	--! Constante: cuarto de periodo del reloj.
 	constant tclk4: time := tclk/4;
 	
 	
@@ -105,7 +110,7 @@ package arithpack is
 			address_a	: in std_logic_vector (8 downto 0);
 			q_a	: out std_logic_vector (17 downto 0)
 	);
-	end component;	--! Entidad uf: sus siglas significan undidad funcional. La unidad funcional se encarga de realizar las diferentes operaciones vectoriales (producto cruz — producto punto). 
+	end component;	--! Entidad uf: sus siglas significan undidad funcional. La unidad funcional se encarga de realizar las diferentes operaciones vectoriales (producto cruz &oacute; producto punto). 
 	
 	component uf
 	generic (
@@ -121,7 +126,7 @@ package arithpack is
 	);
 	end component;
 		
-	--! Entidad opcoder: opcoder decodifica la operaci—n que se va a realizar. Para tal fin coloca en la entrada de uf (unidad funcional), cuales van a ser los operandos de los multiplicadores con los que uf cuenta y adem‡s escribe en el selector de operaci—n de uf, el tipo de operaci—n a realizar.
+	--! Entidad opcoder: opcoder decodifica la operaci&oacute;n que se va a realizar. Para tal fin coloca en la entrada de uf (unidad funcional), cuales van a ser los operandos de los multiplicadores con los que uf cuenta y adem‡s escribe en el selector de operaci&oacute;n de uf, el tipo de operaci&oacute;n a realizar.
 	component opcoder 
 	generic (
 		width : integer := 18;
@@ -147,7 +152,7 @@ package arithpack is
 	end component;
 	
 	
-	--! Esta entidad corresponde al multiplicador que se instanciar’a dentro de la unidad funcional. El multiplicador registra los operandos a la entrada y el respectivo producto de la multiplicaci—n a la salida. 
+	--! Esta entidad corresponde al multiplicador que se instanciar&iacute;a dentro de la unidad funcional. El multiplicador registra los operandos a la entrada y el respectivo producto de la multiplicaci&oacute;n a la salida. 
 	component lpm_mult
 	generic (
 		lpm_hint		: string;
@@ -170,7 +175,7 @@ package arithpack is
 	
 	
 	
-	--! cla_logic_block corresponde a un bloque de l—gica Carry look Ahead. Se instancia y utiliza dentro de un sumador cualquiera, pues sirve para calcular los carry out de la operaci—n. 
+	--! cla_logic_block corresponde a un bloque de l&oacute;gica Carry look Ahead. Se instancia y utiliza dentro de un sumador cualquiera, pues sirve para calcular los carry out de la operaci&oacute;n. 
 	component cla_logic_block 
 	generic ( width: integer:=4);
 	port (
@@ -180,7 +185,7 @@ package arithpack is
 	);
 	end component;
 	
-	--! rca_logic_block corresponde a un bloque de l—gica Ripple Carry Adder. Se instancia y utiliza dentro de un sumador cualquiera, pues sirve para calcular los carry out de la operaci—n.
+	--! rca_logic_block corresponde a un bloque de l&oacute;gica Ripple Carry Adder. Se instancia y utiliza dentro de un sumador cualquiera, pues sirve para calcular los carry out de la operaci&oacute;n.
 	component rca_logic_block
 	generic ( width : integer := 4);
 	port (
@@ -205,13 +210,14 @@ package arithpack is
 	);	 		
 	end component;
 	
-	
+	--! Procedimiento para escribir std_logic_vectors en formato hexadecimal.
 	procedure hexwrite_0(l:inout line; h: in std_logic_vector);
 	 	
 end package; 
 
+--! Funciones utilitarias, relacionadas sobre todo con el testbench
 package body arithpack is
-	--! Funciones utilitarias, relacionadas sobre todo con el testbench
+	
 	constant hexchars : string (1 to 16) := "0123456789ABCDEF";
 	
 	procedure hexwrite_0(l:inout line;h:in std_logic_vector) is

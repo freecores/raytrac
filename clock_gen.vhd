@@ -1,4 +1,4 @@
---! @file clockgen.vhd
+--! @file clock_gen.vhd
 --! @brief Test bench clock generator.
 --! @author Julian Andres Guarin Reyes.
 -- RAYTRAC
@@ -18,7 +18,9 @@
 -- 
 --     You should have received a copy of the GNU General Public License
 --     along with raytrac.  If not, see <http://www.gnu.org/licenses/>.
+--! Libreria de definicion de senales y tipos estandares, comportamiento de operadores aritmeticos y logicos.
 library ieee;
+--! Paquete de definicion estandard de logica. 
 use ieee.std_logic_1164.all;
 use work.arithpack.all;
 
@@ -31,6 +33,8 @@ architecture clock_gen_arch of clock_gen is
 
 
 begin
+
+	--! Processo de reset, se mantendr&acute; en 0 durante 1 ns, seguido por 1 en 52 ns y finalmente en 0 y se deja ah&iacute;.
 	resetproc: process
 	begin
 		rst<= not(rstMasterValue);
@@ -40,6 +44,8 @@ begin
 		rst<= not(rstMasterValue);
 		wait;
 	end process resetproc;
+	
+	--! Proceso de clock, el valor inicial es 1. Inmediatamente baja a 0 y a partir de ah&iacute; con una frecuencia de 50 MHz se genera una se&ntilde;al de clock.	
 	clockproc: process
 	begin
 		

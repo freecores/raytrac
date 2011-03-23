@@ -15,9 +15,12 @@
 -- 
 --     You should have received a copy of the GNU General Public License
 --     along with raytrac.  If not, see <http://www.gnu.org/licenses/>.
-library ieee;
-use ieee.std_logic_1164.all;
 
+--! Libreria de definici&oacute;n de segnales y tipos estandares, comportamiento de operadores aritmeticos y logicos.\n 
+library ieee;
+--! Paquete de definicion estandard de logica. 
+use ieee.std_logic_1164.all;
+--! Se usaran en esta descripcion los componentes del package arithpack.vhd. 
 use work.arithpack.all;
 entity adder is 
 	generic (
@@ -34,7 +37,7 @@ entity adder is
 	);
 end adder;
 
-
+--! @brief arquitectura del sumador
 architecture adder_arch of adder is 
 
 	signal sa,p,g:	std_logic_vector(width-1 downto 0);
@@ -50,6 +53,8 @@ begin
 	
 	result(0)<= a(0) xor b(0) xor ci;
 	wide_adder:
+	
+	
 	if (width>1) generate
 		wide_adder_generate_loop:
 		for i in 1 to width-1 generate
@@ -61,7 +66,7 @@ begin
 	p<= sa or b;
 	
 	
-	-- Conditional Instantiation / Adder Substraction Logic --
+	--! Si se configura una se&ntilde;al para seleccionar entre suma y resta, se generar&oacute; el circuito a continuaci&oacute;n.
 	
 	adder_sub_logic :	-- adder substractor logic
 	if substractor_selector = "YES" generate
@@ -71,7 +76,7 @@ begin
 		end generate a_xor_s;
 	end generate adder_sub_Logic;
 		
-	add_logic:	-- just adder.
+	add_logic:	--!Si no se configura una se&ntilde;al de selecci&oacute;n entonces sencillamente se conecta a a sa.
 	if substractor_selector = "NO" generate
 		sa <= a;
 	end generate add_logic;
@@ -79,6 +84,8 @@ begin
 
 
 	-- Conditional Instantiation / RCA/CLA Logical Blocks Generation --
+	
+	--! Si se selecciona un ripple carry adder se instancia el siguiente circuito
 	rca_logic_block_instancing:	-- Ripple Carry Adder
 	if carry_logic="RCA" generate	
 		rca_x: rca_logic_block 
@@ -91,6 +98,7 @@ begin
 		);
 	end generate rca_logic_block_instancing;
 	
+	--! Si se selecciona un Carry Lookahead adder se instancia el siguiente circuito
 	cla_logic_block_instancing:	-- Carry Lookahead Adder
 	if carry_logic="CLA" generate
 		cla_x: cla_logic_block
@@ -103,16 +111,6 @@ begin
 		);
 	end generate cla_logic_block_instancing;
 	
-				
-
-	
-
-	
-
-			
-			
-			
-
 
 end adder_arch;
 

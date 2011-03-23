@@ -2,7 +2,7 @@
 -- RAYTRAC
 --! @file cla_logic_block.vhd
 --! @author Julian Andres Guarin
---! @brief Bloque de lógica Carry Look Ahead. 
+--! @brief Bloque de l&oacute;gica Carry Look Ahead. 
 -- cla_logic_block.vhd
 -- This file is part of raytrac.
 -- 
@@ -26,18 +26,18 @@ library ieee;
 --! Paquete de definicion estandard de logica. Standard logic definition pack.
 use ieee.std_logic_1164.all;
 
---! Entidad generadora de un bloque de cálculo de carry, carry look ahead.
+--! Entidad generadora de un bloque de c&acute;lculo de carry, carry look ahead.
 
---! En una suma A+B para cada par de bits Ai, Bi, se genera un carry out Couti, este Couti en un bloque generador de carry Carry Look Ahead, no depende del cálculo de los Carry Out anteriores, Couti-1, Couti-2,...., Cout0. Lo que hace el Carry Look Ahead Logic Block, es calcular en paralelo los valores de toso los Couti, usando las señales de propagación y generación, Pi y Gi, y através de una formula "recurrente". Comparado con el Ripple Carry Adder el Carry Look Ahead Adder, empleará la mitad del tiempo, pero para lograrlo usará muchas elementos lógicos en una FPGA o mas transistores en un procesos de fabricación CMOS. En síntesis se sacrifica un mayor uso de recursos para lograr mayor desempeño.
+--! En una suma A+B para cada par de bits Ai, Bi, se genera un carry out Couti, este Couti en un bloque generador de carry Carry Look Ahead, no depende del c&acute;lculo de los Carry Out anteriores, Couti-1, Couti-2,...., Cout0. Lo que hace el Carry Look Ahead Logic Block, es calcular en paralelo los valores de toso los Couti, usando las se&ntilde;ales de propagaci&oacute;n y generaci&oacute;n, Pi y Gi, y atrav&eacute;s de una formula "recurrente". Comparado con el Ripple Carry Adder el Carry Look Ahead Adder, emplear&acute; la mitad del tiempo, pero para lograrlo usar&acute; muchas elementos l&oacute;gicos en una FPGA o mas transistores en un procesos de fabricaci&oacute;n CMOS. En s&iacute;ntesis se sacrifica un mayor uso de recursos para lograr mayor desempe&ntilde;o.
 
 entity cla_logic_block is
 	generic (
-		width : integer := 4							--! Tamaño por defecto de un bloque Carry Look Ahead.  
+		width : integer := 4							--! Tama&ntilde;o por defecto de un bloque Carry Look Ahead.  
 	);
 
 	port (
-		p,g : in std_logic_vector(width-1 downto 0);	--! Señales de Propagación y Generación. 
-		cin : in std_logic;							--! Señal de Carry de entrada. 
+		p,g : in std_logic_vector(width-1 downto 0);	--! Se&ntilde;ales de Propagaci&oacute;n y Generaci&oacute;n. 
+		cin : in std_logic;							--! Se&ntilde;al de Carry de entrada. 
 		
 		c : out std_logic_vector(width downto 1)		--! Carry Out.
 	);
@@ -46,16 +46,16 @@ end cla_logic_block;
 
 --! Arquitectura del bloque Carry Look Ahead.
 
---! El bloque de lógica de Carry Look Ahead, se sintetiza a partir de un código comportamental.
---! Para cada Couti, se instancia una función combinatoria. La complejidad de las funciones combinatorias crece con el número de Couti a calcular.
+--! El bloque de l&oacute;gica de Carry Look Ahead, se sintetiza a partir de un c&oacute;digo comportamental.
+--! Para cada Couti, se instancia una funci&oacute;n combinatoria. La complejidad de las funciones combinatorias crece con el n&uacute;mero de Couti a calcular.
 --! La siguiente tabla describe el funcionamiento de este circuito.    
 
 architecture cla_logic_block_arch of cla_logic_block is
 
 begin
-	--! El siguiente proceso instancia funciones combinatorias para CADA UNO de los valores de Couti a calcular. En ningun momemnto se utiliza el resultado de los Cout antrerioes a Couti, agilizando el cálculo de las funciones. 
+	--! El siguiente proceso instancia funciones combinatorias para CADA UNO de los valores de Couti a calcular. En ningun momemnto se utiliza el resultado de los Cout antrerioes a Couti, agilizando el c&acute;lculo de las funciones. 
 
-	--! La razón principal para realizar la instanciación de las funciones combinatorias necesarias con un process en vez de un generate, rádica en utilizar un conjunto de variables que afecte unicamente al proceso comportamental descrito y no a la arquitectura entera. 
+	--! La raz&oacute;n principal para realizar la instanciaci&oacute;n de las funciones combinatorias necesarias con un process en vez de un generate, r&acute;dica en utilizar un conjunto de variables que afecte unicamente al proceso comportamental descrito y no a la arquitectura entera. 
 	claProc:	-- claProc instancia funciones combinatorias en las variables iCarry,
 				-- pero notese que los valores de iCarry(i) no dependen jamas de iCarry(i-1) a diferencia de rcaProc.
 	process(p,g,cin)

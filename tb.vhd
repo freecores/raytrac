@@ -1,7 +1,7 @@
 ------------------------------------------------
 --! @file tb.vhd
 --! @brief RayTrac TestBench
---! @author Julián Andrés Guarín Reyes
+--! @author Juli&aacute;n Andr&eacute;s Guar&iacute;n Reyes
 --------------------------------------------------
 
 
@@ -62,7 +62,7 @@ begin
 	--! Procedimiento para escribir los resultados del testbench
 	sampleproc: process 
 		variable buff : line;
-		file rombuff : text open write_mode is "TRACE_rom_content";
+		file rombuff : text open write_mode is "TRACE_rom_content.csv";
 		
 	begin
 		
@@ -83,34 +83,34 @@ begin
 			hexwrite_0 (buff,address(8 downto 0));
 			write (buff,string'(" (opcode addcode):("));
 			hexwrite_0 (buff,opadd);
-			write (buff,string'(") {"));
+			write (buff,string'(") { "));
 			hexwrite_0 (buff,qa(17 downto 0));
-			write (buff,string'(" "));
+			write (buff,string'(","));
 			hexwrite_0 (buff,qa(35 downto 18));
-			write (buff,string'(" "));
+			write (buff,string'(","));
 			hexwrite_0 (buff,qa(53 downto 36));
-			write (buff,string'("} "));
-			write (buff,string'(" {"));
+			write (buff,string'(" } "));
+			write (buff,string'(" { "));
 			hexwrite_0 (buff,qb(17 downto 0));
-			write (buff,string'(" "));
+			write (buff,string'(","));
 			hexwrite_0 (buff,qb(35 downto 18));
-			write (buff,string'(" "));
+			write (buff,string'(","));
 			hexwrite_0 (buff,qb(53 downto 36));
-			write (buff,string'("} "));
-			write (buff,string'(" {"));
+			write (buff,string'(" } "));
+			write (buff,string'(" { "));
 			hexwrite_0 (buff,qc(17 downto 0));
-			write (buff,string'(" "));
+			write (buff,string'(","));
 			hexwrite_0 (buff,qc(35 downto 18));
-			write (buff,string'(" "));
+			write (buff,string'(","));
 			hexwrite_0 (buff,qc(53 downto 36));
-			write (buff,string'("} "));
-			write (buff,string'(" {"));
+			write (buff,string'(" } "));
+			write (buff,string'(" { "));
 			hexwrite_0 (buff,qd(17 downto 0));
-			write (buff,string'(" "));
+			write (buff,string'(","));
 			hexwrite_0 (buff,qd(35 downto 18));
-			write (buff,string'(" "));
+			write (buff,string'(","));
 			hexwrite_0 (buff,qd(53 downto 36));
-			write (buff,string'("} "));
+			write (buff,string'(" } "));
 			writeline(rombuff,buff);
 			wait for tclk;
 		end loop displayRom;	

@@ -1,6 +1,6 @@
 --! @file raytrac.vhd
 --! @brief Descripción del sistema aritmetico usado por raytrac.
---! @author Julián Andrés Guarín Reyes.
+--! @author Juli&acute;n Andr&eacute;s Guar&iacute;n Reyes.
 -- RAYTRAC
 -- Author Julian Andres Guarin
 -- uf.vhd
@@ -19,9 +19,9 @@
 --     You should have received a copy of the GNU General Public License
 --     along with raytrac.  If not, see <http://www.gnu.org/licenses/>.
 
---! Libreria de definicion de senales y tipos estandares, comportamiento de operadores aritmeticos y logicos.\n Signal and types definition library. This library also defines 
+--! Libreria de definicion de senales y tipos estandares, comportamiento de operadores aritmeticos y logicos.
 library ieee;
---! Paquete de definicion estandard de logica. Standard logic definition pack.
+--! Paquete de definicion estandard de logica. 
 use ieee.std_logic_1164.all;
 
 --! Paquete para el manejo de aritmŽtica con signo sobre el tipo std_logic_vector 
@@ -30,17 +30,17 @@ use ieee.std_logic_signed.all;
 --! Paquete estandar de texto
 use std.textio.all;
 
---! Se usaran en esta descripcion los componentes del package arithpack.vhd.\n It will be used in this description the components on the arithpack.vhd package. 
+--! Se usaran en esta descripcion los componentes del package arithpack.vhd. 
 use work.arithpack.all;
 
 
---! uf es la descripción del circuito que realiza la aritmética del Rt Engine.
+--! uf es la descripci&oacute;n del circuito que realiza la aritm&eacute;tica del Rt Engine.
 
---! La entrada opcode indica la operación que se está realizando, en los sumadores, es la misma señal que se encuentra en la entidad opcoder, que selecciona si se está realizando un producto punto o un producto cruz. Dentro de la arquitectura de uf, la señal opcode selecciona en la primera etapa de sumadores, si la operación a realizar será una resta o una suma. 
---! Los resultados estarán en distintas salidas dependiendo de la operación, lo cual es apenas natural: El producto cruz tiene por resultado un vector, mientras que el producto punto tiene por resultado un escalar. 
+--! La entrada opcode indica la operación que se est&acute; realizando, en los sumadores, es la misma señal que se encuentra en la entidad opcoder, que selecciona si se est&acute; realizando un producto punto o un producto cruz. Dentro de la arquitectura de uf, la señal opcode selecciona en la primera etapa de sumadores, si la operación a realizar ser&acute; una resta o una suma. 
+--! Los resultados estar&acute;n en distintas salidas dependiendo de la operación, lo cual es apenas natural: El producto cruz tiene por resultado un vector, mientras que el producto punto tiene por resultado un escalar. 
 --! Esta entidad utiliza las señales de control clk y rst.}
 --! \n\n
---! La característica fundamental de uf, es que puede realizar 2 operaciones de producto punto al mimso tiempo ó una operación de producto cruz al mismo tiempo. La otra característica importante es que el pipe de producto punto es mas largo que el pipe de producto cruz: el producto punto tomará 3 clocks para realizarse, mientras que el procto punto tomara 4 clocks para realizarse.    
+--! La caracter&iacute;stica fundamental de uf, es que puede realizar 2 operaciones de producto punto al mimso tiempo ó una operación de producto cruz al mismo tiempo. La otra caracter&iacute;stica importante es que el pipe de producto punto es mas largo que el pipe de producto cruz: el producto punto tomar&acute; 3 clocks para realizarse, mientras que el procto punto tomara 4 clocks para realizarse.    
 
 entity uf is
 	generic (
@@ -51,7 +51,7 @@ entity uf is
 	port (
 		opcode		: in std_logic; --! Entrada que dentro de la arquitectura funciona como selector de la operación que se lleva a cabo en la primera etapa de sumadores/restadores. 
 		m0f0,m0f1,m1f0,m1f1,m2f0,m2f1,m3f0,m3f1,m4f0,m4f1,m5f0,m5f1 : in std_logic_vector(17 downto 0); --! Entradas que van conectadas a los multiplicadores en la primera etapa de la descripción.  
-		cpx,cpy,cpz,dp0,dp1 : out std_logic_vector(31 downto 0); --! Salidas donde se registran los resultados de las operaciones aritméticas: cpx,cpy,cpz serán los componentes del vector que da por resultado el producto cruz entre los vectores AxB ó CxD.  
+		cpx,cpy,cpz,dp0,dp1 : out std_logic_vector(31 downto 0); --! Salidas donde se registran los resultados de las operaciones aritm&eacute;ticas: cpx,cpy,cpz ser&acute;n los componentes del vector que da por resultado el producto cruz entre los vectores AxB ó CxD.  
 		clk,rst		: in std_logic --! Las entradas de control usuales.  
 	);
 end uf;
@@ -71,8 +71,8 @@ architecture uf_arch of uf is
 	signal stageSRopcode : std_logic; --! Señal proveniente del opcode que selecciona si los sumadores deben ejecutar una resta o una suma dependiendo de la operación que se ejecute en ese momento del pipe.  
 	
 	-- Some support signals
-	signal stage1_internalCarry	: std_logic_vector(2 downto 0); --! Cada uno de los 3 sumadores de la etapa de sumadores está compuesto de una cascada de 2 sumadores Carry Look Ahead: aXhigh y aXlow. El carry out del componente low y el carry in del componente high, se conectará a través de las señales internal carry.   
-	signal stage2_internalCarry : std_logic_vector(1 downto 0); --! Cada uno de los 2 sumadores de la última etapa de sumadores está compuesto de una cascada de 2 sumadores Carry Look AheadÑ: aXhigh y aXlow. El carry out del componente low y el carry in del componente high, se conectará a través de las señales internal carry.  
+	signal stage1_internalCarry	: std_logic_vector(2 downto 0); --! Cada uno de los 3 sumadores de la etapa de sumadores est&acute; compuesto de una cascada de 2 sumadores Carry Look Ahead: aXhigh y aXlow. El carry out del componente low y el carry in del componente high, se conectar&acute; a trav&eacute;s de las señales internal carry.   
+	signal stage2_internalCarry : std_logic_vector(1 downto 0); --! Cada uno de los 2 sumadores de la última etapa de sumadores est&acute; compuesto de una cascada de 2 sumadores Carry Look AheadÑ: aXhigh y aXlow. El carry out del componente low y el carry in del componente high, se conectar&acute; a trav&eacute;s de las señales internal carry.  
 	
 	--Stage 2 signals	
 	signal stage2a0, stage2a2, stage2a3, stage2a4, stage2p2, stage2p3 : std_logic_vector (31 downto 0); --! Estas señales corresponden a los sumandos derivados de la primera etapa de multiplicadores (stage2p2, stage2p3) y a los sumandos derivados del resultado de las sumas en la primera etapa de sumadores. 
@@ -307,7 +307,7 @@ begin
 	
 	-- Looking into the design the stage 1 to stage 2 are the sequences pipe stages that must be controlled in this particular HDL.
 	--! Este proceso describe la manera en que se organizan las etapas de pipe.
-	--! Todas las señales internas en las etapas de pipe, en el momento en que la entrada rst alcanza el nivel rstMasterValue, se colocan en '0'. Nótese que, salvo stageMopcode<=stageSRopcode, las señales que vienen desde la entrada hacia los multiplicadores en la etapa 0 y desde la salida de los multiplicadores desde la etapa0 hacia la etapa 1, no están siendo descritas en este proceso, la explicación de es simple: Los multiplicadores que se están instanciado tienen registros a la entrada y la salida, permitiendo así, registrar las entradas y registrar los productos o salidas de los  multiplicadores, hacia la etapa 1 o etapa de sumadores/restadores. 
+	--! Todas las señales internas en las etapas de pipe, en el momento en que la entrada rst alcanza el nivel rstMasterValue, se colocan en '0'. Nótese que, salvo stageMopcode<=stageSRopcode, las señales que vienen desde la entrada hacia los multiplicadores en la etapa 0 y desde la salida de los multiplicadores desde la etapa0 hacia la etapa 1, no est&acute;n siendo descritas en este proceso, la explicación de es simple: Los multiplicadores que se est&acute;n instanciado tienen registros a la entrada y la salida, permitiendo as&iacute;, registrar las entradas y registrar los productos o salidas de los  multiplicadores, hacia la etapa 1 o etapa de sumadores/restadores. 
 	
 	uf_seq: process (clk,rst)
 	begin
@@ -341,7 +341,7 @@ begin
 		tbproc0:
 		process
 			variable buff : line;
-			file mbuff : text open write_mode is "TRACE_multiplier_content";
+			file mbuff : text open write_mode is "TRACE_multiplier_content.csv";
 		begin
 		write(buff,string'("UF multipliers test benching"));
 		writeline(mbuff, buff);
@@ -371,7 +371,7 @@ begin
 		tbproc1:
 		process
 			variable buff : line;
-			file fbuff : text open write_mode is "TRACE_decoded_factors_content";
+			file fbuff : text open write_mode is "TRACE_decoded_factors_content.csv";
 		begin
 			
 			write(buff,string'("UF factors decoded test benching"));
@@ -383,25 +383,31 @@ begin
 			displayRom:
 			loop
 				write (buff,now,unit =>ns);				
-				write (buff,string'(" {"));
+				write (buff,string'(" { "));
 				hexwrite_0 (buff,m0f0(17 downto 0));
+				write (buff,string'(","));
 				hexwrite_0 (buff,m0f1(17 downto 0));
-				write (buff,string'("} {"));
+				write (buff,string'(" } { "));
 				hexwrite_0 (buff,m1f0(17 downto 0));
+				write (buff,string'(","));
 				hexwrite_0 (buff,m1f1(17 downto 0));
-				write (buff,string'("} {"));
+				write (buff,string'(" } { "));
 				hexwrite_0 (buff,m2f0(17 downto 0));
+				write (buff,string'(","));
 				hexwrite_0 (buff,m2f1(17 downto 0));
-				write (buff,string'("} {"));
+				write (buff,string'(" } { "));
 				hexwrite_0 (buff,m3f0(17 downto 0));
+				write (buff,string'(","));
 				hexwrite_0 (buff,m3f1(17 downto 0));
-				write (buff,string'("} {"));
+				write (buff,string'(" } { "));
 				hexwrite_0 (buff,m4f0(17 downto 0));
-				hexwrite_0 (buff,m4f1(17 downto 0));
-				write (buff,string'("} {"));
+				write (buff,string'(","));
+			 	hexwrite_0 (buff,m4f1(17 downto 0));
+				write (buff,string'(" } { "));
 				hexwrite_0 (buff,m5f0(17 downto 0));
+				write (buff,string'(","));
 				hexwrite_0 (buff,m5f1(17 downto 0));
-				write (buff,string'("}"));				
+				write (buff,string'(" }"));				
 				writeline(fbuff,buff);
 				wait for tclk;
 			end loop displayRom;			
@@ -410,7 +416,7 @@ begin
 		tbproc2:
 		process
 			variable buff : line;
-			file rbuff : text open write_mode is "TRACE_results_content";
+			file rbuff : text open write_mode is "TRACE_results_content.csv";
 		begin
 			
 			write(buff,string'("UF results test benching"));
@@ -422,17 +428,17 @@ begin
 			displayRom:
 			loop
 				write (buff,now,unit =>ns);				
-				write (buff,string'(" {"));
+				write (buff,string'(" { "));
 				hexwrite_0 (buff,stage1a0(31 downto 0));
-				write (buff,string'(" "));
+				write (buff,string'(","));
 				hexwrite_0 (buff,stage1a1(31 downto 0));
-				write (buff,string'(" "));
+				write (buff,string'(","));
 				hexwrite_0 (buff,stage1a2(31 downto 0));
-				write (buff,string'("} {dp0: "));
+				write (buff,string'(" } dp0,dp1:{ "));
 				hexwrite_0 (buff,stage2a3(31 downto 0));
-				write (buff,string'(",dp1: "));
+				write (buff,string'(","));
 				hexwrite_0 (buff,stage2a4(31 downto 0));
-				write (buff,string'("}"));				
+				write (buff,string'(" }"));				
 				writeline(rbuff,buff);
 				wait for tclk;
 			end loop displayRom;			

@@ -63,27 +63,27 @@ begin
 	sampleproc: process 
 		variable buff : line;
 		file rombuff : text open write_mode is "TRACE_rom_content.csv";
-		
+		variable stop : integer := 0;
 	begin
 		
-		write(buff,string'("ROM memories test benching"));
+		write(buff,string'("#ROM memories test benching"));
 		writeline(rombuff, buff);
+		write(buff,string'("#{Time} {AddressR} {Opc Adc} {Ax,Ay,Az} {Bx,By,Bz} {Cx,Cy,Cz} {Dx,Dy,Dz}"));
+		writeline(rombuff, buff);
+		
 		wait for 5 ns; 
 		wait until rst=not(rstMasterValue);
-		write (buff,now,unit =>ns);
-		write (buff,string'(" "));
-		hexwrite_0 (buff,address(8 downto 0));
-		writeline(rombuff,buff);
 		wait until clock='1';
 		wait for tclk2+tclk4; --! Garantizar la estabilidad de los datos que se van a observar en la salida.
 		displayRom:
 		loop
+			write (buff,string'("{"));
 			write (buff,now,unit =>ns);
-			write (buff,string'(" "));
+			write (buff,string'("}{"));
 			hexwrite_0 (buff,address(8 downto 0));
-			write (buff,string'(" (opcode addcode):("));
+			write (buff,string'("}{"));
 			hexwrite_0 (buff,opadd);
-			write (buff,string'(") { "));
+			write (buff,string'("} { "));
 			hexwrite_0 (buff,qa(17 downto 0));
 			write (buff,string'(","));
 			hexwrite_0 (buff,qa(35 downto 18));
@@ -113,6 +113,17 @@ begin
 			write (buff,string'(" } "));
 			writeline(rombuff,buff);
 			wait for tclk;
+			
+			
+			-- STOP FORREST!
+			if opadd=X"2" and address=X"00"  then
+				if stop=1 then
+					wait;
+				else 
+					stop:=1;
+				end if;
+			end if;
+			
 		end loop displayRom;	
 			
 	end process sampleproc;

@@ -371,7 +371,7 @@ begin
 			write (buff,string'("}"));
 			writeline(mbuff,buff);
 			wait for tclk;
-			if now>=theend then
+			if now>theend then
 				wait;
 			end if;
 		end loop displayRom;
@@ -423,7 +423,7 @@ begin
 				write (buff,string'(" }"));				
 				writeline(fbuff,buff);
 				wait for tclk;
-				if now>=theend then
+				if now>theend then
 					wait;
 				end if;
 			end loop displayRom;			
@@ -462,7 +462,7 @@ begin
 				write (buff,string'(" }"));				
 				writeline(rbuff,buff);
 				wait for tclk;
-				if now>=theend then
+				if now>theend then
 					wait;
 				 end if;
 			end loop displayRom;			

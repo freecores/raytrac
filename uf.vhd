@@ -341,9 +341,12 @@ begin
 		tbproc0:
 		process
 			variable buff : line;
+			variable theend : time :=30815 ns;
 			file mbuff : text open write_mode is "TRACE_multiplier_content.csv";
 		begin
-		write(buff,string'("UF multipliers test benching"));
+		write(buff,string'("#UF multipliers test benching"));
+		writeline(mbuff, buff);
+		write(buff,string'("#{Time} {m0result} {m1result} {m2result} {m3result} {m4result} {m5result}"));
 		writeline(mbuff, buff);
 		wait for 5 ns; 
 		wait until rst=not(rstMasterValue);
@@ -351,21 +354,26 @@ begin
 		wait for tclk2+tclk4; --! Garantizar la estabilidad de los datos que se van a observar en la salida.
 		displayRom:
 		loop
+			write (buff,string'("{"));			
 			write (buff,now,unit =>ns);
-			write (buff,string'(" "));
+			write (buff,string'("}{"));
 			hexwrite_0 (buff,stage1p0(31 downto 0));
-			write (buff,string'(" "));
+			write (buff,string'("}{"));
 			hexwrite_0 (buff,stage1p1(31 downto 0));
-			write (buff,string'(" "));
+			write (buff,string'("}{"));
 			hexwrite_0 (buff,stage1p2(31 downto 0));
-			write (buff,string'(" "));
+			write (buff,string'("}{"));
 			hexwrite_0 (buff,stage1p1(31 downto 0));
-			write (buff,string'(" "));
+			write (buff,string'("}{"));
 			hexwrite_0 (buff,stage1p4(31 downto 0));
-			write (buff,string'(" "));
+			write (buff,string'("}{"));
 			hexwrite_0 (buff,stage1p5(31 downto 0));
+			write (buff,string'("}"));
 			writeline(mbuff,buff);
 			wait for tclk;
+			if now>=theend then
+				wait;
+			end if;
 		end loop displayRom;
 		end process tbproc0;
 		tbproc1:
@@ -374,7 +382,9 @@ begin
 			file fbuff : text open write_mode is "TRACE_decoded_factors_content.csv";
 		begin
 			
-			write(buff,string'("UF factors decoded test benching"));
+			write(buff,string'("#UF factors decoded test benching"));
+			writeline(fbuff, buff);
+			write(buff,string'("#{Time} {m0f0,m0f1}{m1f0,m1f1}{m2f0,m2f1}{m3f0,m3f1}{m4f0,m4f1}{m5f0,m5f1}"));
 			writeline(fbuff, buff);
 			wait for 5 ns; 
 			wait until rst=not(rstMasterValue);
@@ -382,7 +392,9 @@ begin
 			wait for tclk2+tclk4; --! Garantizar la estabilidad de los datos que se van a observar en la salida.
 			displayRom:
 			loop
-				write (buff,now,unit =>ns);				
+				write (buff,string'(" { "));
+				write (buff,now,unit =>ns);	
+				write (buff,string'(" } "));			
 				write (buff,string'(" { "));
 				hexwrite_0 (buff,m0f0(17 downto 0));
 				write (buff,string'(","));
@@ -419,24 +431,28 @@ begin
 			file rbuff : text open write_mode is "TRACE_results_content.csv";
 		begin
 			
-			write(buff,string'("UF results test benching"));
+			write(buff,string'("#UF results test benching"));
 			writeline(rbuff, buff);
+			write(buff,string'("#{Time} {CPX,CPY,CPZ}{DP0,DP1}"));
+			writeline(rbuff, buff);
+			
 			wait for 5 ns; 
 			wait until rst=not(rstMasterValue);
 			wait until clk='1';
 			wait for tclk2+tclk4; --! Garantizar la estabilidad de los datos que se van a observar en la salida.
 			displayRom:
 			loop
-				write (buff,now,unit =>ns);				
 				write (buff,string'(" { "));
+				write (buff,now,unit =>ns);				
+				write (buff,string'(" }{ "));
 				hexwrite_0 (buff,stage1a0(31 downto 0));
 				write (buff,string'(","));
 				hexwrite_0 (buff,stage1a1(31 downto 0));
 				write (buff,string'(","));
 				hexwrite_0 (buff,stage1a2(31 downto 0));
-				write (buff,string'(" } dp0,dp1:{ "));
+				write (buff,string'(" }{ "));
 				hexwrite_0 (buff,stage2a3(31 downto 0));
-				write (buff,string'(","));
+				write (buff,string'("}{"));
 				hexwrite_0 (buff,stage2a4(31 downto 0));
 				write (buff,string'(" }"));				
 				writeline(rbuff,buff);

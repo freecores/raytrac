@@ -341,7 +341,7 @@ begin
 		tbproc0:
 		process
 			variable buff : line;
-			variable theend : time :=30815 ns;
+			variable theend : time :=30835 ns;
 			file mbuff : text open write_mode is "TRACE_multiplier_content.csv";
 		begin
 		write(buff,string'("#UF multipliers test benching"));
@@ -355,7 +355,7 @@ begin
 		displayRom:
 		loop
 			write (buff,string'("{"));			
-			write (buff,now,unit =>ns);
+			write (buff,now,unit =>ns); 
 			write (buff,string'("}{"));
 			hexwrite_0 (buff,stage1p0(31 downto 0));
 			write (buff,string'("}{"));
@@ -379,6 +379,7 @@ begin
 		tbproc1:
 		process
 			variable buff : line;
+			variable theend : time :=30795 ns;
 			file fbuff : text open write_mode is "TRACE_decoded_factors_content.csv";
 		begin
 			
@@ -422,12 +423,16 @@ begin
 				write (buff,string'(" }"));				
 				writeline(fbuff,buff);
 				wait for tclk;
+				if now>=theend then
+					wait;
+				end if;
 			end loop displayRom;			
 		end process tbproc1;
 		
 		tbproc2:
 		process
 			variable buff : line;
+			variable theend : time :=30855 ns;
 			file rbuff : text open write_mode is "TRACE_results_content.csv";
 		begin
 			
@@ -457,6 +462,9 @@ begin
 				write (buff,string'(" }"));				
 				writeline(rbuff,buff);
 				wait for tclk;
+				if now>=theend then
+					wait;
+				 end if;
 			end loop displayRom;			
 		end process tbproc2;	
 

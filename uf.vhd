@@ -363,7 +363,7 @@ begin
 			write (buff,string'("}{"));
 			hexwrite_0 (buff,stage1p2(31 downto 0));
 			write (buff,string'("}{"));
-			hexwrite_0 (buff,stage1p1(31 downto 0));
+			hexwrite_0 (buff,stage1p3(31 downto 0));
 			write (buff,string'("}{"));
 			hexwrite_0 (buff,stage1p4(31 downto 0));
 			write (buff,string'("}{"));

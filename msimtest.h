@@ -18,10 +18,10 @@
 #define RESULT_LINES 1540 
 
 typedef struct altrom {
-	long int rom[ROM_SLOTS];
-	long int dec[DEC_SLOTS];
-	long int mul[MUL_SLOTS];
-	long int res[RESULT_SLOTS];
+	long long int rom[ROM_SLOTS];
+	long long int dec[DEC_SLOTS];
+	long long int mul[MUL_SLOTS];
+	long long int res[RESULT_SLOTS];
 	
 	
 }altrom_reg;

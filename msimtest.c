@@ -67,7 +67,7 @@ ssize_t getline(char ** lptr, size_t n, FILE * stream){
 		
 	} while (1);	
 }
-#define ONEPAD(x,s) x |= (1<<(s-1))&x?(-1<<s):0 
+#define ONEPAD(x,s) x |= (1<<(s-1))&x?(((long long int)-1)<<s):0 
 void onespadding(int s){
 	
 	
@@ -85,7 +85,7 @@ void vph(void*v,void*r,char e){
 	//find {
 	char ** pv=(char**)v;
 	char * c=pv[0];
-	long int * Pv=r;
+	long long int * Pv=r;
 	
 	//SEARCHTOKEN(c,s);
 	*Pv=0;
@@ -104,7 +104,7 @@ void vpi(void*v,void*r,char e){
 	
 	char ** pv=(char**)v;
 	char * c=pv[0];
-	long int * Pv=r;
+	long long int * Pv=r;
 	
 	//SEARCHTOKEN(c,s);
 	*Pv=0;
@@ -167,7 +167,7 @@ void quickgetfile(int i){
 
 	long int * slot[]={&innuendo[0].rom[0],&innuendo[0].dec[0],&innuendo[0].mul[0],&innuendo[0].res[0]};
 	
-	long int * xslot=slot[i];
+	long long int * xslot=slot[i];
 	vvp * pfunc	= (vvp*)pmodel[i];
 
 	int smodel	= psmodel[i];
@@ -216,7 +216,7 @@ void quickgetfile(int i){
 			}
 			
 		}
-		xslot+=(sizeof(altrom_reg)/4);	
+		xslot+=(sizeof(altrom_reg)/8);	
 		
 				
 		
@@ -227,7 +227,26 @@ void quickgetfile(int i){
 	return;
 	
 }
+void vdisp(void){
+	
+	int index0,index1,op;
+	long long int ms[6];
+	for (index0=0; index0<1535; index0++) {
+		op=innuendo[index0].rom[2];
+		for (index1=0; index1<6; index1++) {
+			ms[index1]=innuendo[index0+1].dec[1+2*index1]*innuendo[index0+1].dec[2+2*index1];
+			ms[index1]>>=4;
+			
+		
+			fprintf(stdout, "T: %d I: %d\n",index1,innuendo[index0+3].mul[0]); 
+			fprintf(stdout,"C: %llx S: %llx\n",ms[index1],(innuendo[index0+3].mul[index1+1]<<32)>>32);
+		}
+		
+	}
 
+
+	
+}
 
 int main (int argc, char ** argv){
 	
@@ -268,7 +287,7 @@ int main (int argc, char ** argv){
 	quickgetfile(1);
 	quickgetfile(2);
 	quickgetfile(3);
-	
+	vdisp();
 	onespadding(18);
 	
 	return 1;

@@ -35,7 +35,7 @@ use work.arithpack.all;
 entity opcoder is 
 	generic (
 		width : integer := 18;
-		structuralDescription : string:= "YES"
+		structuralDescription : string:= "NO"
 	);
 	port (
 		Ax,Bx,Cx,Dx,Ay,By,Cy,Dy,Az,Bz,Cz,Dz : in std_logic_vector (width-1 downto 0);

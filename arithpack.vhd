@@ -164,11 +164,11 @@ package arithpack is
 		lpm_widthp		: natural
 	);
 	port (
-			aclr	: in std_logic ;
-			clock	: in std_logic ;
-			datab	: in std_logic_vector (17 downto 0);
-			dataa	: in std_logic_vector (17 downto 0);
-			result	: out std_logic_vector (31 downto 0)
+		aclr	: in std_logic ;
+		clock	: in std_logic ;
+		datab	: in std_logic_vector (17 downto 0);
+		dataa	: in std_logic_vector (17 downto 0);
+		result	: out std_logic_vector (31 downto 0)
 	);
 	end component;
 
@@ -210,9 +210,37 @@ package arithpack is
 	);	 		
 	end component;
 	
+	--! Entidad raiz cuadrada para enteros de 32 bits. no worries 'jhonny g' aint no thy recepie!. 
+	--! No es una entidad de aproximaci&acute;on, posee: etapa de decodificaci&acute e imparidad;on de direcciones,
+	--! etapa de calculo de la raiz cuadrada mediante memoria, etapa: 
+	component sqrt
+	
+	port (
+		clk,rst :	in std_logic;	-- se&ntilde;ales de control.
+		r		:	in std_logic_vector (31 downto 0);	--radicando
+		s		:	out std_logic_vector (15 downto 0)
+	);
+	end component;
+	
 	--! Procedimiento para escribir std_logic_vectors en formato hexadecimal.
 	procedure hexwrite_0(l:inout line; h: in std_logic_vector);
-	 	
+	
+	
+	component shifter is 
+	generic (
+		address_width	: integer := 9;
+		width			: integer := 12
+	);
+	port (
+		data			: in std_logic_vector(width - 1 downto 0);
+		address 		: out std_logic_vector (address_width-1 downto 0);
+		zero			: out std_logic;
+		maxoneispair	: out std_logic
+	);	
+	end component;
+	
+
+ 	
 end package; 
 
 --! Funciones utilitarias, relacionadas sobre todo con el testbench

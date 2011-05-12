@@ -24,6 +24,7 @@
 library ieee;
 --! Paquete de definicion estandard de logica.
 use ieee.std_logic_1164.all;
+use ieee.math_real.all;
 
 --use ieee.std_logic_unsigned.conv_integer;
 
@@ -228,14 +229,15 @@ package arithpack is
 	
 	component shifter is 
 	generic (
-		address_width	: integer := 9;
-		width			: integer := 12
+		address_width	: integer	:= 9;
+		width			: integer	:= 32;
+		even_shifter	: string	:= "YES"
 	);
 	port (
 		data			: in std_logic_vector(width - 1 downto 0);
+		exp				: out std_logic_vector(integer(ceil(log(real(width),2.0)))-1 downto 0);
 		address 		: out std_logic_vector (address_width-1 downto 0);
-		zero			: out std_logic;
-		maxoneispair	: out std_logic
+		zero			: out std_logic
 	);	
 	end component;
 	

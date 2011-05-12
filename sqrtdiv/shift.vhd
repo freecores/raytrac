@@ -26,55 +26,74 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_arith.all;
 use ieee.std_logic_signed.all;
+use ieee.math_real.all;
 
 
 entity shifter is 
 	generic (
-		address_width	: integer := 9;
-		width			: integer := 32
+		address_width	: integer	:= 9;
+		width			: integer	:= 32;
+		even_shifter	: string	:= "YES"	
+		
 	);
 	port (
 		data			: in std_logic_vector(width - 1 downto 0);
+		exp				: out std_logic_vector(integer(ceil(log(real(width),2.0)))-1 downto 0);
 		address 		: out std_logic_vector (address_width-1 downto 0);
-		zero			: out std_logic;
-		maxoneispair	: out std_logic
+		zero			: out std_logic
 	);	
 end shifter;
 
 architecture shifter_arch of shifter is 
-	signal datamask : std_logic_vector(width+address_width-1 downto 0);
+
+	-- signal datamask : std_logic_vector(width+address_width-1 downto 0);
 begin
-	datamask (width+address_width-1 downto address_width) <= data(width-1 downto 0);
-	datamask (address_width-1 downto 0) <= (others=>'0');
+	-- datamask (width+address_width-1 downto address_width) <= data(width-1 downto 0);
+	-- datamask (address_width-1 downto 0) <= (others=>'0');
 	
 	sanityLost:
-	process (datamask)
-		variable index: integer range 0 to width+address_width-1:=width+address_width-1;
+	process (data)
+		variable index: integer range-1 to width+address_width-1:=width+address_width-1;
 		
 	begin
 		address<=(others=>'0');
-		maxoneispair<='0';
-		sanityWon:
-		for index in width+address_width-1 downto address_width loop
-				
-			if datamask(index)='1' then
-				if (index-address_width) rem 2 = 0 then
-					maxoneispair<='1';
+		exp<=(others=>'0');
+		
+		zero<=data(0);
+		
+		if even_shifter="YES" then
+			index:=width-1;
+		else
+			index:=width-2;
+		end if;
+		
+		while index>=1 loop
+			if data(index)='1' then
+				zero<='0';
+				exp<=CONV_STD_LOGIC_VECTOR(index, exp'high+1);
+				if index>=address_width then
+					address <= data (index-1 downto index-address_width);
+				else
+					address(address_width-1 downto address_width-index) <= data (index-1 downto 0);
+					address(address_width-index-1 downto 0) <= (others =>'0');
 				end if;
-				address(address_width-1 downto 0) <= datamask(index-1 downto index-address_width);
 				exit;
 			end if;
-		end loop sanityWon;
+			index:=index-2; --Boost
+		end loop;
+		
+		
+		
 		
 	end process sanityLost;
-	process (data)
-	begin
-		if data=0 then
-			zero<='1';
-		else
-			zero<='0';
-		end if;
-	end process;
+	-- process (data)
+	-- begin
+		-- if data=0 then
+			-- zero<='1';
+		-- else
+			-- zero<='0';
+		-- end if;
+	-- end process;
 	
 end shifter_arch;
 

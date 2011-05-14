@@ -100,7 +100,7 @@ int f0inv(float x){
 	int I;
 	float fI;
 	fI=(1/x);
-	fprintf (stdout," %f %f ", x, fI);
+	//fprintf (stdout," %f %f ", x, fI);
 	fI*=pow(2,memparam.dec);
 	I=fI;
 	return I;

@@ -30,20 +30,27 @@ struct {
 	int dec;
 	char *initialheader;
 	char *end;
+	int R;
 	
-}memparam={0,0,0,australia,canada};	
+}memparam={0,0,0,australia,canada,0};	
 
 //mpx memparam={0,0,australia};
 
 void optParser(int argc, char ** argv){
 	
 	char a=0;
-	int e=0,d=0,t=0;
+	int e=0,d=0,t=0,s=0,i=0;
 	/*memparam.initialheader=australia;
 	memparam.width=0;
 	memparam.depth=0;*/
-	while ((a=getopt(argc,argv,"t:e:d:"))!=-1){
+	while ((a=getopt(argc,argv,"t:e:d:Rr"))!=-1){
 		switch(a){
+			case 'R': //Raiz Cuadrada
+				memparam.R=1;
+				break;
+			case 'r': //random
+				memparam.R=2;
+				break;
 			case 't':
 				if (t){
 					fprintf (stdout, "error:Doble parametro t...\n");
@@ -89,19 +96,45 @@ void optParser(int argc, char ** argv){
 int hexreq(long int x){
 	return ((int)(log2(x)/4))+1;
 }
+int f0inv(float x){ 
+	int I;
+	float fI;
+	fI=(1/x);
+	fprintf (stdout," %f %f ", x, fI);
+	fI*=pow(2,memparam.dec);
+	I=fI;
+	return I;
+}
 
+int f1sqrt(float x){
+	int S;
+	float fS;
+	fS=(sqrt(x)*pow(2,memparam.dec));
+	S=fS;
+	return S;
+}
 
+int f2random(float x){
+	int mask=pow(2,memparam.width+1)-1;
+	return random()&mask; 
+}
+typedef int (*ff2i)(float);
 void generatenums(void){
 	
 	int index;
 	unsigned long int factor;
-	float ffactor;
+	float ffactor,epsilon;
 	char buff[1024],sign;
-	int mask=pow(2,memparam.width+1)-1, depthpfw=hexreq(memparam.depth),widthpfw=((int)(memparam.width/4))+(memparam.width%4?1:0);
+	ff2i xf[]={f0inv,f1sqrt,f2random};
+	int depthpfw=hexreq(memparam.depth);
+	int widthpfw=((int)(memparam.width/4))+(memparam.width%4?1:0);
 	srandom(time(0));
+	epsilon=1/(float)memparam.depth;
+	
+	fprintf(stdout,"-- epsilon: %f\n",epsilon);
 	for(index=0;index<memparam.depth ;index++){
-		factor=random()&mask;
-		sign=(factor&(1<<memparam.width))?'-':'+';
+		factor=xf[memparam.R](1+index*epsilon);
+		sign=memparam.R==2?((factor&(1<<memparam.width))?'-':'+'):'+';
 		ffactor=(factor&(1<<memparam.width))?(factor^(int)(pow(2,memparam.width+1)-1))+1:factor;
 		ffactor/=pow(2,memparam.dec);
 		memset(buff,0,1024);

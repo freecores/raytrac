@@ -1,6 +1,6 @@
 /*
- *  msimtest.c
- *  memoryMaker
+ *! \file msimtest.c
+ *  \brief Archivo de cabecera de mismtest. Este programa tiene por proposito verificar que los resultados arrojados por la ejecuci&oacute;n del testbench sean validos. Este programa est&aacute; muy mal escrito. Por favor no lo tome como referencia de ninguna manera, esta HORRIBLEMENTE escrito!.
  *
  *  Created by julian on 21/03/11.
  *  Copyright 2011 __MyCompanyName__. All rights reserved.

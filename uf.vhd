@@ -1,5 +1,5 @@
 --! @file raytrac.vhd
---! @brief Descripción del sistema aritmetico usado por raytrac.
+--! @brief Descripci&oacute;n del sistema aritmetico usado por raytrac.
 --! @author Juli&acute;n Andr&eacute;s Guar&iacute;n Reyes.
 -- RAYTRAC
 -- Author Julian Andres Guarin
@@ -34,13 +34,13 @@ use std.textio.all;
 use work.arithpack.all;
 
 
---! uf es la descripci&oacute;n del circuito que realiza la aritm&eacute;tica del Rt Engine.
+--! uf es la descripci&oacute;on del circuito que realiza la aritm&eacute;tica del Rt Engine.
 
---! La entrada opcode indica la operación que se est&acute; realizando, en los sumadores, es la misma señal que se encuentra en la entidad opcoder, que selecciona si se est&acute; realizando un producto punto o un producto cruz. Dentro de la arquitectura de uf, la señal opcode selecciona en la primera etapa de sumadores, si la operación a realizar ser&acute; una resta o una suma. 
---! Los resultados estar&acute;n en distintas salidas dependiendo de la operación, lo cual es apenas natural: El producto cruz tiene por resultado un vector, mientras que el producto punto tiene por resultado un escalar. 
---! Esta entidad utiliza las señales de control clk y rst.}
+--! La entrada opcode indica la operaci&oacute;n que se est&aacute; realizando, en los sumadores, es la misma se&ntilde;al que se encuentra en la entidad opcoder, que selecciona si se est&aacute; realizando un producto punto o un producto cruz. Dentro de la arquitectura de uf, la se&ntilde;al opcode selecciona en la primera etapa de sumadores, si la operaci&oacute;n a realizar ser&aacute; una resta o una suma. 
+--! Los resultados estar&acute;n en distintas salidas dependiendo de la operaci&oacute;n, lo cual es apenas natural: El producto cruz tiene por resultado un vector, mientras que el producto punto tiene por resultado un escalar. 
+--! Esta entidad utiliza las se&ntilde;ales de control clk y rst.
 --! \n\n
---! La caracter&iacute;stica fundamental de uf, es que puede realizar 2 operaciones de producto punto al mimso tiempo ó una operación de producto cruz al mismo tiempo. La otra caracter&iacute;stica importante es que el pipe de producto punto es mas largo que el pipe de producto cruz: el producto punto tomar&acute; 3 clocks para realizarse, mientras que el procto punto tomara 4 clocks para realizarse.    
+--! La caracter&iacute;stica fundamental de uf, es que puede realizar 2 operaciones de producto punto al mimso tiempo &oacute; una operaci&oacute;n de producto cruz. La otra caracter&iacute;stica importante es que el pipe de producto punto es mas largo que el pipe de producto cruz: el producto punto tomar&acute; 3 clocks para realizarse, mientras que el procto punto tomara 4 clocks para realizarse.    
 
 entity uf is
 	generic (
@@ -49,9 +49,9 @@ entity uf is
 			carry_logic : string := "CLA"
 	);
 	port (
-		opcode		: in std_logic; --! Entrada que dentro de la arquitectura funciona como selector de la operación que se lleva a cabo en la primera etapa de sumadores/restadores. 
-		m0f0,m0f1,m1f0,m1f1,m2f0,m2f1,m3f0,m3f1,m4f0,m4f1,m5f0,m5f1 : in std_logic_vector(17 downto 0); --! Entradas que van conectadas a los multiplicadores en la primera etapa de la descripción.  
-		cpx,cpy,cpz,dp0,dp1 : out std_logic_vector(31 downto 0); --! Salidas donde se registran los resultados de las operaciones aritm&eacute;ticas: cpx,cpy,cpz ser&acute;n los componentes del vector que da por resultado el producto cruz entre los vectores AxB ó CxD.  
+		opcode		: in std_logic; --! Entrada que dentro de la arquitectura funciona como selector de la operaci&oacute;n que se lleva a cabo en la primera etapa de sumadores/restadores. 
+		m0f0,m0f1,m1f0,m1f1,m2f0,m2f1,m3f0,m3f1,m4f0,m4f1,m5f0,m5f1 : in std_logic_vector(17 downto 0); --! Entradas que van conectadas a los multiplicadores en la primera etapa de la descripci&oacute;n.  
+		cpx,cpy,cpz,dp0,dp1 : out std_logic_vector(31 downto 0); --! Salidas donde se registran los resultados de las operaciones aritm&eacute;ticas: cpx,cpy,cpz ser&acute;n los componentes del vector que da por resultado el producto cruz entre los vectores AxB &oacute; CxD.  
 		clk,rst		: in std_logic --! Las entradas de control usuales.  
 	);
 end uf;
@@ -68,7 +68,7 @@ architecture uf_arch of uf is
 	
 	signal stage1p0, stage1p1, stage1p2, stage1p3, stage1p4, stage1p5 : std_logic_vector (31 downto 0); --! Señales provenientes de los productos de la etapa previa de multiplicadores.
 	signal stage1a0, stage1a1, stage1a2 : std_logic_vector (31 downto 0); --! Señales / buses, con los resultados de los sumadores. 
-	signal stageSRopcode : std_logic; --! Señal proveniente del opcode que selecciona si los sumadores deben ejecutar una resta o una suma dependiendo de la operación que se ejecute en ese momento del pipe.  
+	signal stageSRopcode : std_logic; --! Señal proveniente del opcode que selecciona si los sumadores deben ejecutar una resta o una suma dependiendo de la operaci&oacute;n que se ejecute en ese momento del pipe.  
 	
 	-- Some support signals
 	signal stage1_internalCarry	: std_logic_vector(2 downto 0); --! Cada uno de los 3 sumadores de la etapa de sumadores est&acute; compuesto de una cascada de 2 sumadores Carry Look Ahead: aXhigh y aXlow. El carry out del componente low y el carry in del componente high, se conectar&acute; a trav&eacute;s de las señales internal carry.   
@@ -307,7 +307,7 @@ begin
 	
 	-- Looking into the design the stage 1 to stage 2 are the sequences pipe stages that must be controlled in this particular HDL.
 	--! Este proceso describe la manera en que se organizan las etapas de pipe.
-	--! Todas las señales internas en las etapas de pipe, en el momento en que la entrada rst alcanza el nivel rstMasterValue, se colocan en '0'. Nótese que, salvo stageMopcode<=stageSRopcode, las señales que vienen desde la entrada hacia los multiplicadores en la etapa 0 y desde la salida de los multiplicadores desde la etapa0 hacia la etapa 1, no est&acute;n siendo descritas en este proceso, la explicación de es simple: Los multiplicadores que se est&acute;n instanciado tienen registros a la entrada y la salida, permitiendo as&iacute;, registrar las entradas y registrar los productos o salidas de los  multiplicadores, hacia la etapa 1 o etapa de sumadores/restadores. 
+	--! Todas las señales internas en las etapas de pipe, en el momento en que la entrada rst alcanza el nivel rstMasterValue, se colocan en '0'. N&oacute;tese que, salvo stageMopcode<=stageSRopcode, las señales que vienen desde la entrada hacia los multiplicadores en la etapa 0 y desde la salida de los multiplicadores desde la etapa0 hacia la etapa 1, no est&acute;n siendo descritas en este proceso, la explicaci&oacute;n de es simple: Los multiplicadores que se est&acute;n instanciado tienen registros a la entrada y la salida, permitiendo as&iacute;, registrar las entradas y registrar los productos o salidas de los  multiplicadores, hacia la etapa 1 o etapa de sumadores/restadores. 
 	
 	uf_seq: process (clk,rst)
 	begin

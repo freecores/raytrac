@@ -37,7 +37,7 @@ entity shifter2xstage is
 		data	: in std_logic_vector (width-1 downto 0);
 		exp		: out std_logic_vector (2*integer(ceil(log(real(width),2.0)))-1 downto 0);
 		add		: out std_logic_vector (2*address_width-1 downto 0);
-		zero	: out std_logic_vector (1 downto 0)
+		zero	: out std_logic
 	);
 end shifter2xstage;
 
@@ -47,15 +47,16 @@ architecture shifter2xstage_arch of shifter2xstage is
 	signal exp1	: std_logic_vector (integer(ceil(log(real(width),2.0)))-1 downto 0);
 	signal add0	: std_logic_vector (address_width-1 downto 0);
 	signal add1	: std_logic_vector (address_width-1 downto 0);
+	signal szero: std_logic_vector (1 downto 0);
 
 begin
-
+	zero <= szero(1) and szero(0);
 	evenS:shifter
 	generic map (address_width,width,"YES")
-	port map (data,exp0,add0,zero(0));
+	port map (data,exp0,add0,szero(0));
 	oddS:shifter
 	generic map (address_width,width,"NO")
-	port map (data,exp1,add1,zero(1));
+	port map (data,exp1,add1,szero(1));
 	exp(integer(ceil(log(real(width),2.0)))-1 downto 0)<=exp0;
 	exp(2*integer(ceil(log(real(width),2.0)))-1 downto integer(ceil(log(real(width),2.0))))<=exp1;
 	add(address_width-1 downto 0)<=add0;

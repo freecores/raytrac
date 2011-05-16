@@ -37,7 +37,7 @@ entity adder is
 	);
 end adder;
 
---! @brief arquitectura del sumador
+--! @brief 	Arquitectura del sumador
 architecture adder_arch of adder is 
 
 	signal sa,p,g:	std_logic_vector(width-1 downto 0);
@@ -66,7 +66,7 @@ begin
 	p<= sa or b;
 	
 	
-	--! Si se configura una se&ntilde;al para seleccionar entre suma y resta, se generar&oacute; el circuito a continuaci&oacute;n.
+	--! Si se configura una se&ntilde;al para seleccionar entre suma y resta, se generar&aacute; el circuito a continuaci&oacute;n.
 	
 	adder_sub_logic :	-- adder substractor logic
 	if substractor_selector = "YES" generate

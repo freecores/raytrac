@@ -29,6 +29,7 @@ use ieee.std_logic_signed.all;
 use ieee.math_real.all;
 
 
+--! \brief Dado que cualquier n&uacute;mero entero A, se puede escribir 2^n * f, es importante obtener una representaci&oacute;n del valor de f en base 2. Una vez hallado este valor y evaluado en una funci&oacute;n bastara con realizar un corrimiento a la izquierda n bits del resultado, para calcular funciones como A^-1 o A^0.5.
 entity shifter is 
 	generic (
 		address_width	: integer	:= 9;
@@ -46,10 +47,7 @@ end shifter;
 
 architecture shifter_arch of shifter is 
 
-	-- signal datamask : std_logic_vector(width+address_width-1 downto 0);
 begin
-	-- datamask (width+address_width-1 downto address_width) <= data(width-1 downto 0);
-	-- datamask (address_width-1 downto 0) <= (others=>'0');
 	
 	sanityLost:
 	process (data)
@@ -86,14 +84,7 @@ begin
 		
 		
 	end process sanityLost;
-	-- process (data)
-	-- begin
-		-- if data=0 then
-			-- zero<='1';
-		-- else
-			-- zero<='0';
-		-- end if;
-	-- end process;
+	
 	
 end shifter_arch;
 

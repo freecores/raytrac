@@ -35,7 +35,7 @@ use ieee.math_real.all;
 
 entity RLshifter is
 	generic (
-		shiftFunction	: string  := "SQUARE_ROOT"; 
+		shiftFunction	: string  := "INVERSION"; 
 		mantissa_width	: integer := 18;
 		width			: integer := 32
 		
@@ -51,39 +51,28 @@ end RLshifter;
 architecture RLshifter_arch of RLshifter is
 begin
 
-	leftShift:
-	if shiftFunction="SQUARE_ROOT" generate
-		sqroot:
-		process (mantis, exp)
-			variable expi : integer;
-		begin
-			expi := conv_integer(exp);
-			lupe:
-			for i in width-1 downto 0 loop
+	inverse:
+	process (mantis,exp)
+		variable expi : integer ;
+	begin
+		expi:= conv_integer(exp);
+		
+		for i in width-1 downto 0 loop
+			
+			if shiftFunction="INVERSION" then 			
+				if i<=width-1-expi and i>=width-expi-mantissa_width then
+					result(i)<=mantis(mantissa_width-width+expi+i);
+				else
+					result(i)<='0';
+				end if;
+			end if;				
+			if shiftFunction="SQUARE_ROOT" then 
 				if i>expi then 
 					result(i)<='0';
 				else
-					result(i)<=mantis(mantissa_width-1-expi+i);
+					result(i)<=mantis(mantissa_width-1-expi+i);					
 				end if;
-			end loop lupe;
-		end process sqroot;
-	end generate leftShift;
-	rightShift:
-	if shiftFunction="INVERSION" generate
-		inverse:
-		process (mantis,exp)
-			variable expi : integer ;
-		begin
-			expi:= conv_integer(exp);
-			
-			for i in width-1 downto 0 loop
-				if i<=width-1-expi and i>=width-expi-mantissa_width then
-					result(i)
-					<=mantis(mantissa_width-width+expi+i);
-				else
-					result(i)<='0';
-				end if;
-			end loop;
-		end process inverse;
-	end generate rightShift;
+			end if;								
+		end loop;
+	end process inverse;
 end RLshifter_arch; 

@@ -26,14 +26,16 @@
 
 library ieee;
 use ieee.std_logic_1164.all;
+use ieee.std_logic_arith.all;
 use ieee.std_logic_unsigned.all;
-use work.arithpack.all;
+use ieee.math_real.all;
+--use work.arithpack.all;
 
 
 
 entity RLshifter is
 	generic (
-		shiftFunction	: string  := "SQUARE_ROOT" 
+		shiftFunction	: string  := "SQUARE_ROOT"; 
 		mantissa_width	: integer := 18;
 		width			: integer := 32
 		
@@ -51,34 +53,37 @@ begin
 
 	leftShift:
 	if shiftFunction="SQUARE_ROOT" generate
-	
 		sqroot:
 		process (mantis, exp)
-			variable expi : integer := conv_integer(exp);
+			variable expi : integer;
 		begin
-			result(width-1 downto expi+1)	<= (others=>'0');
-			result(expi	downto 0)			<= mantissa(mantissa_width-1 downto mantissa_width-1-exp);
-		end sqroot;
-	
+			expi := conv_integer(exp);
+			lupe:
+			for i in width-1 downto 0 loop
+				if i>expi then 
+					result(i)<='0';
+				else
+					result(i)<=mantis(mantissa_width-1-expi+i);
+				end if;
+			end loop lupe;
+		end process sqroot;
 	end generate leftShift;
-	
 	rightShift:
 	if shiftFunction="INVERSION" generate
-	
 		inverse:
 		process (mantis,exp)
-			variable expi : integer := conv_integer(exp);
+			variable expi : integer ;
 		begin
-			if expi>0 then
-				result (width-1 downto width-expi) <= (others => '0');
-			end if;
-			if mantissa_width+expi<width then
-				result (width-1-expi downto width-mantissa_width) <= mantisa(mantissa_width-1 downto 0);
-				result (width-mantissa_width-1 downto 0) <= (others => '0');
-			else	
-				result (width-1-expi downto 0) <= mantisa(mantisa_width-1 downto mantissa_width-width+expi);
-			end if;
-		
-		end inverse;
-
+			expi:= conv_integer(exp);
+			
+			for i in width-1 downto 0 loop
+				if i<=width-1-expi and i>=width-expi-mantissa_width then
+					result(i)
+					<=mantis(mantissa_width-width+expi+i);
+				else
+					result(i)<='0';
+				end if;
+			end loop;
+		end process inverse;
+	end generate rightShift;
 end RLshifter_arch; 

@@ -70,16 +70,15 @@ begin
 			variable expi : integer := conv_integer(exp);
 		begin
 			if expi>0 then
-				result (width-1 downto width-expi) <= (others =>'0');
-				if expi+mantissa_width<width then 
-					result (width-expi-1 downto width-expi-mantissa_width) <= mantis(mantissa_width-1 downto 0);
-					result (width-expi-mantissa_width-1 downto 0) <= (others=>'0');
-				else
-					result (width-expi-1 downto 0) <= mantis(mantissa_width-1 downto mantissa_width+expi-width);
-				end if; 
-			else
-				result (width-1 downto width-mantissa_width) <= mantis(mantissa_width-1 downto 0);
-				
+				result (width-1 downto width-expi) <= (others => '0');
+			end if;
+			if mantissa_width+expi<width then
+				result (width-1-expi downto width-mantissa_width) <= mantisa(mantissa_width-1 downto 0);
+				result (width-mantissa_width-1 downto 0) <= (others => '0');
+			else	
+				result (width-1-expi downto 0) <= mantisa(mantisa_width-1 downto mantissa_width-width+expi);
+			end if;
+		
 		end inverse;
 
 end RLshifter_arch; 

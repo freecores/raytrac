@@ -35,7 +35,7 @@ use ieee.math_real.all;
 
 entity RLshifter is
 	generic (
-		shiftFunction	: string  := "INVERSION"; 
+		shiftFunction	: string  := "SQUARE_ROOT"; 
 		mantissa_width	: integer := 18;
 		width			: integer := 32
 		
@@ -58,21 +58,24 @@ begin
 		expi:= conv_integer(exp);
 		
 		for i in width-1 downto 0 loop
-			
+
+			result(i)<='0';			
+
 			if shiftFunction="INVERSION" then 			
 				if i<=width-1-expi and i>=width-expi-mantissa_width then
 					result(i)<=mantis(mantissa_width-width+expi+i);
-				else
-					result(i)<='0';
 				end if;
 			end if;				
+
 			if shiftFunction="SQUARE_ROOT" then 
-				if i>expi then 
-					result(i)<='0';
-				else
+				if i<=expi then 
 					result(i)<=mantis(mantissa_width-1-expi+i);					
 				end if;
 			end if;								
+
 		end loop;
+
 	end process inverse;
+
 end RLshifter_arch; 
+

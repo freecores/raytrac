@@ -31,7 +31,7 @@ use work.arithpack.all;
 entity shifter2xstage is 
 	generic (
 		address_width	: integer := 9;
-		width			: integer := 16
+		width			: integer := 32
 	);
 	port (
 		data	: in std_logic_vector (width-1 downto 0);
@@ -48,14 +48,33 @@ architecture shifter2xstage_arch of shifter2xstage is
 	signal add0	: std_logic_vector (address_width-1 downto 0);
 	signal add1	: std_logic_vector (address_width-1 downto 0);
 	signal szero: std_logic_vector (1 downto 0);
+	
+	function exp0StringParam()return string is
+	begin
+		if width rem 2 = 0 then 
+			return "NO";
+		else
+			return "YES";
+		end if; 
+	end exp0StringParam;
+	function exp1StringParam()return string is
+	begin
+		if width rem 2 = 0 then 
+			return "YES";
+		else
+			return "NO";
+		end if; 
+	end exp1StringParam;
+	
+	
 
 begin
 	zero <= szero(1) and szero(0);
 	evenS:shifter
-	generic map (address_width,width,"YES")
+	generic map (address_width,width,exp0StringParam())
 	port map (data,exp0,add0,szero(0));
 	oddS:shifter
-	generic map (address_width,width,"NO")
+	generic map (address_width,width,exp1StringParam())
 	port map (data,exp1,add1,szero(1));
 	exp(integer(ceil(log(real(width),2.0)))-1 downto 0)<=exp0;
 	exp(2*integer(ceil(log(real(width),2.0)))-1 downto integer(ceil(log(real(width),2.0))))<=exp1;

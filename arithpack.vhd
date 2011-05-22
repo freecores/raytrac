@@ -225,9 +225,9 @@ package arithpack is
 	
 	--! Procedimiento para escribir std_logic_vectors en formato hexadecimal.
 	procedure hexwrite_0(l:inout line; h: in std_logic_vector);
-	
-	
-	component shifter is 
+
+	--! SqrtDiv Unit::shifter, esta unidad transforma el n&uacute;mero entero A, en terminos de 2^N * m = A. El literal m corresponde al valor de la mantissa. En terminos de representaci'on binaria, la mantissa es el valor de la direcci'on de memoria que contiene el valor f(mantissa). El literal N corresponde al valor entero mayor m'as cercano del logaritmo en base 2 del n'umero entero A.
+	component shifter  
 	generic (
 		address_width	: integer	:= 9;
 		width			: integer	:= 32;
@@ -241,7 +241,32 @@ package arithpack is
 	);	
 	end component;
 	
-
+	--! SqrtDiv Unit::func, func, es una memoria que almacena alguna funci'on en el rango de [1,2). Los valores de la funci'on evaluada en este rango se encuentran almacenados en una memoria ROM que seleccione el desarrollador. 
+	component  func 
+	generic (
+		memoryfilepath : string :="X:/Tesis/Workspace/hw/rt_lib/arith/src/trunk/sqrtdiv/memsqrt.mif"
+	);
+	port (
+		ad0,ad1 : in std_logic_vector (8 downto 0);
+		clk : in std_logic;
+		q0,q1 ; : out std_logic_vector(17 downto 0)
+	);
+	end component;
+	--! SqrtDiv Unit::shifter2xstage, esta unidad funciona tal cual la unidad shifter, pero al doble de la velocidad. El problema es que la entidad entrega dos valores de N: exp es un std_logic_vector la primera mitad entregar'a exp0 y la mitad mas significativa ser'a exp1. 
+	--! De estos dos valores no signados, el valor que representa a N es el mayor de los 2. As'i mismo ocurre con las mantissas. Si el exp0 es mayor que exp1 se escoge add0 en vez de add1 y viceversa.
+	 
+	component shifter2xstage is 
+	generic (
+		address_width	: integer := 9;
+		width			: integer := 32
+	);
+	port (
+		data	: in std_logic_vector (width-1 downto 0);
+		exp		: out std_logic_vector (2*integer(ceil(log(real(width),2.0)))-1 downto 0);
+		add		: out std_logic_vector (2*address_width-1 downto 0);
+		zero	: out std_logic
+	);
+end shifter2xstage;
  	
 end package; 
 
@@ -264,5 +289,7 @@ package body arithpack is
 			end if;
 			write(l,hexchars(1+ieee.std_logic_unsigned.conv_integer(h(index_high+h'low downto index_low+h'low))));
 		end loop; 
-	end procedure;	
+	end procedure;
+	
+	
 end package body arithpack;

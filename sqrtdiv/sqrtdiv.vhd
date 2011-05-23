@@ -20,7 +20,7 @@
 --     along with raytrac.  If not, see <http://www.gnu.org/licenses/>.
 
 
-library ieee
+library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_arith.all;
 use ieee.std_logic_unsigned.all;
@@ -33,9 +33,9 @@ entity sqrtdiv is
 	generic (
 		reginput: string	:= "YES";
 		c3width	: integer	:= 18;
-		functype: string	:= "SQUARE_ROOT"; 
+		functype: string	:= "INVERSION"; 
 		iwidth	: integer	:= 32;
-		owidth	: integer	:= 16;
+		owidth	: integer	:= 18;
 		awidth	: integer	:= 9
 	);
 	port (
@@ -69,18 +69,34 @@ architecture sqrtdiv_arch of sqrtdiv is
 	signal cumpaselector	: std_logic;
 	signal cumpazero		: std_logic;
 		
-	signal cumpaN			: std_logic_vector (2*integer(ceil(log(real(iwidth),2.0)))-1 downto 0);
+	signal cumpaN			: std_logic_vector (integer(ceil(log(real(iwidth),2.0)))-1 downto 0);
 	signal cumpaF			: std_logic_vector (c3width-1 downto 0);
 	
 	--! chief::Cuarta etapa: Corrimiento a la izquierda o derecha, para el caso de la ra'iz cuadrada o la inversi'on respectivamente. 
 	
-	signal chiefN			: std_logic_vector (2*integer(ceil(log(real(iwidth),2.0)))-1 downto 0);
+	signal chiefN			: std_logic_vector (integer(ceil(log(real(iwidth),2.0)))-1 downto 0);
 	signal chiefF			: std_logic_vector (c3width-1 downto 0);
 	
 	
+	--! Constantes para manejar el tama&ntilde;o de los vectores
+	constant exp1H : integer := 2*integer(ceil(log(real(iwidth),2.0)))-1;
+	constant exp1L : integer := integer(ceil(log(real(iwidth),2.0)));
+	constant exp0H : integer := exp1L-1;
+	constant exp0L : integer := 0;
+	constant add1H : integer := 2*awidth-1;
+	constant add1L : integer := awidth;
+	constant add0H : integer := add1L-1;
+	constant add0L : integer := 0;
+	
+	
+	constant c3qHH : integer := 2*c3width-1;
+	constant c3qHL : integer := c3width;
+	constant c3qLH : integer := c3width-1;
+	constant c3qLL : integer := 0;
+	
 begin
 	
-	!-- expomantis.
+	--! expomantis.
 	expomantisreg:
 	if reginput="YES" generate
 		expomantisProc:
@@ -89,28 +105,29 @@ begin
 			if rst=rstMasterValue then
 				expomantisvalue <= (others =>'0');
 			elsif clk'event and clk='1' then
-				expomantisvalue <= vale;
+				expomantisvalue <= value;
 			end if;
 		end process expomantisProc;
 	end generate expomantisreg;
-	expomantisnoreg;
+	
+	expomantisnoreg:
 	if reginput ="NO" generate
 		expomantisvalue<=value;
 	end generate expomantisnoreg;
+	
 	expomantisshifter2x:shifter2xstage
 	generic map(awidth,iwidth)
 	port map(expomantisvalue,expomantisexp,expomantisadd,expomantiszero);
 	
 	--! funky.
 	funkyProc:
-	process (clk,rst)
+	process (clk,rst,expomantisexp, expomantiszero)
 	begin
 		if rst=rstMasterValue then
 			funkyexp <= (others => '0');
-			
 			funkyzero <= '0';
-		else
-			funkyexp <= expomantisexp;
+		elsif clk'event and clk='1' then
+			funkyexp(exp1H downto 0) <= expomantisexp(exp1H downto 0);
 			funkyzero <= expomantiszero;
 		end if;
 	end process funkyProc;
@@ -118,52 +135,52 @@ begin
 	funkyget:
 	process (funkyexp)
 	begin
-		if (funkyexp(integer(ceil(log(real(iwidth),2.0)))-1 downto 0)>funkyexp(2*integer(ceil(log(real(iwidth),2.0)))-1 downto integer(ceil(log(real(iwidth),2.0))))) then
+		if (funkyexp(exp0H downto 0)>funkyexp(exp1H downto exp1L)) then
 			funkyselector<='0';
 		else
 			funkyselector<='1';
 		end if;
 	end process funkyget;
+	
 	funkyinversion:
 	if functype="INVERSION" generate
 		meminvr:func
 		generic map ("X:/Tesis/Workspace/hw/rt_lib/arith/src/trunk/sqrtdiv/meminvr.mif")
 		port map(
-			funkyadd(integer(ceil(log(real(iwidth),2.0)))-1 downto 0),
-			funkyadd(2*integer(ceil(log(real(iwidth),2.0)))-1 downto integer(ceil(log(real(iwidth),2.0)))),
+			funkyadd(add0H downto add0L),
+			funkyadd(add1H downto add1L),
 			clk,
-			funkyq(c3width-1 downto 0),
-			funkyq(2*c3width-1 downto c3width));
+			funkyq(c3qLH downto c3qLL),
+			funkyq(c3qHH downto c3qHL));
 	end generate funkyinversion;
 	funkysquare_root:
 	if functype="SQUARE_ROOT" generate
 		sqrt: func
 		generic map ("X:/Tesis/Workspace/hw/rt_lib/arith/src/trunk/sqrtdiv/memsqrt.mif")
 		port map(
-			funkyadd(integer(ceil(log(real(iwidth),2.0)))-1 downto 0),
-			ad1 => (others => '0'),
+			funkyadd(add0H downto add0L),
+			(others => '0'),
 			clk,
-			funkyq(c3width-1 downto 0),
+			funkyq(c3qLH downto c3qLL),
 			open);
 	
 		sqrt2x: func
 		generic map ("X:/Tesis/Workspace/hw/rt_lib/arith/src/trunk/sqrtdiv/memsqrt2f.mif")
 		port map(
-			ad0 => (others => '0'),
-			funkyadd(2*integer(ceil(log(real(iwidth),2.0)))-1 downto integer(ceil(log(real(iwidth),2.0)))),
+			(others => '0'),
+			funkyadd(add1H downto add1L),
 			clk,
 			open,
-			funkyq(2*c3width-1 downto c3width));
+			funkyq(c3qHH downto c3qHL));
 	end generate funkysquare_root;
-	
 	
 	--! cumpa.
 	cumpaProc:
 	process (clk,rst)
 	begin
 		if rst=rstMasterValue then
-			cumpaselector <= (others => '0');
-			cumpazero <= (others => '0');
+			cumpaselector <= '0';
+			cumpazero <= '0';
 			cumpaexp <= (others => '0');
 			cumpaq <= (others => '0');
 		elsif clk'event and clk='1' then
@@ -177,11 +194,11 @@ begin
 	process (cumpaq,cumpaexp,cumpaselector)
 	begin
 		if cumpaselector='0' then
-			cumpaN<=cumpaexp(integer(ceil(log(real(iwidth),2.0)))-1 downto 0);
-			cumpaF<=cumpaq(c3width-1 downto 0);
+			cumpaN<=cumpaexp(exp0H downto exp0L);
+			cumpaF<=cumpaq(c3qLH downto c3qLL);
 		else
-			cumpaN<=cumpaexp(2*integer(ceil(log(real(iwidth),2.0)))-1 downto integer(ceil(log(real(iwidth),2.0))));					 		
-			cumpaF<=cumpaq(2*c3width-1 downto c3width);
+			cumpaN<=cumpaexp(exp1H downto exp1L);					 		
+			cumpaF<=cumpaq(c3qHH downto c3qHL);
 		end if;
 	end process cumpaMux;
 	
@@ -198,9 +215,12 @@ begin
 			zero <= cumpazero;
 		end if;
 	end process chiefProc;
-	cumpaShifter: RLshifter
-	generic map(functype,c3width,owidth)
-	port map(chiefN,chiefF,result);
+	chiefShifter: RLshifter
+	generic map(functype,c3width,iwidth,owidth)
+	port map(
+		chiefN,
+		chiefF,
+		result);
 	
 end sqrtdiv_arch;
 		

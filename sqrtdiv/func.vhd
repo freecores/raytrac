@@ -34,12 +34,16 @@ use altera_mf.all;
 
 entity func is 
 	generic (
+		
 		memoryfilepath : string :="X:/Tesis/Workspace/hw/rt_lib/arith/src/trunk/sqrtdiv/memsqrt.mif";
+		awidth : integer := 9;
+		qwidth : integer := 18
+	
 	);
 	port (
-		ad0,ad1 : in std_logic_vector (8 downto 0);
-		clk : in std_logic;
-		q0,q1 ; : out std_logic_vector(17 downto 0)
+		ad0,ad1 : in std_logic_vector (awidth-1 downto 0) := (others => '0');
+		clk 	: in std_logic;
+		q0,q1	: out std_logic_vector(qwidth-1 downto 0)
 	);
 end func;
 
@@ -118,7 +122,7 @@ begin
 		wrcontrol_wraddress_reg_b => "CLOCK0"
 	)
 	port map (
-		clock0 => clock,
+		clock0 => clk,
 		wren_a => '0',
 		address_b => ad1,
 		data_b => (others=>'0'),

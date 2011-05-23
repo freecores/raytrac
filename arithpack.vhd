@@ -53,7 +53,7 @@ package arithpack is
 	type tbState is (abcd,axb,cxd,stop);
 	
 	--! Constante con el nivel l&oacute;gico de reset.
-	constant rstMasterValue : std_logic := '1';
+	constant rstMasterValue : std_logic := '0';
 	
 	--! Constante: periodo del reloj, para una frecuencia de 50 MHz 
 	constant tclk : time := 20 ns;
@@ -244,12 +244,14 @@ package arithpack is
 	--! SqrtDiv Unit::func, func, es una memoria que almacena alguna funci'on en el rango de [1,2). Los valores de la funci'on evaluada en este rango se encuentran almacenados en una memoria ROM que seleccione el desarrollador. 
 	component  func 
 	generic (
-		memoryfilepath : string :="X:/Tesis/Workspace/hw/rt_lib/arith/src/trunk/sqrtdiv/memsqrt.mif"
+		memoryfilepath : string :="X:/Tesis/Workspace/hw/rt_lib/arith/src/trunk/sqrtdiv/memsqrt.mif";
+		awidth : integer := 9;
+		qwidth : integer := 18
 	);
 	port (
-		ad0,ad1 : in std_logic_vector (8 downto 0);
-		clk : in std_logic;
-		q0,q1 ; : out std_logic_vector(17 downto 0)
+		ad0,ad1 : in std_logic_vector (awidth-1 downto 0) := (others => '0');
+		clk 	: in std_logic;
+		q0,q1	: out std_logic_vector(qwidth-1 downto 0)
 	);
 	end component;
 	--! SqrtDiv Unit::shifter2xstage, esta unidad funciona tal cual la unidad shifter, pero al doble de la velocidad. El problema es que la entidad entrega dos valores de N: exp es un std_logic_vector la primera mitad entregar'a exp0 y la mitad mas significativa ser'a exp1. 
@@ -266,8 +268,22 @@ package arithpack is
 		add		: out std_logic_vector (2*address_width-1 downto 0);
 		zero	: out std_logic
 	);
-end shifter2xstage;
- 	
+	end component;
+	
+	component RLshifter
+	generic (
+		shiftFunction	: string  := "SQUARE_ROOT"; 
+		mantissa_width	: integer := 18;
+		iwidth			: integer := 32;
+		owidth			: integer := 16
+		
+	);
+	port (
+		exp		: in std_logic_vector (integer(ceil(log(real(iwidth),2.0)))-1 downto 0);
+		mantis	: in std_logic_vector (mantissa_width-1 downto 0);
+		result	: out std_logic_vector (owidth-1 downto 0)
+	);
+ 	end component;
 end package; 
 
 --! Funciones utilitarias, relacionadas sobre todo con el testbench

@@ -37,13 +37,14 @@ entity RLshifter is
 	generic (
 		shiftFunction	: string  := "SQUARE_ROOT"; 
 		mantissa_width	: integer := 18;
-		width			: integer := 32
+		iwidth			: integer := 32;
+		owidth			: integer := 16
 		
 	);
 	port (
-		exp		: in std_logic_vector (integer(ceil(log(real(width),2.0)))-1 downto 0);
+		exp		: in std_logic_vector (integer(ceil(log(real(iwidth),2.0)))-1 downto 0);
 		mantis	: in std_logic_vector (mantissa_width-1 downto 0);
-		result	: out std_logic_vector (width-1 downto 0)
+		result	: out std_logic_vector (owidth-1 downto 0)
 	);
 end RLshifter;
 
@@ -55,15 +56,19 @@ begin
 	process (mantis,exp)
 		variable expi : integer ;
 	begin
-		expi:= conv_integer(exp);
+		if shiftFunction="INVERSION" then
+			expi:= conv_integer(exp);
+		else 
+			expi:= conv_integer(exp(exp'high downto 1));
+		end if;
 		
-		for i in width-1 downto 0 loop
+		for i in owidth-1 downto 0 loop
 
 			result(i)<='0';			
 
 			if shiftFunction="INVERSION" then 			
-				if i<=width-1-expi and i>=width-expi-mantissa_width then
-					result(i)<=mantis(mantissa_width-width+expi+i);
+				if i<=owidth-1-expi and i>=owidth-expi-mantissa_width then
+					result(i)<=mantis(mantissa_width-owidth+expi+i);
 				end if;
 			end if;				
 

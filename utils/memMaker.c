@@ -107,16 +107,18 @@ int f0inv(float x){
 	float fI;
 	fI=(1/x);
 	//fprintf (stdout," %f %f ", x, fI);
-	fI*=pow(2,memparam.dec);
+	fI*=pow(2,memparam.dec+2);
 	I=fI;
+	I&=0x3ffff;
 	return I;
 }
 
 int f1sqrt(float x){
 	int S;
 	float fS;
-	fS=(sqrt(x)*pow(2,memparam.dec));
+	fS=(sqrt(x)*pow(2,memparam.dec+2));
 	S=fS;
+	S&=0x3ffff;
 	return S;
 }
 

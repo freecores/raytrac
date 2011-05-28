@@ -60,22 +60,22 @@ architecture sqrtdiv_arch of sqrtdiv is
 	signal funkyexp			: std_logic_vector (2*integer(ceil(log(real(iwidth),2.0)))-1 downto 0);
 	signal funkyzero		: std_logic;
 	
-	signal funkyq			: std_logic_vector (2*c3width-1 downto 0);
+	signal funkyq			: std_logic_vector (2*c3width+3 downto 0);
 	signal funkyselector	: std_logic;
 	
 	--! cumpa::Tercera etapa: Selecci'on de valores de acuerdo al exp escogido.
 	signal cumpaexp			: std_logic_vector (2*integer(ceil(log(real(iwidth),2.0)))-1 downto 0);
-	signal cumpaq			: std_logic_vector (2*c3width-1 downto 0);
+	signal cumpaq			: std_logic_vector (2*c3width+3 downto 0);
 	signal cumpaselector	: std_logic;
 	signal cumpazero		: std_logic;
 		
 	signal cumpaN			: std_logic_vector (integer(ceil(log(real(iwidth),2.0)))-1 downto 0);
-	signal cumpaF			: std_logic_vector (c3width-1 downto 0);
+	signal cumpaF			: std_logic_vector (c3width+1 downto 0);
 	
 	--! chief::Cuarta etapa: Corrimiento a la izquierda o derecha, para el caso de la ra'iz cuadrada o la inversi'on respectivamente. 
 	
 	signal chiefN			: std_logic_vector (integer(ceil(log(real(iwidth),2.0)))-1 downto 0);
-	signal chiefF			: std_logic_vector (c3width-1 downto 0);
+	signal chiefF			: std_logic_vector (c3width+1 downto 0);
 	
 	
 	--! Constantes para manejar el tama&ntilde;o de los vectores
@@ -85,13 +85,13 @@ architecture sqrtdiv_arch of sqrtdiv is
 	constant exp0L : integer := 0;
 	constant add1H : integer := 2*awidth-1;
 	constant add1L : integer := awidth;
-	constant add0H : integer := add1L-1;
+	constant add0H : integer := awidth-1;
 	constant add0L : integer := 0;
 	
 	
-	constant c3qHH : integer := 2*c3width-1;
-	constant c3qHL : integer := c3width;
-	constant c3qLH : integer := c3width-1;
+	constant c3qHH : integer := 2*c3width+3;
+	constant c3qHL : integer := c3width+2;
+	constant c3qLH : integer := c3width+1;
 	constant c3qLL : integer := 0;
 	
 begin
@@ -126,12 +126,17 @@ begin
 		if rst=rstMasterValue then
 			funkyexp <= (others => '0');
 			funkyzero <= '0';
+			funkyadd <= (others => '0');
+
 		elsif clk'event and clk='1' then
+		
 			funkyexp(exp1H downto 0) <= expomantisexp(exp1H downto 0);
 			funkyzero <= expomantiszero;
+			funkyadd <= expomantisadd;
+			
 		end if;
 	end process funkyProc;
-	funkyadd <= expomantisadd;
+	
 	funkyget:
 	process (funkyexp)
 	begin
@@ -145,33 +150,66 @@ begin
 	funkyinversion:
 	if functype="INVERSION" generate
 		meminvr:func
-		generic map ("X:/Tesis/Workspace/hw/rt_lib/arith/src/trunk/sqrtdiv/meminvr.mif")
+		generic map ("../../../MinGW/MSys/1.0/home/julian/code/testbench/trunk/utils/arachnophobia.mif")
+		--generic map ("X:/Tesis/Workspace/hw/rt_lib/arith/src/trunk/sqrtdiv/meminvr.mif")
 		port map(
-			funkyadd(add0H downto add0L),
-			funkyadd(add1H downto add1L),
+			expomantisadd(awidth-1 downto 0),
+			expomantisadd(2*awidth-1 downto awidth),
 			clk,
-			funkyq(c3qLH downto c3qLL),
-			funkyq(c3qHH downto c3qHL));
+			funkyq(c3qLH-2 downto c3qLL),
+			funkyq(c3qHH-2 downto c3qHL));
+		funkynibbles:
+		process(funkyadd)
+		begin
+		
+			if funkyadd(awidth-1 downto 0) = conv_std_logic_vector(0,awidth) then
+				funkyq(c3qLH downto c3qLH-1) <= "10";
+			else
+				funkyq(c3qLH downto c3qLH-1) <= "01";
+			end if;
+			if funkyadd(2*awidth-1 downto awidth) = conv_std_logic_vector(0,awidth) then
+				funkyq(c3qHH downto c3qHH-1) <= "10";
+			else
+				funkyq(c3qHH downto c3qHH-1) <= "01";
+			end if;
+		end process funkynibbles;
+		
 	end generate funkyinversion;
 	funkysquare_root:
 	if functype="SQUARE_ROOT" generate
 		sqrt: func
-		generic map ("X:/Tesis/Workspace/hw/rt_lib/arith/src/trunk/sqrtdiv/memsqrt.mif")
+		generic map ("../../../MinGW/MSys/1.0/home/julian/code/testbench/trunk/utils/phobia.mif")
+		--generic map ("X:/Tesis/Workspace/hw/rt_lib/arith/src/trunk/sqrtdiv/memsqrt.mif")
 		port map(
-			funkyadd(add0H downto add0L),
+			expomantisadd(awidth-1 downto 0),
 			(others => '0'),
 			clk,
-			funkyq(c3qLH downto c3qLL),
+			funkyq(c3qLH-2 downto c3qLL),
 			open);
 	
 		sqrt2x: func
-		generic map ("X:/Tesis/Workspace/hw/rt_lib/arith/src/trunk/sqrtdiv/memsqrt2f.mif")
+		generic map ("../../../MinGW/MSys/1.0/home/julian/code/testbench/trunk/utils/phobia2.mif")
+		--generic map ("X:/Tesis/Workspace/hw/rt_lib/arith/src/trunk/sqrtdiv/memsqrt2f.mif")
 		port map(
 			(others => '0'),
-			funkyadd(add1H downto add1L),
+			expomantisadd(2*awidth-1 downto awidth),
 			clk,
 			open,
-			funkyq(c3qHH downto c3qHL));
+			funkyq(c3qHH-2 downto c3qHL));
+		funkynibbles:
+		process(funkyadd)
+		begin
+			--! Siempre ser'a 2 el nibble mas significativo cuando estemos calculando f**0.5. 
+			funkyq(c3qLH downto c3qLH-1) <= "10";
+			--! Siempre ser'a 1 el bit mas significativo cuando estemos calculando 2f**0.5.
+			funkyq(c3qHH) <= '1';
+			if funkyadd(2*awidth-1 downto awidth) >= conv_std_logic_vector(64,awidth) then
+				funkyq(c3qHH-1) <= '1';
+			else
+				funkyq(c3qHH-1) <= '0';
+			end if;
+		end process funkynibbles;
+
 	end generate funkysquare_root;
 	
 	--! cumpa.
@@ -216,7 +254,7 @@ begin
 		end if;
 	end process chiefProc;
 	chiefShifter: RLshifter
-	generic map(functype,c3width,iwidth,owidth)
+	generic map(functype,c3width+2,iwidth,owidth)
 	port map(
 		chiefN,
 		chiefF,

@@ -64,6 +64,9 @@ package arithpack is
 	--! Constante: cuarto de periodo del reloj.
 	constant tclk4: time := tclk/4;
 	
+	--! Path del directorio donde se encuentra
+	constant memoryPath: string := "../../../MinGW/MSys/1.0/home/julian/code/testbench/trunk/sqrtdiv/";
+	--constant memoryPath: string := "X:/Tesis/Workspace/hw/rt_lib/arith/src/trunk/sqrtdiv/"
 	
 	--! Generacion de Clock y de Reset.
 	component clock_gen 

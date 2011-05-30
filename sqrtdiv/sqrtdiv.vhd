@@ -150,8 +150,7 @@ begin
 	funkyinversion:
 	if functype="INVERSION" generate
 		meminvr:func
-		generic map ("../../../MinGW/MSys/1.0/home/julian/code/testbench/trunk/utils/arachnophobia.mif")
-		--generic map ("X:/Tesis/Workspace/hw/rt_lib/arith/src/trunk/sqrtdiv/meminvr.mif")
+		generic map (memoryPath&"meminvr.mif")
 		port map(
 			expomantisadd(awidth-1 downto 0),
 			expomantisadd(2*awidth-1 downto awidth),
@@ -178,8 +177,7 @@ begin
 	funkysquare_root:
 	if functype="SQUARE_ROOT" generate
 		sqrt: func
-		generic map ("../../../MinGW/MSys/1.0/home/julian/code/testbench/trunk/utils/phobia.mif")
-		--generic map ("X:/Tesis/Workspace/hw/rt_lib/arith/src/trunk/sqrtdiv/memsqrt.mif")
+		generic map (memoryPath&"memsqrt.mif")
 		port map(
 			expomantisadd(awidth-1 downto 0),
 			(others => '0'),
@@ -188,8 +186,7 @@ begin
 			open);
 	
 		sqrt2x: func
-		generic map ("../../../MinGW/MSys/1.0/home/julian/code/testbench/trunk/utils/phobia2.mif")
-		--generic map ("X:/Tesis/Workspace/hw/rt_lib/arith/src/trunk/sqrtdiv/memsqrt2f.mif")
+		generic map ("memsqrt2f.mif")
 		port map(
 			(others => '0'),
 			expomantisadd(2*awidth-1 downto awidth),

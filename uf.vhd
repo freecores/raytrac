@@ -51,7 +51,7 @@ entity uf is
 	port (
 		opcode		: in std_logic; --! Entrada que dentro de la arquitectura funciona como selector de la operaci&oacute;n que se lleva a cabo en la primera etapa de sumadores/restadores. 
 		m0f0,m0f1,m1f0,m1f1,m2f0,m2f1,m3f0,m3f1,m4f0,m4f1,m5f0,m5f1 : in std_logic_vector(17 downto 0); --! Entradas que van conectadas a los multiplicadores en la primera etapa de la descripci&oacute;n.  
-		cpx,cpy,cpz,dp0,dp1 : out std_logic_vector(31 downto 0); --! Salidas donde se registran los resultados de las operaciones aritm&eacute;ticas: cpx,cpy,cpz ser&acute;n los componentes del vector que da por resultado el producto cruz entre los vectores AxB &oacute; CxD.  
+		cpx,cpy,cpz,dp0,dp1,kvx0,kvy0,kvz0,kvx1,kvy1,kvz1 : out std_logic_vector(31 downto 0); --! Salidas donde se registran los resultados de las operaciones aritm&eacute;ticas: cpx,cpy,cpz ser&acute;n los componentes del vector que da por resultado el producto cruz entre los vectores AxB &oacute; CxD. kvx0, kvy0, kvz0, kvx1, kvy1, kvz1 es el resultado de los multiplicadores   
 		clk,rst		: in std_logic --! Las entradas de control usuales.  
 	);
 end uf;
@@ -100,7 +100,7 @@ begin
 		datab	=> stage0mf01,
 		result	=> stage0p0
 	);
-	
+	kvx0 <= stage0p0;
 	--! Multiplicador 1
 	m1 : lpm_mult 
 	generic map (
@@ -119,6 +119,7 @@ begin
 		datab	=> stage0mf11,
 		result	=> stage0p1
 	);
+	kvy0 <= stage0p1;
 	
 	--! Multiplicador 2
 	m2 : lpm_mult 
@@ -138,6 +139,7 @@ begin
 		datab	=> stage0mf21,
 		result	=> stage0p2
 	);
+	kvz0 <= stage0p2;
 	
 	--! Multiplicador 3
 	m3 : lpm_mult 
@@ -157,7 +159,7 @@ begin
 		datab	=> stage0mf31,
 		result	=> stage0p3
 	);
-	
+	kvx1 <= stage0p3;
 	--! Multiplicador 4
 	m4 : lpm_mult 
 	generic map (
@@ -176,6 +178,7 @@ begin
 		datab	=> stage0mf41,
 		result	=> stage0p4
 	);
+	kvy1 <= stage0p4;
 	
 	--! Multiplicador 5
 	m5 : lpm_mult 
@@ -195,7 +198,7 @@ begin
 		datab	=> stage0mf51,
 		result	=> stage0p5
 	);
-	
+	kvz1 <= stage0p5;
 	
 	
 	useIeee:
@@ -218,6 +221,7 @@ begin
 		-- Adder Instantiation (Stage 2)
 		stage2a3 <= stage2a0+stage2p2;
 		stage2a4 <= stage2p3+stage2a2;
+		
 	end generate useIeee;
 	dontUseIeee:
 	if use_std_logic_signed="NO" generate
@@ -429,7 +433,7 @@ begin
 			end loop displayRom;			
 		end process tbproc1;
 		
-		tbproc2:
+		tbproc2: 
 		process
 			variable buff : line;
 			variable theend : time :=30855 ns;
@@ -464,7 +468,7 @@ begin
 				wait for tclk;
 				if now>theend then
 					wait;
-				 end if;
+				end if;
 			end loop displayRom;			
 		end process tbproc2;	
 

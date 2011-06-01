@@ -59,7 +59,7 @@ begin
 		if shiftFunction="INVERSION" then
 			expi:= conv_integer(exp);
 		else 
-			expi:= conv_integer(exp(exp'high downto 1));
+			expi:= conv_integer(exp(exp'high downto 1)); --! Por qu'e hasta 1 y no hasta 0!? Porque el corrimiento de la raiz cuadrada es 2^(N/2)  
 		end if;
 		
 		for i in owidth-1 downto 0 loop

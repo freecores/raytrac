@@ -34,7 +34,7 @@ entity sqrtdiv is
 		reginput: string	:= "YES";
 		c3width	: integer	:= 18;
 		functype: string	:= "INVERSION"; 
-		iwidth	: integer	:= 32;
+		iwidth	: integer	:= 18;
 		owidth	: integer	:= 18;
 		awidth	: integer	:= 9
 	);

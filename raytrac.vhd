@@ -98,9 +98,10 @@ entity raytrac is
 		A,B,C,D 		: in std_logic_vector(18*3-1 downto 0);									--! Vectores de entrada A,B,C,D, cada uno de tamano fijo: 3 componentes x 18 bits. \n Input vectors A,B,C,D, each one of fixed size: 3 components x 18 bits. 
 		opcode,addcode	: in std_logic;															--! Opcode and addcode input bits, opcode selects what operation is going to perform one of the entities included in the design and addcode what operands are going to be involved in such. \n Opcode & addcode, opcode selecciona que operacion se va a llevar a cabo dentro de una de las entidades referenciadas dentro de la descripcion, mientras que addcode decide cuales van a ser los operandos que realizaran tal. 
 		clk,rst,ena		: in std_logic;															--! Las senales de control usual. The usual control signals.
+		sqrt0,sqrt1		: out std_logic_vector(17 downto 0);
 		addABx,addABy,addABz,addCDx,addCDy,addCDz	  		: out std_logic_vector(17 downto 0);--! Suma de vectores. 
 		subABx,subABy,subABz,subCDx,subCDy,subCDz	  		: out std_logic_vector(17 downto 0);--! Suma de vectores. 
-		CPX,CPY,CPZ,DP0,DP1,kvx0,kvy0,kvz0,kvx1,kvy1,kvz1	: out std_logic_vector(31 downto 0);--! Salidas que representan los resultados del RayTrac: pueden ser dos resultados, de dos operaciones de producto punto, o un producto cruz. Por favor revisar el documento de especificacion del dispositivo para tener mas claridad.\n  Outputs representing the result of the RayTrac entity: can be the results of two parallel dot product operations or the result of a single cross product, in order to clarify refere to the entity specification documentation.
+		CPX,CPY,CPZ,DP0,DP1,kvx0,kvy0,kvz0,kvx1,kvy1,kvz1	: out std_logic_vector(31 downto 0) --! Salidas que representan los resultados del RayTrac: pueden ser dos resultados, de dos operaciones de producto punto, o un producto cruz. Por favor revisar el documento de especificacion del dispositivo para tener mas claridad.\n  Outputs representing the result of the RayTrac entity: can be the results of two parallel dot product operations or the result of a single cross product, in order to clarify refere to the entity specification documentation.
 		
 		
 	);
@@ -172,18 +173,34 @@ begin
 		end process procNotReg;
 	end generate notreg;
 	--! El siguiente sumador es un sumador de 18 bits por lo tanto no se utiliza el sumador de 32 bits en la etapa SR del UF.
-	addABx <= SA(17 downto 0) + SB(17 downto 0);
-	addABy <= SA(35 downto 18) + SB(35 downto 18);
-	addABz <= SA(53 downto 36) + SB(53 downto 36);
-	addCDx <= SC(17 downto 0) + SD(17 downto 0);
-	addCDy <= SC(35 downto 18) + SD(35 downto 18);
-	addCDz <= SC(53 downto 36) + SD(53 downto 36);
-	subABx <= SA(17 downto 0) - SB(17 downto 0);
-	subABy <= SA(35 downto 18) - SB(35 downto 18);
-	subABz <= SA(53 downto 36) - SB(53 downto 36);
-	subCDx <= SC(17 downto 0) - SD(17 downto 0);
-	subCDy <= SC(35 downto 18) - SD(35 downto 18);
-	subCDz <= SC(53 downto 36) - SD(53 downto 36);
+	
+	procaddsub:
+	process (clk,rst,SA,SB,SC,SD)
+	begin
+	
+		if rst=rstMasterValue then
+			addABx  <= (others => '0');
+			addABy  <= (others => '0');
+			addABz  <= (others => '0');
+			subABx  <= (others => '0');
+			subABy  <= (others => '0');
+			subABz  <= (others => '0');
+		elsif clk'event and clk='1' then
+			addABx <= SA(17 downto 0) + SB(17 downto 0);
+			addABy <= SA(35 downto 18) + SB(35 downto 18);
+			addABz <= SA(53 downto 36) + SB(53 downto 36);
+			addCDx <= SC(17 downto 0) + SD(17 downto 0);
+			addCDy <= SC(35 downto 18) + SD(35 downto 18);
+			addCDz <= SC(53 downto 36) + SD(53 downto 36);
+			subABx <= SA(17 downto 0) - SB(17 downto 0);
+			subABy <= SA(35 downto 18) - SB(35 downto 18);
+			subABz <= SA(53 downto 36) - SB(53 downto 36);
+			subCDx <= SC(17 downto 0) - SD(17 downto 0);
+			subCDy <= SC(35 downto 18) - SD(35 downto 18);
+			subCDz <= SC(53 downto 36) - SD(53 downto 36);
+		end if;				
+	
+	end process procaddsub;
 	
 	--! Instantiate Opcoder 
 	opcdr : opcoder

@@ -34,7 +34,7 @@ entity shifter is
 	generic (
 		address_width	: integer	:= 9;
 		width			: integer	:= 32;
-		--! Cuando even shifter es "YES" se hara la busqueda del primer bit con valor 1, de izquierda a derecha, pero NO de uno 
+		--! Cuando even shifter es "YES" se hara la busqueda del primer bit con valor 1, de izquierda a derecha, pero NO de uno en uno.
 		even_shifter	: string	:= "YES"	
 		
 	);

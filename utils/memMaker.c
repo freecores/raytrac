@@ -35,6 +35,7 @@ struct {
 	
 	int offset;
 	
+	
 }memparam={0,0,0,australia,canada,0,1};	
 
 //mpx memparam={0,0,australia};
@@ -107,7 +108,7 @@ int f0inv(float x){
 	float fI;
 	fI=(1/x);
 	//fprintf (stdout," %f %f ", x, fI);
-	fI*=pow(2,memparam.dec+2);
+	fI*=pow(2,memparam.dec);
 	I=fI;
 	I&=0x3ffff;
 	return I;
@@ -116,7 +117,7 @@ int f0inv(float x){
 int f1sqrt(float x){
 	int S;
 	float fS;
-	fS=(sqrt(x)*pow(2,memparam.dec+2));
+	fS=(sqrt(x)*pow(2,memparam.dec));
 	S=fS;
 	S&=0x3ffff;
 	return S;

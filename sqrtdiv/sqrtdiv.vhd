@@ -157,21 +157,6 @@ begin
 			clk,
 			funkyq(c3qLH-2 downto c3qLL),
 			funkyq(c3qHH-2 downto c3qHL));
-		funkynibbles:
-		process(funkyadd)
-		begin
-		
-			if funkyadd(awidth-1 downto 0) = conv_std_logic_vector(0,awidth) then
-				funkyq(c3qLH downto c3qLH-1) <= "10";
-			else
-				funkyq(c3qLH downto c3qLH-1) <= "01";
-			end if;
-			if funkyadd(2*awidth-1 downto awidth) = conv_std_logic_vector(0,awidth) then
-				funkyq(c3qHH downto c3qHH-1) <= "10";
-			else
-				funkyq(c3qHH downto c3qHH-1) <= "01";
-			end if;
-		end process funkynibbles;
 		
 	end generate funkyinversion;
 	funkysquare_root:
@@ -193,20 +178,7 @@ begin
 			clk,
 			open,
 			funkyq(c3qHH-2 downto c3qHL));
-		funkynibbles:
-		process(funkyadd)
-		begin
-			--! Siempre ser'a 2 el nibble mas significativo cuando estemos calculando f**0.5. 
-			funkyq(c3qLH downto c3qLH-1) <= "10";
-			--! Siempre ser'a 1 el bit mas significativo cuando estemos calculando 2f**0.5.
-			funkyq(c3qHH) <= '1';
-			if funkyadd(2*awidth-1 downto awidth) >= conv_std_logic_vector(64,awidth) then
-				funkyq(c3qHH-1) <= '1';
-			else
-				funkyq(c3qHH-1) <= '0';
-			end if;
-		end process funkynibbles;
-
+		
 	end generate funkysquare_root;
 	
 	--! cumpa.

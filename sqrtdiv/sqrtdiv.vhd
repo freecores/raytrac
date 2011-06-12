@@ -171,7 +171,7 @@ begin
 			open);
 	
 		sqrt2x: func
-		generic map ("memsqrt2f.mif")
+		generic map (memoryPath&"memsqrt2f.mif")
 		port map(
 			(others => '0'),
 			expomantisadd(2*awidth-1 downto awidth),

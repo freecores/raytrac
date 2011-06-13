@@ -34,15 +34,16 @@ entity sqrtdiv is
 		reginput: string	:= "YES";
 		c3width	: integer	:= 18;
 		functype: string	:= "INVERSION"; 
-		iwidth	: integer	:= 18;
-		owidth	: integer	:= 18;
+		iwidth	: integer	:= 32;
 		awidth	: integer	:= 9
 	);
 	port (
 		clk,rst	: in std_logic;
 		value	: in std_logic_vector (iwidth-1 downto 0);
 		zero	: out std_logic;
-		result	: out std_logic_vector (owidth-1 downto 0)
+		
+		sqr		: out std_logic_vector (15 downto 0);
+		inv		: out std_logic_vector (16 downto 0)
 	);
 end sqrtdiv;
 
@@ -60,24 +61,28 @@ architecture sqrtdiv_arch of sqrtdiv is
 	signal funkyexp			: std_logic_vector (2*integer(ceil(log(real(iwidth),2.0)))-1 downto 0);
 	signal funkyzero		: std_logic;
 	
-	signal funkyq			: std_logic_vector (2*c3width+3 downto 0);
+	signal funkyq			: std_logic_vector (2*c3width-1  downto 0);
 	signal funkyselector	: std_logic;
 	
 	--! cumpa::Tercera etapa: Selecci'on de valores de acuerdo al exp escogido.
 	signal cumpaexp			: std_logic_vector (2*integer(ceil(log(real(iwidth),2.0)))-1 downto 0);
-	signal cumpaq			: std_logic_vector (2*c3width+3 downto 0);
+	signal cumpaq			: std_logic_vector (2*c3width-1 downto 0);
 	signal cumpaselector	: std_logic;
 	signal cumpazero		: std_logic;
 		
 	signal cumpaN			: std_logic_vector (integer(ceil(log(real(iwidth),2.0)))-1 downto 0);
-	signal cumpaF			: std_logic_vector (c3width+1 downto 0);
+	signal cumpaF			: std_logic_vector (c3width-1 downto 0);
 	
 	--! chief::Cuarta etapa: Corrimiento a la izquierda o derecha, para el caso de la ra'iz cuadrada o la inversi'on respectivamente. 
 	
 	signal chiefN			: std_logic_vector (integer(ceil(log(real(iwidth),2.0)))-1 downto 0);
-	signal chiefF			: std_logic_vector (c3width+1 downto 0);
+	signal chiefF			: std_logic_vector (c3width-1 downto 0);
+	signal chiefQ			: std_logic_vector (c3width-1 downto 0);
 	
+	--! inverseDistance::Quinta etapa
 	
+	signal iDistN			: std_logic_vector (integer(ceil(log(real(iwidth),2.0)))-1 downto 0);
+	signal iDistF			: std_logic_vector (c3width-1 downto 0);
 	--! Constantes para manejar el tama&ntilde;o de los vectores
 	constant exp1H : integer := 2*integer(ceil(log(real(iwidth),2.0)))-1;
 	constant exp1L : integer := integer(ceil(log(real(iwidth),2.0)));
@@ -89,9 +94,9 @@ architecture sqrtdiv_arch of sqrtdiv is
 	constant add0L : integer := 0;
 	
 	
-	constant c3qHH : integer := 2*c3width+3;
-	constant c3qHL : integer := c3width+2;
-	constant c3qLH : integer := c3width+1;
+	constant c3qHH : integer := 2*c3width-1;
+	constant c3qHL : integer := c3width;
+	constant c3qLH : integer := c3width-1;
 	constant c3qLL : integer := 0;
 	
 begin
@@ -147,39 +152,22 @@ begin
 		end if;
 	end process funkyget;
 	
-	funkyinversion:
-	if functype="INVERSION" generate
-		meminvr:func
-		generic map (memoryPath&"meminvr.mif")
-		port map(
-			expomantisadd(awidth-1 downto 0),
-			expomantisadd(2*awidth-1 downto awidth),
-			clk,
-			funkyq(c3qLH-2 downto c3qLL),
-			funkyq(c3qHH-2 downto c3qHL));
-		
-	end generate funkyinversion;
-	funkysquare_root:
-	if functype="SQUARE_ROOT" generate
-		sqrt: func
-		generic map (memoryPath&"memsqrt.mif")
-		port map(
-			expomantisadd(awidth-1 downto 0),
-			(others => '0'),
-			clk,
-			funkyq(c3qLH-2 downto c3qLL),
-			open);
+
 	
-		sqrt2x: func
-		generic map (memoryPath&"memsqrt2f.mif")
-		port map(
-			(others => '0'),
-			expomantisadd(2*awidth-1 downto awidth),
-			clk,
-			open,
-			funkyq(c3qHH-2 downto c3qHL));
+	sqrt: funcinvr
+	generic map (memoryPath&"memsqrt.mif")
+	port map(
+		funkyadd(awidth-1 downto 0),
+		clk,
+		funkyq(c3qLH downto c3qLL));
+	
+	sqrt2x: funcinvr
+	generic map (memoryPath&"memsqrt2f.mif")
+	port map(
+		funkyadd(2*awidth-1 downto awidth),
+		clk,
+		funkyq(c3qHH downto c3qHL));
 		
-	end generate funkysquare_root;
 	
 	--! cumpa.
 	cumpaProc:
@@ -209,7 +197,9 @@ begin
 		end if;
 	end process cumpaMux;
 	
-	--! chief.
+	--! Branching.
+	-- exp <= chiefN;
+	-- fadd <= chiefF(c3width-2 downto c3width-1-awidth);
 	chiefProc:
 	process (clk,rst)
 	begin 
@@ -223,11 +213,62 @@ begin
 		end if;
 	end process chiefProc;
 	chiefShifter: RLshifter
-	generic map(functype,c3width+2,iwidth,owidth)
+	generic map("SQUARE_ROOT",c3width,iwidth,16)
 	port map(
 		chiefN,
 		chiefF,
-		result);
+		sqr);
+	branching_invfunc:
+	if functype="INVERSION" generate
+		sqrt: funcinvr
+		generic map (memoryPath&"meminvr.mif")
+		port map(
+			chiefF(c3width-2 downto c3width-1-awidth),
+			clk,
+			chiefQ(c3width-1 downto 0));
+		
+		
+		
+	end generate branching_invfunc;
+	
+	branchingHighLander:
+	if functype="SQUARE_ROOT" generate
+		chiefQ <= (others => '0');
+	end generate branchingHighLander;
+	
+	--! Inverse
+	inverseDistanceOK:
+	if functype="INVERSION" generate
+		
+		inverseDistance:
+		process (clk,rst)
+		begin
+	
+			if rst=rstMasterValue then
+				iDistN <= (others => '0');
+				iDistF <= (others => '0');
+			elsif clk'event and clk='1' then
+				iDistN <= chiefN;
+				iDistF <= chiefQ;
+			end if; 
+			
+	
+		end process inverseDistance;
+		
+		inverseShifter: RLshifter
+		generic map("INVERSION",c3width,iwidth,17)
+		port map(
+			iDistN,
+			iDistF,
+			inv);
+	end generate inverseDistanceOK;
+	
+	inverseDistanceNOTOK:
+	if functype = "SQUARE_ROOT" generate
+		iDistN <= (others => '0');
+		iDistF <= (others => '0');
+		inv <= (others => '0');
+	end generate inverseDistanceNOTOK;
 	
 end sqrtdiv_arch;
 		

@@ -36,7 +36,7 @@ entity sm is
 		clk,rst		: in std_logic;		
 		umantissa	: in std_logic_vector	(mantissaWidth-1	downto	0);
 		sign	 	: in std_logic;
-		smantissa	: out std_logic_vector	(mantissaWidth+1 	downto	0)
+		smantissa	: out std_logic_vector	(mantissaWidth 		downto	0)
 	);
 end entity;
 

@@ -60,20 +60,20 @@ begin
 				ssb(31) <= sb(31);
 				ssb(30 downto 23) <= sa(30 downto 23)-sb(30 downto 23);
 				ssb(22 downto 0) <= sb(22 downto 0);
+				--! zero signaling
+				ssz <= zb;
 				--!clasifica a
 				ssa <= sa;
-				--! zero
-				ssz <= za;
 				
 			else
 				--!signo,exponente,mantissa
 				ssb(31) <= sa(31);
 				ssb(30 downto 23) <= sb(30 downto 23)-sa(30 downto 23);
 				ssb(22 downto 0) <= sa(22 downto 0);
+				--! zero signaling
+				ssz <= za;
 				--!clasifica b
 				ssa <= sb;
-				--! zero
-				ssz <= zb;
 			end if;
 			
 			--! Tercera etapa corrimiento y normalizaci&oacute;n de mantissas  

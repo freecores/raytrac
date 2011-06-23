@@ -117,7 +117,7 @@ begin
 			
 			
 			
-			--! Segunda etapa corrimiento y normalizaci&oacute;n de mantissas  
+			--! Segunda etapa corrimiento y denormalizaci&oacute;n de mantissas  
 			s4a <= ssa;
 			s4sgb <= ssb(31);
 			s4sgc <= ssc(31);

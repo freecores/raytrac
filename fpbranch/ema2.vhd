@@ -40,10 +40,29 @@ entity ema2 is
 end ema2;
 
 architecture ema2_arch of ema2 is
-	signal sa,sb,ssa,ssb,sssa,sssb,s4a		: std_logic_vector(31 downto 0);
-	signal s4umb							: std_logic_vector(23 downto 0);
-	signal s4sma,s4smb						: std_logic_vector(24 downto 0);								
-	signal s4sgb,za,zb,ssz					: std_logic; 
+	component lpm_mult 
+	generic (
+		lpm_hint			: string;
+		lpm_representation	: string;
+		lpm_type			: string;
+		lpm_widtha			: natural;
+		lpm_widthb			: natural;
+		lpm_widthp			: natural
+	);
+	port (
+		dataa	: in std_logic_vector ( lpm_widtha-1 downto 0 );
+		datab	: in std_logic_vector ( lpm_widthb-1 downto 0 );
+		result	: out std_logic_vector( lpm_widthp-1 downto 0 )
+	);
+	end component;	
+	
+	signal bss								: std_logic_vector(22 downto 0); -- Inversor de la mantissa
+	signal sa,sb,ssa,ssb,sssa,sssb,s4a		: std_logic_vector(31 downto 0); -- Float 32 bit 
+	signal s4umb							: std_logic_vector(23 downto 0); -- Unsigned mantissa
+	signal s4sma,s4smb						: std_logic_vector(24 downto 0); -- Signed mantissas
+	signal sspH,sspL						: std_logic_vector(35 downto 0); -- Shifter Product								
+	signal s4sgb,zeroa,zerob,ssz			: std_logic; 
+	
 begin
 
 	process (clk)
@@ -61,7 +80,7 @@ begin
 				ssb(30 downto 23) <= sa(30 downto 23)-sb(30 downto 23);
 				ssb(22 downto 0) <= sb(22 downto 0);
 				--! zero signaling
-				ssz <= zb;
+				ssz <= zerob;
 				--!clasifica a
 				ssa <= sa;
 				
@@ -71,24 +90,38 @@ begin
 				ssb(30 downto 23) <= sb(30 downto 23)-sa(30 downto 23);
 				ssb(22 downto 0) <= sa(22 downto 0);
 				--! zero signaling
-				ssz <= za;
+				ssz <= zeroa;
 				--!clasifica b
 				ssa <= sb;
 			end if;
 			
-			--! Tercera etapa corrimiento y normalizaci&oacute;n de mantissas  
+			--! Segunda etapa corrimiento y denormalizaci&oacute;n de mantissas  
 			s4a <= ssa;
 			s4sgb <= ssb(31);
-			s4umb <= shr(ssz&ssb(22 downto 0),ssb(30 downto 23));
 			
-			--! Cuarta etapa signar la mantissa y entregar el exponente.
+			for i in 17 downto 0 loop
+				s4umb(i)  <= sspH(17-i) or sspL(23-i);
+			end loop;
+			for i in 23 downto 18 loop
+				s4umb(i)  <= sspL(23-i);
+			end loop;
+			
+
+			
+			--! Tercera etapa signar la mantissa y entregar el exponente.
 			sma <= s4sma + s4a(31);
 			smb <= s4smb + s4sgb;
 			exp <= s4a(30 downto 23);
 		end if;
 	end process;
 	--! Combinatorial Gremlin
-	
+	highshiftermult:lpm_mult
+	generic	map ("DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9","UNSIGNED","LPM_MULT",18,18,36)
+	port 	map (shl(conv_std_logic_vector(1,18),ssb(30 downto 23)),bss(22 downto 5),sspH);	
+	lowshiftermult:lpm_mult
+	generic	map ("DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9","UNSIGNED","LPM_MULT",18,18,36)
+	port 	map (shl(conv_std_logic_vector(1,18),ssb(30 downto 23)),conv_std_logic_vector(0,12)&bss(4 downto 0)&ssz,sspL);	
+
 	--!Signar b y c
 	signbc:
 	for i in 23 downto 0 generate
@@ -107,19 +140,23 @@ begin
 	--! zero
 	process (sb,sa)
 	begin
-		zb <='0';
-		za <='0';
+		zerob <='0';
+		zeroa <='0';
 		for i in 30 downto 23 loop
 			if sa(i)='1' then
-				za <= '1';
+				zeroa <= '1';
 			end if;
 			if sb(i)='1' then
-				zb <='1';
+				zerob <='1';
 			end if;
 			
 		end loop;
 	end process;
-	
+	--! ssb2bssInversor de posicion 
+	ssb2bss:
+	for i in 22 downto 0 generate
+		bss(i) <= ssb(22-i);
+	end generate ssb2bss;
 	
 end ema2_arch;
 

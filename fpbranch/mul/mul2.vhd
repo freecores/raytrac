@@ -61,7 +61,7 @@ architecture mul2_arch of mul2 is
 	);
 	end component;	
 
-	signal s0sga,s0sgb,s0sg,s1sg,s0significandMSB:std_logic;
+	signal s0sga,s0sgb,s1sg,s0significandMSB:std_logic;
 	signal s0exa,s0exb,s1ex:std_logic_vector(7 downto 0);
 	signal s0ex : std_logic_vector(8 downto 0);
 	signal s0uma,s0umb:std_logic_vector(16 downto 0);
@@ -84,11 +84,16 @@ begin
 			--! Etapa 0 multiplicacion de la mantissa, suma de los exponentes y multiplicaci&oacute;n de los signos.
 			s1map <= s0map(35 downto 11);
 			s1ex <= s0ex(7 downto 0);
-			p32(31) <= s0sg;
-			
-						
+			s1sg <= s0sga xor s0sgb;
+			--! Etapa 1 entregar el resultado
+			p32(31) <= s1sg;
+			p32(30 downto 23) <= s1ex+s1map(24);
+			if s1map(24) ='1' then
+				p32(22 downto 0) <= s1map(23 downto 1);
+			else
+				p32(22 downto 0) <= s1map(22 downto 0);
+			end if;
 		end if;
-		
 	end process;
 	
 	--! Combinatorial Gremlin
@@ -96,22 +101,9 @@ begin
 	generic	map ("DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9",0,"UNSIGNED","LPM_MULT",18,18,36)
 	port 	map (s0significandMSB&s0uma,s0significandMSB&s0umb,s0map);
 	
-	process(s1map,s1ex)
-	begin
-		p32(30 downto 23) <=s1ex+s1map(24);
-		if s1map(24)='1' then
-			p32(22 downto 0) <= s1map(23 downto 1);
-		else
-			p32(22 downto 0) <= s1map(22 downto 0);
-		end if;
-					
-	end process;
-	
-	
 	process (s0sga,s0sgb,s0exa,s0exb,s0uma,s0umb)
 		variable i8s0exa,i8s0exb: integer range 0 to 255;
 	begin
-		s0sg <= s0sga xor s0sgb;
 		i8s0exa:=conv_integer(s0exa);
 		i8s0exb:=conv_integer(s0exb);
 		if i8s0exa = 0 or i8s0exb = 0  then

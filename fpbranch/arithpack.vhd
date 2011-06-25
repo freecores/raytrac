@@ -88,6 +88,15 @@ package arithpack is
 		port	(clk,rst : out std_logic);
 	end component;
 	
+	
+	component sadd3 
+	port (
+		a,b,c:in std_logic_vector(24 downto 0);
+		dpc:in std_logic;
+		res:out std_logic_vector(24 downto 0)
+	);
+	end component;
+	
 	--! Ray Trac: Implementacion del Rt Engine
 	component raytrac
 	generic (

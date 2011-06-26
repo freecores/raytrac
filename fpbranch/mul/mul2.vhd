@@ -1,5 +1,5 @@
 ------------------------------------------------
---! @file mmp.vhd
+--! @file mul2.vhd
 --! @brief RayTrac Mantissa Multiplier  
 --! @author Juli&aacute;n Andr&eacute;s Guar&iacute;n Reyes
 --------------------------------------------------
@@ -54,19 +54,26 @@ architecture mul2_arch of mul2 is
 		lpm_widthp			: natural
 	);
 	port (
-		dataa	: in std_logic_vector ( 17 downto 0 );
-		datab	: in std_logic_vector ( 17 downto 0 );
---		clock 	: in std_logic;
-		result	: out std_logic_vector ( 35 downto 0 )
+		dataa	: in std_logic_vector ( lpm_widtha-1 downto 0 );
+		datab	: in std_logic_vector ( lpm_widthb-1 downto 0 );
+		result	: out std_logic_vector ( lpm_widthp-1 downto 0 )
 	);
 	end component;	
 
-	signal s0sga,s0sgb,s1sg,s0significandMSB:std_logic;
-	signal s0exa,s0exb,s1ex:std_logic_vector(7 downto 0);
-	signal s0ex : std_logic_vector(8 downto 0);
-	signal s0uma,s0umb:std_logic_vector(16 downto 0);
-	signal s0map:std_logic_vector(35 downto 0);
-	signal s1map:std_logic_vector(24 downto 0);
+	--Stage 0 signals
+	
+	
+	
+	signal s0sga,s0sgb,s0zrs,s1sgr,s2sgr:std_logic;
+	signal s0exa,s0exb,s1exp,s2exp:std_logic_vector(7 downto 0);
+	signal s0exp : std_logic_vector(8 downto 0);
+	signal s0uma,s0umb:std_logic_vector(22 downto 0);
+	signal s0ad,s0bc,s1ad,s1bc:std_logic_vector(23 downto 0);
+	signal s0ac:std_logic_vector(35 downto 0);
+	
+	
+	signal s1ac,s1umu:std_logic_vector(35 downto 0);
+	signal s2umu:std_logic_vector(24 downto 0);
 	
 begin
 
@@ -79,40 +86,68 @@ begin
 			s0sgb <= b32(31);
 			s0exa <= a32(30 downto 23);
 			s0exb <= b32(30 downto 23);
-			s0uma <= a32(22 downto 6);
-			s0umb <= b32(22 downto 6);
+			s0uma <= a32(22 downto 0);
+			s0umb <= b32(22 downto 0);
 			--! Etapa 0 multiplicacion de la mantissa, suma de los exponentes y multiplicaci&oacute;n de los signos.
-			s1map <= s0map(35 downto 11);
-			s1ex <= s0ex(7 downto 0);
-			s1sg <= s0sga xor s0sgb;
-			--! Etapa 1 entregar el resultado
-			p32(31) <= s1sg;
-			p32(30 downto 23) <= s1ex+s1map(24);
-			if s1map(24) ='1' then
-				p32(22 downto 0) <= s1map(23 downto 1);
+			s1sgr <= s0sga xor s0sgb;
+			s1ad <= s0ad;
+			s1bc <= s0bc;
+			s1ac <= s0ac;
+			s1exp <= s0exp(7 downto 0);
+			
+			--! Etapa 1 Sumas parciales
+			s2umu <= s1umu(35 downto 11);
+			s2sgr <= s1sgr;
+			s2exp <= s1exp;
+			
+			--! Etapa 2 entregar el resultado
+			p32(31) <= s2sgr;
+			p32(30 downto 23) <= s2exp+s2umu(24);
+			if s2umu(24) ='1' then
+				p32(22 downto 0) <= s2umu(23 downto 1);
 			else
-				p32(22 downto 0) <= s1map(22 downto 0);
+				p32(22 downto 0) <= s2umu(22 downto 0);
 			end if;
 		end if;
 	end process;
 	
-	--! Combinatorial Gremlin
-	mult:lpm_mult
-	generic	map ("DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9",0,"UNSIGNED","LPM_MULT",18,18,36)
-	port 	map (s0significandMSB&s0uma,s0significandMSB&s0umb,s0map);
+	--! Combinatorial Gremlin Etapa 0 : multiplicacion de la mantissa, suma de los exponentes y multiplicaci&oacute;n de los signos.
 	
-	process (s0sga,s0sgb,s0exa,s0exb,s0uma,s0umb)
+	--! Multipliers
+	mult18x18ac:lpm_mult
+	generic	map ("DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9",0,"UNSIGNED","LPM_MULT",18,18,36)
+	port 	map (s0zrs&s0uma(22 downto 6),s0zrs&s0umb(22 downto 6),s0ac);
+	mult18x6ad:lpm_mult
+	generic	map ("DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9",0,"UNSIGNED","LPM_MULT",18,6,24)
+	port 	map (s0zrs&s0uma(22 downto 6),s0umb(5 downto 0),s0ad);
+	mult18x6bc:lpm_mult
+	generic	map ("DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9",0,"UNSIGNED","LPM_MULT",18,6,24)
+	port 	map (s0zrs&s0umb(22 downto 6),s0uma(5 downto 0),s0bc);
+	
+	--! Exponent Addition 
+	process (s0sga,s0sgb,s0exa,s0exb)
 		variable i8s0exa,i8s0exb: integer range 0 to 255;
 	begin
 		i8s0exa:=conv_integer(s0exa);
 		i8s0exb:=conv_integer(s0exb);
 		if i8s0exa = 0 or i8s0exb = 0  then
-			s0ex <= (others => '0');
-			s0significandMSB <= '0';
+			s0exp <= (others => '0');
+			s0zrs <= '0';
 		else 
-			s0significandMSB<='1';
-			s0ex <= conv_std_logic_vector(i8s0exb+i8s0exa+129,9);
+			s0zrs<='1';
+			s0exp <= conv_std_logic_vector(i8s0exb+i8s0exa+129,9);
 		end if;
 	end process;
+	
+	--! Etapa 1: Suma parcial de la multiplicacion. Suma del exponente	
+	process(s1ac,s1ad,s1bc)
+	begin
+		s1umu <= s1ac+s1ad(23 downto 6)+s1bc(23 downto 6);
+	end process;
+	
+	
+			
+	
+	
 	
 end mul2_arch;

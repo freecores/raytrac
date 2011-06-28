@@ -62,15 +62,17 @@ architecture ema2_arch of ema2 is
 		result	: out std_logic_vector( lpm_widthp-1 downto 0 )
 	);
 	end component;	
-	signal s4lshift,s5lshift						: std_logic_vector (4 downto 0);
-	signal sexp,s5exp								: std_logic_vector (7 downto 0);
-	signal bss										: std_logic_vector(22 downto 0); -- Inversor de la mantissa
-	signal sa,sb,ssa,ssb,sssa,sssb,s4a				: std_logic_vector(31 downto 0); -- Float 32 bit 
-	signal s4umb									: std_logic_vector(23 downto 0); -- Unsigned mantissa
-	signal s4sma,s4smb,ssma,ssmb,s4ures,s5ures		: std_logic_vector(24 downto 0); -- Signed mantissas
-	signal s4res									: std_logic_vector(25 downto 0); -- Signed mantissa result
-	signal sspH,sspL,s5nrmL,s5nrmH					: std_logic_vector(35 downto 0); -- Shifter Product								
-	signal s4sgb,zeroa,zerob,ssz,s5sgr,s4zero		: std_logic; 
+	signal s2slr										: std_logic_vector(1 downto 0); 
+	signal s3lshift,s4lshift							: std_logic_vector(4 downto 0);
+	signal s2exp,s3exp,s4exp							: std_logic_vector(7 downto 0);
+	signal s4slab										: std_logic_vector(15 downto 0);
+	signal s2slab										: std_logic_vector(16 downto 0);
+	signal b1s,s4nrmP									: std_logic_vector(22 downto 0); -- Inversor de la mantissa
+	signal s0a,s0b,s1a,s1b,sssa,sssb,s3a				: std_logic_vector(31 downto 0); -- Float 32 bit 
+	signal s1sma,s2sma,s2smb,s3sma,s3smb,s3ures,s4ures	: std_logic_vector(24 downto 0); -- Signed mantissas
+	signal s3res										: std_logic_vector(25 downto 0); -- Signed mantissa result
+	signal s1pS,s1pH,s1pL,s4nrmL,s4nrmH,s4nrmS			: std_logic_vector(17 downto 0); -- Shifert Product
+	signal s3sgb,s0zeroa,s0zerob,s1z,s4sgr				: std_logic; 
 	
 begin
 
@@ -79,150 +81,189 @@ begin
 		if clk'event and clk='1' then 
 		
 			--!Registro de entrada
-			sa <= a32;
-			sb <= b32;
+			s0a <= a32;
+			s0b <= b32;
 
-			--!Primera etapa a vs. b
-			if sa(30 downto 23) >= sb (30 downto 23) then
+			--!Etapa 0,Escoger el mayor exponente que sera el resultado desnormalizado, calcula cuanto debe ser el corrimiento de la mantissa con menor exponente y reorganiza los operandos, si el mayor es b, intercambia las posici&oacute;n si el mayor es a las posiciones la mantiene. Zero check.
+			if s0a(30 downto 23) >= s0b (30 downto 23) then
 				--!signo,exponente,mantissa
-				ssb(31) <= sb(31);
-				ssb(30 downto 23) <= sa(30 downto 23)-sb(30 downto 23);
-				ssb(22 downto 0) <= sb(22 downto 0);
+				s1b(31) <= s0b(31);
+				s1b(30 downto 23) <= s0a(30 downto 23)-s0b(30 downto 23);
+				s1b(22 downto 0) <= s0b(22 downto 0);
 				--! zero signaling
-				ssz <= zerob;
+				s1z <= s0zerob;
 				--!clasifica a
-				ssa <= sa;
+				s1a <= s0a;
 				
 			else
 				--!signo,exponente,mantissa
-				ssb(31) <= sa(31);
-				ssb(30 downto 23) <= sb(30 downto 23)-sa(30 downto 23);
-				ssb(22 downto 0) <= sa(22 downto 0);
+				s1b(31) <= s0a(31);
+				s1b(30 downto 23) <= s0b(30 downto 23)-s0a(30 downto 23);
+				s1b(22 downto 0) <= s0a(22 downto 0);
 				--! zero signaling
-				ssz <= zeroa;
+				s1z <= s0zeroa;
 				--!clasifica b
-				ssa <= sb;
+				s1a <= s0b;
 			end if;
 			
-			--! Segunda etapa corrimiento y denormalizaci&oacute;n de mantissas  
-			s4a <= ssa;
-			s4sgb <= ssb(31);
+			--! Etapa 1: Denormalizaci&oacute;n de las mantissas.  
+			--! A
+			s2exp <= s1a(30 downto 23);
+			s2sma <= s1sma;
 			
-			for i in 17 downto 0 loop
-				s4umb(i)  <= sspH(17-i) or sspL(23-i);
+			--! B
+			for i in 23 downto 15 loop
+				s2smb(i)	<= s1pL(23-i) xor s1b(31);
 			end loop;
-			for i in 23 downto 18 loop
-				s4umb(i)  <= sspL(23-i);
+			for i in 14 downto 6 loop
+				s2smb(i) 	<= (s1pH(14-i) or s1pL(14-i+9)) xor s1b(31);
+			end loop;			
+			for i in 5 downto 0 loop
+				s2smb(i) 	<= (s1pS(5-i) or s1pH(5-i+9)) xor s1b(31);
 			end loop;
-			
-
-			
-			--! Tercera etapa signar la mantissa y entregar el exponente. Obteniendo el numero denormalizado
-			ssma <= s4sma + s4a(31);
-			ssmb <= s4smb + s4sgb;
-			sexp <= s4a(30 downto 23);
-			
-			--! Cuarta etapa suma/resta de mantissas denormalizadas y quitar el signo al resultado.
-			s5ures <= s4ures(24 downto 0)+s4res(25);
-			s5sgr  <= s4res(25);
-			for i in 7 downto 0 loop
-				s5exp(i) <= sexp(i) and s4zero;
-			end loop;
-			s5lshift <= s4lshift;
-			
-			--! Quinta etapa corrimientos y normalizaci&oacute;n de mantissas y entrega de resultado.
-			res32(31) <= s5sgr;
-			if s5ures(24)='1' then 
-				res32(22 downto 0) <= s5ures(23 downto 1);
-				res32(30 downto 23) <= s5exp+1;
+			 
+			if s1b(30 downto 28)>"000" then
+				s2slr <= "11";
 			else
-				for i in 22 downto 5 loop
-					res32(i) <= s5nrmL(i) or s5nrmH(i-5);
-				end loop;
-				for i in 4 downto 0 loop
-					res32(i) <= s5nrmL(i);
-				end loop;
-				res32(30 downto 23) <= s5exp - ("000"&s5lshift);
+				s2slr <= s1b(27 downto 26);
 			end if;
 			
+			s2smb(24) <= s1b(31);
 			
+			--! Etapa2: Finalizar la denormalizaci&oacute;n de b.
+			--! A
+			s3sma <= s2sma;		
+			s3exp <= s2exp;
 			
-		
-		
+			--! B
+			case (s2slr) is
+				when "00" =>
+					s3smb 	<= s2smb(24 downto 0)+s2smb(24);
+				when "01" => 
+					s3smb 	<= ( s2slab(8 downto 0) & s2smb(23 downto 8) ) + s2smb(24);
+				when "10"  =>
+					s3smb 	<= ( s2slab(16 downto 0) & s2smb(23 downto 16)) + s2smb(24);
+				when others => 
+					s3smb 	<= (others => '0');
+			end case;  
+				
+			
+			--! Etapa 3: Etapa 3 Realizar la suma, quitar el signo de la mantissa y codificar el corrimiento hacia la izquierda.
+			s4ures	<= s3ures+s3res(25); 				--Resultado no signado
+			s4sgr	<= s3res(25);						--Signo
+			s4exp 	<= s3exp;							--Exponente 
+			s4lshift <= s3lshift;						--Corrimiento hacia la izquierda. 
+			
+			--! Etapa 4: Corrimiento y normalizaci&oacute;n de la mantissa resultado.
+			res32(31) <= s4sgr;
+			if s4ures(24)='1' then 
+				res32(22 downto 0) <= s4ures(23 downto 1);
+				res32(30 downto 23) <= s4exp+1;
+			else
+				case s4lshift(4 downto 3) is
+					when "00" => 
+						res32(22 downto 0) 	<= s4nrmP(22 downto 0);
+						res32(30 downto 23) <= s4exp - s4lshift;
+					when "01" => 
+						res32(22 downto 0) 	<= s4nrmP(14 downto 0)	& s4slab(7 downto 0);
+						res32(30 downto 23) <= s4exp - s4lshift;
+					when "10" => 
+						res32(22 downto 0)	<= s4nrmP(6 downto 0)	& s4slab(15 downto 0);
+						res32(30 downto 23) <= s4exp - s4lshift;  
+					when others => 
+						res32(30 downto 0) <= (others => '0');	
+				end case;	
+				
+			end if;
 		
 		end if;
 	end process;
-	--! Combinatorial Gremlin
-	denormhighshiftermult:lpm_mult
-	generic	map ("DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9","UNSIGNED","LPM_MULT",18,18,36)
-	port 	map (shl(conv_std_logic_vector(1,18),ssb(30 downto 23)),bss(22 downto 5),sspH);	
-	denormlowshiftermult:lpm_mult
-	generic	map ("DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9","UNSIGNED","LPM_MULT",18,18,36)
-	port 	map (shl(conv_std_logic_vector(1,18),ssb(30 downto 23)),conv_std_logic_vector(0,12)&bss(4 downto 0)&ssz,sspL);	
---! Combinatorial Gremlin
-	normhighshiftermult:lpm_mult
-	generic	map ("DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9","UNSIGNED","LPM_MULT",18,18,36)
-	port 	map (shl(conv_std_logic_vector(1,18),s5lshift),s5ures(22 downto 5),s5nrmH);	
-	normlowshiftermult:lpm_mult
-	generic	map ("DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9","UNSIGNED","LPM_MULT",18,18,36)
-	port 	map (shl(conv_std_logic_vector(1,18),s5lshift),conv_std_logic_vector(0,13)&s5ures(4 downto 0),s5nrmL);
-	--!Signar b y c
-	signbc:
-	for i in 23 downto 0 generate
-		s4smb(i) <= s4sgb xor s4umb(i);
-	end generate;
-	s4smb(24) <= s4sgb;
-	
-	--!Signar a
-	signa:
-	for i in 22 downto 0 generate
-		s4sma(i) <= s4a(31) xor s4a(i);
-	end generate;
-	s4sma(23) <= not(s4a(31));
-	s4sma(24) <= s4a(31);	
-	
-	--! zero
-	process (sb,sa)
+	--! Combinatorial gremlin, Etapa 0, Escoger el mayor exponente que sera el resultado desnormalizado,\n 
+	--! calcula cuanto debe ser el corrimiento de la mantissa con menor exponente y reorganiza los operandos,\n
+	--! si el mayor es b, intercambia las posici&oacute;n si el mayor es a las posiciones la mantiene. Zero check.\n 
+	process (s0b(30 downto 23),s0a(30 downto 23))
 	begin
-		zerob <='0';
-		zeroa <='0';
+		s0zerob <='0';
+		s0zeroa <='0';
 		for i in 30 downto 23 loop
-			if sa(i)='1' then
-				zeroa <= '1';
+			if s0a(i)='1' then
+				s0zeroa <= '1';
 			end if;
-			if sb(i)='1' then
-				zerob <='1';
+			if s0b(i)='1' then
+				s0zerob <='1';
 			end if;
 			
 		end loop;
 	end process;
-	--! ssb2bssInversor de posicion 
-	ssb2bss:
+	
+	
+	--! Combinatorial Gremlin, Etapa 1 Denormalizaci&oacute;n de las mantissas. 
+	denormsupershiftermult:lpm_mult
+	generic	map ("DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9","UNSIGNED","LPM_MULT",9,9,18)
+	port 	map ("00"&shl(conv_std_logic_vector(1,7),s1b(25 downto 23)),conv_std_logic_vector(0,3)&b1s(22 downto 17),s1pS);	
+	denormhighshiftermult:lpm_mult
+	generic	map ("DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9","UNSIGNED","LPM_MULT",9,9,18)
+	port 	map ("00"&shl(conv_std_logic_vector(1,7),s1b(25 downto 23)),b1s(16 downto 8),s1pH);	
+	denormlowshiftermult:lpm_mult
+	generic	map ("DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9","UNSIGNED","LPM_MULT",9,9,18)
+	port 	map ("00"&shl(conv_std_logic_vector(1,7),s1b(25 downto 23)),b1s(7 downto 0)&s1z,s1pL);	
+	s1b2b1s:
 	for i in 22 downto 0 generate
-		bss(i) <= ssb(22-i);
-	end generate ssb2bss;
+		b1s(i) <= s1b(22-i);
+	end generate s1b2b1s;
+	signa:
+	for i in 22 downto 0 generate
+		s1sma(i) <= s1a(31) xor s1a(i);
+	end generate;
+	s1sma(23) <= not(s1a(31));
+	s1sma(24) <= s1a(31);	
 	
 	
-	--! Realizar la suma, quitar el signo de la mantissa y codificar el corrimiento hacia la izquierda. 
+	--! Combinatorial Gremlin, Etapa2: Finalizar la denormalizaci&oacute;n de b.
+	s2signslab:
+	for i in 16 downto 0 generate
+		s2slab(i) <= s2smb(24);
+	end generate s2signslab;
+	
+	--! Combinatorial Gremlin, Etapa 3 Realizar la suma, quitar el signo de la mantissa y codificar el corrimiento hacia la izquierda. 
 	adder:sadd2
-	port map (ssma(24)&ssma,ssmb(24)&ssmb,dpc,s4res);
-	process(s4res)
-		variable lshift : integer range 23 downto 0; 
+	port map (s3sma(24)&s3sma,s3smb(24)&s3smb,dpc,s3res);
+	process(s3res)
+		variable lshift : integer range 24 downto 0; 
 	begin
-		lshift:=0;
-		s4zero <= '0'; 
+		lshift:=24;
+ 
 		for i in 0 to 23 loop
-			s4ures(i) <= s4res(25) xor s4res(i);
-			if (s4res(25) xor s4res(i))='1' then
+			s3ures(i) <= s3res(25) xor s3res(i);
+			if (s3res(25) xor s3res(i))='1' then
 				lshift:=23-i;
-				s4zero <= '1';
 			end if;
 		end loop;
-		s4ures(24) <= s4res(24) xor s4res(25);  
-		s4lshift <= conv_std_logic_vector(lshift,5);
+		s3ures(24) <= s3res(24) xor s3res(25);  
+		s3lshift <= conv_std_logic_vector(lshift,5);
 	end process;	
 	
 	
+	--! Combinatorial Gremlin, Etapa 4 corrimientos y normalizaci&oacute;n de la mantissa resultado.
+	normsupershiftermult:lpm_mult
+	generic	map ("DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9","UNSIGNED","LPM_MULT",9,9,18)
+	port 	map (shl(conv_std_logic_vector(1,9),s4lshift(2 downto 0)),s4ures(22 downto 14),s4nrmS);	
+	normhighshiftermult:lpm_mult
+	generic	map ("DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9","UNSIGNED","LPM_MULT",9,9,18)
+	port 	map (shl(conv_std_logic_vector(1,9),s4lshift(2 downto 0)),s4ures(13 downto 5),s4nrmH);	
+	normlowshiftermult:lpm_mult
+	generic	map ("DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9","UNSIGNED","LPM_MULT",9,9,18)
+	port 	map (shl(conv_std_logic_vector(1,9),s4lshift(2 downto 0)),s4ures(4 downto 0)&conv_std_logic_vector(0,4),s4nrmL);
+	process (s4nrmS,s4nrmH,s4nrmL)
+	begin 
+		s4nrmP(22 downto 14) <= s4nrmS(8 downto 0) or s4nrmH(17 downto 9);
+		s4nrmP(13 downto 5) <= s4nrmH(8 downto 0) or s4nrmL(17 downto 9);
+		s4nrmP(4 downto 0) <= s4nrmL(8 downto 4);
+	end process;
+	s4signslab:
+	for i in 15 downto 0 generate
+		s4slab(i) <= '0';
+	end generate s4signslab;
 end ema2_arch;
 
 		

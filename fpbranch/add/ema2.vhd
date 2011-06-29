@@ -150,7 +150,7 @@ begin
 			
 			--! Etapa 3: Etapa 3 Realizar la suma, quitar el signo de la mantissa y codificar el corrimiento hacia la izquierda.
 			s4ures	<= s3ures+s3res(25); 				--Resultado no signado
-			s4sgr	<= s3res(25);						--Signo
+			s4sgr	<= s3res(25) xor dpc;						--Signo
 			s4exp 	<= s3exp;							--Exponente 
 			s4lshift <= s3lshift;						--Corrimiento hacia la izquierda. 
 			
@@ -226,8 +226,21 @@ begin
 	end generate s2signslab;
 	
 	--! Combinatorial Gremlin, Etapa 3 Realizar la suma, quitar el signo de la mantissa y codificar el corrimiento hacia la izquierda. 
-	adder:sadd2
-	port map (s3sma(24)&s3sma,s3smb(24)&s3smb,dpc,s3res);
+	--adder:sadd2
+	--port map (s3sma(24)&s3sma,s3smb(24)&s3smb,dpc,s3res);
+	process (s3sma,s3smb,dpc)
+		variable a: integer range -2**25 to 2**25-1;
+		variable b: integer range -2**25 to 2**25-1;
+	begin
+		a:=ieee.std_logic_signed.conv_integer(s3sma(24)&s3sma);
+		b:=ieee.std_logic_signed.conv_integer(s3smb(24)&s3smb);
+		if dpc='0' then
+			s3res <= conv_std_logic_vector(a+b,26);
+		else
+			s3res <= conv_std_logic_vector(a-b,26);
+		end if;		
+	end process;
+	
 	process(s3res)
 		variable lshift : integer range 24 downto 0; 
 	begin

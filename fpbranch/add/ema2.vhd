@@ -82,7 +82,8 @@ begin
 		
 			--!Registro de entrada
 			s0a <= a32;
-			s0b <= b32;
+			s0b(31) <= dpc xor b32(31);	--! Importante: Integrar el signo en el operando B
+			s0b(30 downto 0) <= b32(30 downto 0);
 
 			--!Etapa 0,Escoger el mayor exponente que sera el resultado desnormalizado, calcula cuanto debe ser el corrimiento de la mantissa con menor exponente y reorganiza los operandos, si el mayor es b, intercambia las posici&oacute;n si el mayor es a las posiciones la mantiene. Zero check.
 			if s0a(30 downto 23) >= s0b (30 downto 23) then
@@ -150,7 +151,7 @@ begin
 			
 			--! Etapa 3: Etapa 3 Realizar la suma, quitar el signo de la mantissa y codificar el corrimiento hacia la izquierda.
 			s4ures	<= s3ures+s3res(25); 				--Resultado no signado
-			s4sgr	<= s3res(25) xor dpc;						--Signo
+			s4sgr	<= s3res(25);						--Signo
 			s4exp 	<= s3exp;							--Exponente 
 			s4lshift <= s3lshift;						--Corrimiento hacia la izquierda. 
 			
@@ -228,17 +229,10 @@ begin
 	--! Combinatorial Gremlin, Etapa 3 Realizar la suma, quitar el signo de la mantissa y codificar el corrimiento hacia la izquierda. 
 	--adder:sadd2
 	--port map (s3sma(24)&s3sma,s3smb(24)&s3smb,dpc,s3res);
-	process (s3sma,s3smb,dpc)
-		variable a: integer range -2**25 to 2**25-1;
-		variable b: integer range -2**25 to 2**25-1;
+	process (s3sma,s3smb)
 	begin
-		a:=ieee.std_logic_signed.conv_integer(s3sma(24)&s3sma);
-		b:=ieee.std_logic_signed.conv_integer(s3smb(24)&s3smb);
-		if dpc='0' then
-			s3res <= conv_std_logic_vector(a+b,26);
-		else
-			s3res <= conv_std_logic_vector(a-b,26);
-		end if;		
+		--! Magia: La suma ocurre aqui
+		s3res <= (s3sma(24)&s3sma)+(s3smb(24)&s3smb);
 	end process;
 	
 	process(s3res)

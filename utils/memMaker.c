@@ -34,9 +34,10 @@ struct {
 	int R;
 	
 	int offset;
+	int addressoffset;
 	
 	
-}memparam={0,0,0,australia,canada,0,1};	
+}memparam={0,0,0,australia,canada,0,1,0};	
 
 //mpx memparam={0,0,australia};
 
@@ -47,8 +48,11 @@ void optParser(int argc, char ** argv){
 	/*memparam.initialheader=australia;
 	memparam.width=0;
 	memparam.depth=0;*/
-	while ((a=getopt(argc,argv,"o:t:e:d:Rr"))!=-1){
+	while ((a=getopt(argc,argv,"a:o:t:e:d:Rr"))!=-1){
 		switch(a){
+			case 'a':
+				memparam.addressoffset=atoi(optarg);
+				break;
 			case 'o':
 				memparam.offset=atoi(optarg);
 				break;
@@ -141,8 +145,8 @@ void generatenums(void){
 	epsilon=1/(float)memparam.depth;
 	
 	fprintf(stdout,"-- epsilon: %f\n",epsilon);
-	for(index=0;index<memparam.depth ;index++){
-		factor=xf[memparam.R](memparam.offset*(1+index*epsilon));
+	for(index=memparam.addressoffset;index<memparam.depth+memparam.addressoffset;index++){
+		factor=xf[memparam.R](memparam.offset*(1+(index-memparam.addressoffset)*epsilon));
 		sign=memparam.R==2?((factor&(1<<memparam.width))?'-':'+'):'+';
 		ffactor=(factor&(1<<memparam.width))?(factor^(int)(pow(2,memparam.width+1)-1))+1:factor;
 		ffactor/=pow(2,memparam.dec);

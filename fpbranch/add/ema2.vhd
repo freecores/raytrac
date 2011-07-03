@@ -1,6 +1,6 @@
 ------------------------------------------------
 --! @file ema2.vhd
---! @brief RayTrac Exponent Managment Adder  
+--! @brief RayTrac Floating Point Adder  
 --! @author Juli&aacute;n Andr&eacute;s Guar&iacute;n Reyes
 --------------------------------------------------
 
@@ -40,13 +40,7 @@ entity ema2 is
 end ema2;
 
 architecture ema2_arch of ema2 is
-	component sadd2 
-	port (
-		a,b:in std_logic_vector(25 downto 0);
-		dpc:in std_logic;
-		res:out std_logic_vector(25 downto 0)
-	);
-	end component;
+	
 	component lpm_mult 
 	generic (
 		lpm_hint			: string;
@@ -68,11 +62,11 @@ architecture ema2_arch of ema2 is
 	signal s4slab										: std_logic_vector(15 downto 0);
 	signal s2slab										: std_logic_vector(16 downto 0);
 	signal b1s,s4nrmP									: std_logic_vector(22 downto 0); -- Inversor de la mantissa
-	signal s0a,s0b,s1a,s1b,sssa,sssb,s3a				: std_logic_vector(31 downto 0); -- Float 32 bit 
+	signal s0a,s0b,s1a,s1b,								: std_logic_vector(31 downto 0); -- Float 32 bit 
 	signal s1sma,s2sma,s2smb,s3sma,s3smb,s3ures,s4ures	: std_logic_vector(24 downto 0); -- Signed mantissas
 	signal s3res										: std_logic_vector(25 downto 0); -- Signed mantissa result
 	signal s1pS,s1pH,s1pL,s4nrmL,s4nrmH,s4nrmS			: std_logic_vector(17 downto 0); -- Shifert Product
-	signal s3sgb,s0zeroa,s0zerob,s1z,s4sgr				: std_logic; 
+	signal s0zeroa,s0zerob,s1z,s4sgr				: std_logic; 
 	
 begin
 

@@ -9,8 +9,7 @@ entity sqrt32 is
 	port (
 		
 		clk : in std_logic;
-		rd32: in std_logic_vector(31 downto 0);
-		
+		rd32: in std_logic_vector(31 downto 0);		
 		sq32: out std_logic_vector(31 downto 0)
 	);
 end sqrt32;
@@ -41,8 +40,10 @@ architecture sqrt32_arch of sqrt32 is
 	);
 	end component;
 
-	signal s0nexp,s0uexp,s0e129,s0e1292	: std_logic_vector(30 downto 23);
+	signal s0sgn			: std_logic;
+	signal s0uexp,s0e129	: std_logic_vector(7 downto 0);
 	signal s0q				: std_logic_vector(17 downto 0);
+	
 begin
 	
 	altsyncram_component : altsyncram
@@ -50,43 +51,44 @@ begin
 		address_aclr_a => "NONE",
 		clock_enable_input_a => "BYPASS",
 		clock_enable_output_a => "BYPASS",
-		init_file => "../../../MinGW/msys/1.0/home/julian/code/testbench/trunk/fpbranch/sqrt/memsqrt.mif",
+		init_file => "X:/Tesis/Workspace/hw/rt_lib/arith/src/trunk/fpbranch/sqrt/memsqrt.mif",
 		intended_device_family => "Cyclone III",
 		lpm_hint => "ENABLE_RUNTIME_MOD=NO",
 		lpm_type => "altsyncram",
 		numwords_a => 1024,
 		operation_mode => "ROM",
 		outdata_aclr_a => "NONE",
-		outdata_reg_a => "CLOCK0",
+		outdata_reg_a => "UNREGISTERED",
 		widthad_a => 10,
 		width_a => 18,
 		width_byteena_a => 1
 	)
 	port map (
 		clock0 => clk,
-		address_a => s0uexp(0)&s0umr(22 downto 14),
+		address_a => rd32(23 downto 14),
 		q_a => s0q
 	);
-		--! SNAN?
+	--! SNAN?
 	process (clk)
 	begin
 		if clk'event and clk='1' then
 			
 			--!Carga de Operando.
-			s0sgn<=rd(31);
-			s0uexp<=rd(30 downto 23);
-			s0umr<=rd(22 downto 0);
+			s0sgn <= rd32(31);
+			s0uexp <= rd32(30 downto 23);
+			
 			
 			--! Etapa 0: Calcular direcci&oacute;n a partir del exponente y el exponente.
-			sq32(31)<=s0sgn;
-			sq32(22 downto 0)<=s0q(16 downto 0) & "000000";
+			sq32(31) <= s0sgn;
+			sq32(30 downto 23) <= (s0e129(7)&s0e129(7 downto 1))+127;
+			sq32(22 downto 6) <= s0q(16 downto 0);
 			
 		
 		end if;
 	end process;
 	
 	--! Combinatorial Gremlin: Etapa 0, calculo del exponente. 
-	s0e129<=s0uexp+129;
-	s0e1292<=s0uexp(s0uexp'high)&s0uexp(7 downto 1);
+	s0e129<=s0uexp+("1000000"&s0uexp(0));
+	sq32(5 downto 0) <= (others => '0');
 
 end sqrt32_arch;

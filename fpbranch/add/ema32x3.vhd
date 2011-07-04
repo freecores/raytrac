@@ -1,5 +1,5 @@
 ------------------------------------------------
---! @file ema3.vhd
+--! @file ema32x3.vhd
 --! @brief RayTrac Exponent Managment Adder  
 --! @author Juli&aacute;n Andr&eacute;s Guar&iacute;n Reyes
 --------------------------------------------------
@@ -7,7 +7,7 @@
 
 -- RAYTRAC (FP BRANCH)
 -- Author Julian Andres Guarin
--- ema3.vhd
+-- ema32x3.vhd
 -- This file is part of raytrac.
 -- 
 --     raytrac is free software: you can redistribute it and/or modify
@@ -30,7 +30,7 @@ use ieee.std_logic_arith.all;
 
 
 
-entity ema3 is 
+entity ema32x3 is 
 	port (
 		clk,dpc		: in std_logic;
 		a32,b32,c32	: in std_logic_vector (31 downto 0);
@@ -39,9 +39,9 @@ entity ema3 is
 						
 	
 	);
-end ema3;
+end ema32x3;
 
-architecture ema3_arch of ema3 is
+architecture ema32x3_arch of ema32x3 is
 	component lpm_mult 
 	generic (
 		lpm_hint			: string;
@@ -89,7 +89,7 @@ begin
 				s1b(30 downto 23) <= s0a(30 downto 23) - s0b(30 downto 23);
 				s1b(22 downto 0) <= s0b(22 downto 0);
 				s1zb <= s0zerob;
-				ssc(31) <= s0c(31);
+				s1c(31) <= s0c(31);
 				s1c(30 downto 23) <= s0a(30 downto 23) - s0c(30 downto 23);
 				s1c(22 downto 0) <= s0c(22 downto 0);
 				s1zc <= s0zeroc;
@@ -223,7 +223,7 @@ begin
 	--! Combinatorial gremlin, Etapa 0, Escoger el mayor exponente que sera el resultado desnormalizado,\n 
 	--! calcula cuanto debe ser el corrimiento de la mantissa con menor exponente y reorganiza los operandos,\n
 	--! si el mayor es b, intercambia las posici&oacute;n si el mayor es a las posiciones la mantiene. Zero check.\n 
-	process (s0b(30 downto 23),s0a(30 downto 23))
+	process (s0b(30 downto 23),s0a(30 downto 23),s0c(30 downto 23))
 	begin
 		s0zerob <='0';
 		s0zeroa <='0';
@@ -329,7 +329,7 @@ begin
 	for i in 15 downto 0 generate
 		s4slab(i) <= '0';
 	end generate s4signslab;
-end ema3_arch;
+end ema32x3_arch;
 
 
 

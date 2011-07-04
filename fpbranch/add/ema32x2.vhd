@@ -1,5 +1,5 @@
 ------------------------------------------------
---! @file ema2.vhd
+--! @file ema32x2.vhd
 --! @brief RayTrac Floating Point Adder  
 --! @author Juli&aacute;n Andr&eacute;s Guar&iacute;n Reyes
 --------------------------------------------------
@@ -7,7 +7,7 @@
 
 -- RAYTRAC (FP BRANCH)
 -- Author Julian Andres Guarin
--- ema2.vhd
+-- ema32x2.vhd
 -- This file is part of raytrac.
 -- 
 --     raytrac is free software: you can redistribute it and/or modify
@@ -31,15 +31,15 @@ use ieee.std_logic_arith.all;
 
 --! Esta entidad recibe dos n&uacutemeros en formato punto flotante IEEE 754, de precision simple y devuelve las mantissas signadas y corridas, y el exponente correspondiente al resultado antes de normalizarlo al formato float. 
 --!\nLas 2 mantissas y el exponente entran despues a la entidad add2 que suma las mantissas y entrega el resultado en formato IEEE 754.
-entity ema2 is 
+entity ema32x2 is 
 	port (
 		clk,dpc		: in std_logic;
 		a32,b32		: in std_logic_vector (31 downto 0);
 		res32		: out std_logic_vector(31 downto 0)
 	);
-end ema2;
+end ema32x2;
 
-architecture ema2_arch of ema2 is
+architecture ema32x2_arch of ema32x2 is
 	
 	component lpm_mult 
 	generic (
@@ -62,7 +62,7 @@ architecture ema2_arch of ema2 is
 	signal s4slab										: std_logic_vector(15 downto 0);
 	signal s2slab										: std_logic_vector(16 downto 0);
 	signal b1s,s4nrmP									: std_logic_vector(22 downto 0); -- Inversor de la mantissa
-	signal s0a,s0b,s1a,s1b,								: std_logic_vector(31 downto 0); -- Float 32 bit 
+	signal s0a,s0b,s1a,s1b								: std_logic_vector(31 downto 0); -- Float 32 bit 
 	signal s1sma,s2sma,s2smb,s3sma,s3smb,s3ures,s4ures	: std_logic_vector(24 downto 0); -- Signed mantissas
 	signal s3res										: std_logic_vector(25 downto 0); -- Signed mantissa result
 	signal s1pS,s1pH,s1pL,s4nrmL,s4nrmH,s4nrmS			: std_logic_vector(17 downto 0); -- Shifert Product
@@ -265,6 +265,6 @@ begin
 	for i in 15 downto 0 generate
 		s4slab(i) <= '0';
 	end generate s4signslab;
-end ema2_arch;
+end ema32x2_arch;
 
 		

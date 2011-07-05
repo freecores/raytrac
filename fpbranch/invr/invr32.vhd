@@ -5,16 +5,16 @@ use ieee.std_logic_unsigned.all;
 
 
 
-entity sqrt32 is 
+entity invr32 is 
 	port (
 		
 		clk : in std_logic;
-		rd32: in std_logic_vector(31 downto 0);		
-		sq32: out std_logic_vector(31 downto 0)
+		dvd32: in std_logic_vector(31 downto 0);		
+		qout32: out std_logic_vector(31 downto 0)
 	);
-end sqrt32;
+end invr32;
 
-architecture sqrt32_arch of sqrt32 is 
+architecture invr32_arch of invr32 is 
 
 	component altsyncram
 	generic (
@@ -46,36 +46,12 @@ architecture sqrt32_arch of sqrt32 is
 	
 begin
 	
-	--! SNAN?
-	process (clk)
-	begin
-		if clk'event and clk='1' then
-			
-			--!Carga de Operando.
-			s0sgn <= rd32(31);
-			s0uexp <= rd32(30 downto 23);
-			
-			
-			--! Etapa 0: Calcular direcci&oacute;n a partir del exponente y el exponente.
-			sq32(31) <= s0sgn;
-			sq32(30 downto 23) <= (s0e129(7)&s0e129(7 downto 1))+127;
-			sq32(22 downto 6) <= s0q(16 downto 0);
-			
-		
-		end if;
-	end process;
-	
-	--! Combinatorial Gremlin: Etapa 0, calculo del exponente. 
-	s0e129<=s0uexp+("1000000"&s0uexp(0));
-	sq32(5 downto 0) <= (others => '0');
-	--! Combinatorial Gremlin, Etapa 0, calcula la ra&iacute;z cuadrada de la mantissa
-	--! Recuerde que aunque rd32(23) no pertenece a la mantissa indica si el exponente es par o impar, 1 (par) y 0 (impar)
 	altsyncram_component : altsyncram
 	generic map (
 		address_aclr_a => "NONE",
 		clock_enable_input_a => "BYPASS",
 		clock_enable_output_a => "BYPASS",
-		init_file => "X:/Tesis/Workspace/hw/rt_lib/arith/src/trunk/fpbranch/sqrt/memsqrt.mif",
+		init_file => "X:/Tesis/Workspace/hw/rt_lib/arith/src/trunk/fpbranch/invr/meminvr.mif",
 		intended_device_family => "Cyclone III",
 		lpm_hint => "ENABLE_RUNTIME_MOD=NO",
 		lpm_type => "altsyncram",
@@ -87,6 +63,41 @@ begin
 		width_a => 18,
 		width_byteena_a => 1
 	)
-	port map (clock0 => clk,address_a => rd32(23 downto 14),q_a => s0q);
+	port map (
+		clock0 => clk,
+		address_a => dvd32(22 downto 13),
+		q_a => s0q
+	);
+	--! SNAN?
+	process (clk)
+	begin
+		if clk'event and clk='1' then
+			
+			--!Carga de Operando.
+			s0sgn <= dvd32(31);
+			s0uexp <= dvd32(30 downto 23);
+			
+			
+			--! Etapa 0: Calcular direcci&oacute;n a partir del exponente, salida y normalizaci&oacute;n de la mantissa.
+			qout32(31) <= s0sgn;
+			if s0q(17)='1' then
+				qout32(22 downto 7) <= (others => '0');
+				qout32(30 downto 23) <= s0e129+255;
+			else
+				qout32(22 downto 7) <= s0q(15 downto 0);
+				qout32(30 downto 23) <= s0e129+254;
+			end if;	
+		
+		end if;
+	end process;
+	
+	--! Combinatorial Gremlin: Etapa 0, calculo del exponente. 
+	process(s0uexp)
+	begin
+		for i in 7 downto 0 loop 
+			s0e129(i)<=not(s0uexp(i));
+		end loop;
+	end process;
+	qout32(6 downto 0) <= (others => '0');
 
-end sqrt32_arch;
+end invr32_arch;

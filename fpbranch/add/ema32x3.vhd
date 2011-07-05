@@ -290,7 +290,8 @@ begin
 	process (s3sma,s3smb,s3smc)
 	begin
 		--! Magia: La suma ocurre aqui
-		s3res <= (s3sma(24)&s3sma(24)&s3sma)+(s3smb(24)&s3smb(24)&s3smb)+(s3smc(24)&s3smc(24)&s3smc);
+		s3res <= (s3sma(24)&s3sma(24)&s3sma)+(s3smb(24)&s3smb(24)&s3smb);
+		--! +(s3smc(24)&s3smc(24)&s3smc);
 	end process;
 	
 	process(s3res)

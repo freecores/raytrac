@@ -41,24 +41,18 @@ end ema32x2;
 
 architecture ema32x2_arch of ema32x2 is
 	
-	component lpm_mult 
-	generic (
-		lpm_hint			: string;
-		lpm_representation	: string;
-		lpm_type			: string;
-		lpm_widtha			: natural;
-		lpm_widthb			: natural;
-		lpm_widthp			: natural
-	);
+	component shftr
 	port (
-		dataa	: in std_logic_vector ( lpm_widtha-1 downto 0 );
-		datab	: in std_logic_vector ( lpm_widthb-1 downto 0 );
-		result	: out std_logic_vector( lpm_widthp-1 downto 0 )
+		dir		: in std_logic;
+		places	: in std_logic_vector (3 downto 0);
+		data24	: in std_logic_vector (23 downto 0);
+		data40	: out std_logic_vector (39 downto 0)
 	);
-	end component;	
+	end component;
+		
 	signal s2slr										: std_logic_vector(1 downto 0); 
 	signal s3lshift,s4lshift							: std_logic_vector(4 downto 0);
-	signal s2exp,s3exp,s4exp							: std_logic_vector(7 downto 0);
+	signal s0sdelta,s0udelta,s0udeltaa,s0udeltab,s2exp,s3exp,s4exp		: std_logic_vector(7 downto 0);
 	signal s4slab										: std_logic_vector(15 downto 0);
 	signal s2slab										: std_logic_vector(16 downto 0);
 	signal b1s,s4nrmP									: std_logic_vector(22 downto 0); -- Inversor de la mantissa
@@ -66,7 +60,7 @@ architecture ema32x2_arch of ema32x2 is
 	signal s1sma,s2sma,s2smb,s3sma,s3smb,s3ures,s4ures	: std_logic_vector(24 downto 0); -- Signed mantissas
 	signal s3res										: std_logic_vector(25 downto 0); -- Signed mantissa result
 	signal s1pS,s1pH,s1pL,s4nrmL,s4nrmH,s4nrmS			: std_logic_vector(17 downto 0); -- Shifert Product
-	signal s0zeroa,s0zerob,s1z,s4sgr				: std_logic; 
+	signal s0zeroa,s0zerob,s1zeroa,s1zerob,s1z,s4sgr			: std_logic; 
 	
 begin
 
@@ -76,31 +70,30 @@ begin
 		
 			--!Registro de entrada
 			s0a <= a32;
+			
 			s0b(31) <= dpc xor b32(31);	--! Importante: Integrar el signo en el operando B
 			s0b(30 downto 0) <= b32(30 downto 0);
-
-			--!Etapa 0,Escoger el mayor exponente que sera el resultado desnormalizado, calcula cuanto debe ser el corrimiento de la mantissa con menor exponente y reorganiza los operandos, si el mayor es b, intercambia las posici&oacute;n si el mayor es a las posiciones la mantiene. Zero check.
-			if s0a(30 downto 23) >= s0b (30 downto 23) then
-				--!signo,exponente,mantissa
-				s1b(31) <= s0b(31);
-				s1b(30 downto 23) <= s0a(30 downto 23)-s0b(30 downto 23);
-				s1b(22 downto 0) <= s0b(22 downto 0);
-				--! zero signaling
-				s1z <= s0zerob;
-				--!clasifica a
-				s1a <= s0a;
-				
+			s0b(22 downto 0) <= b32(22 downto 0);
+			
+			--!Etapa 0,Calcular la manera en que se llevara a cabo la desnormalizacion
+			s1dira		<= s0sdelta(7);
+			s1dirb		<= not(s0sdelta(7));
+		 	s1uma		<= s0a(22 downto 0);
+		 	s1umb		<= s0b(22 downto 0);
+			if s0zeroa='0' or s0zerob='0' then
+				s1expb	<= s0b(30 downto 23) or s0a(30 downto 23);
+				s1udeltaa	<= "0000";
+				s1udeltab	<= "0000";
 			else
-				--!signo,exponente,mantissa
-				s1b(31) <= s0a(31);
-				s1b(30 downto 23) <= s0b(30 downto 23)-s0a(30 downto 23);
-				s1b(22 downto 0) <= s0a(22 downto 0);
-				--! zero signaling
-				s1z <= s0zeroa;
-				--!clasifica b
-				s1a <= s0b;
+				s1expb	<= s0b(30 downto 23);	
+				s1udeltaa	<= s0udeltaa(3 downto 0);
+				s1udeltab	<= s1udeltab(3 downto 0);
 			end if;
 			
+			s1zeroa		<= s0zeroa;
+			s1zerob		<= s0zerob;
+					 	 
+		 			
 			--! Etapa 1: Denormalizaci&oacute;n de las mantissas.  
 			--! A
 			s2exp <= s1a(30 downto 23);
@@ -173,35 +166,59 @@ begin
 		
 		end if;
 	end process;
-	--! Combinatorial gremlin, Etapa 0, Escoger el mayor exponente que sera el resultado desnormalizado,\n 
-	--! calcula cuanto debe ser el corrimiento de la mantissa con menor exponente y reorganiza los operandos,\n
-	--! si el mayor es b, intercambia las posici&oacute;n si el mayor es a las posiciones la mantiene. Zero check.\n 
+	--! Combinatorial gremlin, Etapa 0, Calcular la manera en que se llevara a cabo la desnormalizacion.
 	process (s0b(30 downto 23),s0a(30 downto 23))
 	begin
-		s0zerob <='0';
-		s0zeroa <='0';
-		for i in 30 downto 23 loop
-			if s0a(i)='1' then
-				s0zeroa <= '1';
-			end if;
-			if s0b(i)='1' then
-				s0zerob <='1';
-			end if;
-			
+		--! Diferencia signada entre el valor del exponente a y el exponente b
+		s0sdelta <= s0a(30 downto 23) - s0b(30 downto 23);
+		
+		--! Manejo de cero
+		if sa(30 downto 23) = "00000000" then
+			s0zeroa <= '0';
+		else
+			s0zeroa <= '1';
+		end if;
+		
+		if sb(30 downto 23) = "00000000" then
+			s0zerob <= '0';
+		else
+			s0zerob <= '1';
+		end if;
+		
+		
+	end process;
+	
+	process (s0sdelta)
+	begin
+		--! Esta parte define en que rango de la grafica de normalizac&oacute;n se movera la normalizaci—n del resultado de la mantissa
+		case s0sdelta(7 downto 1) is
+			when "0000000" => 
+				s0nrmshftype <= '0';
+			when "1111111" => 
+				s0nrmshftype <= not(s0sdelta(0));
+			when others => 
+				s0nrmshftype <= '1';
+		end case;
+		
+		--! Valor absoluto de la diferencia entre el exponente a y el b
+		for i in 7 downto 0 loop
+			s0udelta(i) <= s0sdelta(7) xor s0sdelta(i);
 		end loop;
+		
+			 
+	end process
+	
+	process (s0udelta,s0sdelta(7))
+	begin
+		s0udeltaa <= (s0udelta(7)&s0udelta(7 downto 1))+("0000000"&s0sdelta(7));
+		s0udeltab <= (s0udelta(7)&s0udelta(7 downto 1))+("0000000"&s0udelta(0));
 	end process;
 	
 	
-	--! Combinatorial Gremlin, Etapa 1 Denormalizaci&oacute;n de las mantissas. 
-	denormsupershiftermult:lpm_mult
-	generic	map ("DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9","UNSIGNED","LPM_MULT",9,9,18)
-	port 	map ("00"&shl(conv_std_logic_vector(1,7),s1b(25 downto 23)),conv_std_logic_vector(0,3)&b1s(22 downto 17),s1pS);	
-	denormhighshiftermult:lpm_mult
-	generic	map ("DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9","UNSIGNED","LPM_MULT",9,9,18)
-	port 	map ("00"&shl(conv_std_logic_vector(1,7),s1b(25 downto 23)),b1s(16 downto 8),s1pH);	
-	denormlowshiftermult:lpm_mult
-	generic	map ("DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9","UNSIGNED","LPM_MULT",9,9,18)
-	port 	map ("00"&shl(conv_std_logic_vector(1,7),s1b(25 downto 23)),b1s(7 downto 0)&s1z,s1pL);	
+	--! Combinatorial Gremlin, Etapa 1 Denormalizaci&oacute;n de las mantissas.
+	shftra:shftr
+	port 	map (s1dira,s1udeltaa(2 downto 0),s1uma, 
+		
 	s1b2b1s:
 	for i in 22 downto 0 generate
 		b1s(i) <= s1b(22-i);

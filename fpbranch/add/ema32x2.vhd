@@ -61,6 +61,7 @@ architecture ema32x2_arch of ema32x2 is
 	signal s3res										: std_logic_vector(25 downto 0); -- Signed mantissa result
 	signal s1pS,s1pH,s1pL,s4nrmL,s4nrmH,s4nrmS			: std_logic_vector(17 downto 0); -- Shifert Product
 	signal s0zeroa,s0zerob,s1zeroa,s1zerob,s1z,s4sgr			: std_logic; 
+	signal s2sma,s2smb									: std_logic_vector (56 downto 0);
 	
 begin
 
@@ -76,22 +77,22 @@ begin
 			s0b(22 downto 0) <= b32(22 downto 0);
 			
 			--!Etapa 0,Calcular la manera en que se llevara a cabo la desnormalizacion
+			s1signa 	<= s0a(31);
+			s1signb 	<= s0b(31); 
 			s1dira		<= s0sdelta(7);
-			s1dirb		<= not(s0sdelta(7));
 		 	s1uma		<= s0a(22 downto 0);
 		 	s1umb		<= s0b(22 downto 0);
-			if s0zeroa='0' or s0zerob='0' then
+			if sa(30 downto 23) = "00000000" or sb(30 downto 23) = "00000000" then
 				s1expb	<= s0b(30 downto 23) or s0a(30 downto 23);
 				s1udeltaa	<= "0000";
 				s1udeltab	<= "0000";
+				s1zero		<= '1';
 			else
 				s1expb	<= s0b(30 downto 23);	
 				s1udeltaa	<= s0udeltaa(3 downto 0);
 				s1udeltab	<= s1udeltab(3 downto 0);
+				s1zero  <= '0'; 
 			end if;
-			
-			s1zeroa		<= s0zeroa;
-			s1zerob		<= s0zerob;
 					 	 
 		 			
 			--! Etapa 1: Denormalizaci&oacute;n de las mantissas.  
@@ -217,7 +218,31 @@ begin
 	
 	--! Combinatorial Gremlin, Etapa 1 Denormalizaci&oacute;n de las mantissas.
 	shftra:shftr
-	port 	map (s1dira,s1udeltaa(2 downto 0),s1uma, 
+	port 	map (s1dira,s1udeltaa(3 downto 0),'1'&s1uma,s1data40a);
+	shftrb:shftr
+	port	map (not(s1dira),s1udeltab(3 downto 0),'1'&s1umb,s1data40b); 
+	
+	process (s1data40b,s1data40a)
+	begin 
+		
+		if s1dira='1' then
+			s1signeddata56a(55 downto 40) <= (others => '0');
+			s1signeddata56b(15 downto 0) <= (others => '0');
+			for i in 39 downto 0 loop
+				s1signeddata56a(i)  <= s1signa xor s1data40a(i);
+				s1signeddata56b(i+16) <= s1signb xor s1data40b(i);
+			end loop;
+		else
+			s1signeddata56a(15 downto 0) <= (others => '0');
+			s1signeddata56b(55 downto 40) <= (others => '0');
+			for i in 39 downto 0 loop
+				s1signeddata56a(i+16)  <= s1signa xor s1data40a(i);
+				s1signeddata56b(i) <= s1signb xor s1data40b(i);
+			end loop;
+		end if;
+			
+	end process;
+	
 		
 	s1b2b1s:
 	for i in 22 downto 0 generate

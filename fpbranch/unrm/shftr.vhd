@@ -113,6 +113,7 @@ begin
 			s4ssm			<= s3ssm;
 			s4expnurm	<= s3expnurm;
 			
+			
 			 
 			
 						
@@ -198,20 +199,20 @@ begin
 		case s3bgta is
 			when '1' => -- Negativo b>a : se corre a delta espacios a la derecha y b se queda quieto 
 				s3ssmb <= s3smb;
-				shiftslab(23 downto 0)<=(others=>s3sma(24));
+				s3shiftslab(23 downto 0)<=(others=>s3sma(24));
 				case s3udelta is
-					when x"3" => s3ssma <= (s3sma(24)&shiftslab(23 downto 0));
-					when x"2" => s3ssma <= (s3sma(24)&shiftslab(15 downto 0)&s3sma(23 downto 16));
-					when x"1" => s3ssma <= (s3sma(24)&shiftslab(7 downto 0)&s3sma(23 downto 8));
+					when x"3" => s3ssma <= (s3sma(24)&s3shiftslab(23 downto 0));
+					when x"2" => s3ssma <= (s3sma(24)&s3shiftslab(15 downto 0)&s3sma(23 downto 16));
+					when x"1" => s3ssma <= (s3sma(24)&s3shiftslab(7 downto 0)&s3sma(23 downto 8));
 					when others => s3ssma <= s3sma;
 				end case;
 			when others => -- Positivo a>=b : se corre a delta espacios a la derecha y a se queda quieto
 				s3ssma <= s3sma;
 				shiftslab(23 downto 0)<=(others=>s3smb(24));
 				case s3udelta is
-					when x"3" => s3ssmb <= (s3smb(24)&shiftslab(23 downto 0));
-					when x"2" => s3ssmb <= (s3smb(24)&shiftslab(15 downto 0)&s3smb(23 downto 16));
-					when x"1" => s3ssmb <= (s3smb(24)&shiftslab(7 downto 0)&s3smb(23 downto 8));
+					when x"3" => s3ssmb <= (s3smb(24)&s3shiftslab(23 downto 0));
+					when x"2" => s3ssmb <= (s3smb(24)&s3shiftslab(15 downto 0)&s3smb(23 downto 16));
+					when x"1" => s3ssmb <= (s3smb(24)&s3shiftslab(7 downto 0)&s3smb(23 downto 8));
 					when others => s3ssmb <= s3smb;
 				end case;
 		end case;
@@ -264,6 +265,7 @@ begin
 				end case;
 		end case;	 
 	end process;
+	
 		 	  
 	
 

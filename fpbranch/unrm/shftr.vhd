@@ -43,6 +43,8 @@ architecture fadd32_arch of fadd32 is
 	
 
 begin 
+
+--! ******************************************************************************************************************************
 	--! Pipeline
 	pipeline:
 	process(clk)
@@ -89,149 +91,148 @@ begin
 			--! Manejo de exponente, previo a la denormalizacion
 			--! Calulo del Factor de corrimiento 
 			s2expunrm	<= s1expunrm+s1sdelta;
-			s2factor		<= s1factor;		
+			s2factor	<= s1factor;		
 			
 			--! Otras se&ntilde;ales de soporte
 			s2signa		<= s1signa;
 			s2signb		<= s1signb;
-			s2bgta			<= s1sdelta(7);
-			s2uma			<= s1uma;
-			s2umb			<= s1umb;
-			s2udelta		<= s1udelta(4 downto 3);
-			s2zero			<= s1zero;
+			s2bgta		<= s1sdelta(7);
+			s2uma		<= s1uma;
+			s2umb		<= s1umb;
+			s2udelta	<= s1udelta(4 downto 3);
+			s2zero		<= s1zero;
 			
 			
 			--! Etapa 2 Realizar los corrimientos, denormalizacion parcial
-			s3sma 			<= s2pha(24 downto 0) + (s2slaba&s2pla(17 downto 8));
-			s3smb 			<= s2phb(24 downto 0) + (s2slabb&s2plb(17 downto 8));
+			s2asm0		<= (s2xorslab(23)&(('1'&s2um0(22 downto 0))xor(s2xorslab)))+(x"000000"&s2xorslab(23));
+			case s2udelta is
+				when "00" => 
+					s2aum1(23 downto 06) 	<= s2psh(25 downto 08);
+					s2aum1(05 downto 00)	<= s2psh(07 downto 02) or (s2psl(16 downto 11));
+				when "01" => 
+					s2aum1(23 downto 06) 	<= x"00"&s2psh(25 downto 17);
+					s2aum1(05 downto 00)	<= s2sph(16 downto 11);
+				when "10" =>
+					s2aum1(23 downto 06) 	<= x"0000"&s2psh(25);
+					s2aum1(05 downto 00)	<= s2sph(24 downto 19);
+				when others => 
+					s2aum1 					<= (others => '0');
+			end case; 	
+			s2asign		<= (s2bgta and s2signa) or (not(s2bgta) and s2signb); 
+				
+				
+			end case;				
+			s2aexpnurm 	<= s2expnurm;
+			s2azero		<= s2zero;
+			s2abgta 	<= s2bgta;
+			s2audelta 	<= s2udelta;
+			--! Etapa 2 Realizar los corrimientos, denormalizacion parcial
+			s3sma 		<= s2pha(24 downto 0) + (s2slaba&s2pla(17 downto 8));
+			s3smb 		<= s2phb(24 downto 0) + (s2slabb&s2plb(17 downto 8));
 			s3expnurm 	<= s2expnurm;
-			s3zero			<= s2zero;
+			s3zero		<= s2zero;
 			s3bgta 		<= s2bgta;
-			s3udelta 		<= s2udelta;
+			s3udelta 	<= s2udelta;
 			
 			--! Etapa 3, finalizar la denormalizacion y realizar la suma
-			s4ssm			<= s3ssm;
+			s4ssm		<= s3ssm;
 			s4expnurm	<= s3expnurm;
-			
-			
-			 
-			
-						
 		end if;
-	
 	end process;
 	
+--! ******************************************************************************************************************************
 	
 	--! Etapa 1
 	--! Decodificar la magnitud del corrimiento
+	unsigneddelta: lpm_mult
+	generic	map ("DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9","SIGNED","LPM_MULT",9,9,27)
+	port	map (s1sdelta(7)&x"80",s1sdelta(7)&s1sdelta,s1pudelta);
+	s1udelta(4 downto 0) <= s1pudelta(11 downto 7);
 	denormshiftmagnitude:
-	process (s1sdelta(7),s1sdelta(4 downto 0),s1signa,s1signb)
-	begin
-		for i in 4 downto 0 loop
-			s1xdelta(i) <= s1sdelta(i) xor s1sdelta(7);
-		end loop;
-		s1udelta  <= s1xdelta+("0000"&s1sdelta(7));
-		if s1sdelta(7) = '1' then 
-			s1shiftslab	<=	(others=> s1signa);--!b>a
-		else 
-			s1shiftslab	<=	(others=> s1signb);--!a>=b
-		end if;
-	end process;
 	--! Decodificar el factor de corrimiento
 	denormfactor:
 	process (s1shiftslab,s1udelta)
 	begin
+		s1factor(8 downto 0) <= (others => s1sdelta(7));
 		case s1udelta(2 downto 0) is
-			when x"0" => s1factor(8 downto 0) <= s1shiftslab(0 downto 0) & "10000000"; 
-			when x"1" => s1factor(8 downto 0) <= s1shiftslab(1 downto 0) & "1000000";
-			when x"2" => s1factor(8 downto 0) <= s1shiftslab(2 downto 0) & "100000";
-			when x"3" => s1factor(8 downto 0) <= s1shiftslab(3 downto 0) & "10000";
-			when x"4" => s1factor(8 downto 0) <= s1shiftslab(4 downto 0) & "1000";
-			when x"5" => s1factor(8 downto 0) <= s1shiftslab(5 downto 0) & "100";
-			when x"6" => s1factor(8 downto 0) <= s1shiftslab(6 downto 0) & "10";
-			when others => s1factor(8 downto 0) <=s1shiftslab(7 downto 0) &"1";
+			when x"0" => s1factor(8 downto 0) 	<= "100000000"; 
+			when x"1" => s1factor(8 downto 0) 	<= "010000000";
+			when x"2" => s1factor(8 downto 0) 	<= "001000000";
+			when x"3" => s1factor(8 downto 0) 	<= "000100000";
+			when x"4" => s1factor(8 downto 0) 	<= "000010000";
+			when x"5" => s1factor(8 downto 0) 	<= "000001000";
+			when x"6" => s1factor(8 downto 0) 	<= "000000100";
+			when others => s1factor(0) 			<= "000000010";
 		end case;
-	end process;
-	
+ 	end process;
+--! ******************************************************************************************************************************
 	--! Etapa2
-	--! Asignar el factor de corrimiento  las mantissas
+	--! Correr las mantissas
 	denomrselectmantissa2shift:
-	process (s2bgta,s2signa,s2signb,s2factor)
+	process (s2bgta,s2signa,s2signb,s2factor,s2sma,s2smb)
 	begin
+		
 		case s2bgta is 
 			when '1' => -- Negativo b>a : se corre a delta espacios a la derecha y b se queda quieto
-				s2factorb <= s2signb&"10000000";
-				s2factora <= s2factor;
+				s2factorshift	<= s2factor;
+				s2um0			<= s2umb;
+				s2smshift		<= s2uma;
+				s2xorslab		<= (others => s2signb);
 			when others => -- Positivo a>=b : se corre a delta espacios a la derecha y a se queda quieto
-				s2factorb <= s2factor;
-				s2factora <= s2signa&"10000000";
+				s2factorshift 	<= s2factor;
+				s2smshift		<= s2umb;
+				s2um0			<= s2uma;
+				s2xorslab		<= (others => s2signa);
 		end case;
-		
 	end process;
-	
-
+		
 	
 	--! Correr las mantissas y calcularlas.
-	hmulta: lpm_mult
-	generic	map ("DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9","SIGNED","LPM_MULT",9,18,27)
-	port	map (s2factora,s2signa&'1'&s2data24a(22 downto 0),s2pha);
-	lmulta: lpm_mult
-	generic	map ("DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9","SIGNED","LPM_MULT",9,9,27)
-	port	map (s2factora,s2signa&'1'&s2dataa(6 downto 0),s2pla);
-	hmultb: lpm_mult
-	generic	map ("DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9","SIGNED","LPM_MULT",9,18,27)
-	port	map (s2factorb,s2signb&'1'&s2datab(22 downto 0),s2phb);
-	lmultb: lpm_mult
-	generic	map ("DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9","SIGNED","LPM_MULT",9,9,27)
-	port	map (s2factorb,s2signb&'1'&s2datab(6 downto 0),s2plb);
-	mantissadenormslabcalc:
-	process(s2signa,s2signb)
-	begin
-		s2slaba <= (others => s2signa);
-		s2slabb <= (others => s2signb);
-	end process;
+	hshift: lpm_mult
+	generic	map ("DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9","UNSIGNED","LPM_MULT",9,18,27)
+	port	map (s2factorshift,"01"&s2smshift(22 downto 0),s2psh);
+	lshift: lpm_mult
+	generic	map ("DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9","UNSIGNED","LPM_MULT",9,9,18)
+	port	map (s2factorshift,"0"&s2smshift(06 downto 0)&'0,s2psl);
 	
-	--! Sumar las mantissas signadas y colocar los 0's que hagan falta 
-	mantissaadding:
-	process (s3bgta,s3sma,s3smb,s3udelta,zero)
-	begin
 		
-		case s3bgta is
-			when '1' => -- Negativo b>a : se corre a delta espacios a la derecha y b se queda quieto 
-				s3ssmb <= s3smb;
-				s3shiftslab(23 downto 0)<=(others=>s3sma(24));
-				case s3udelta is
-					when x"3" => s3ssma <= (s3sma(24)&s3shiftslab(23 downto 0));
-					when x"2" => s3ssma <= (s3sma(24)&s3shiftslab(15 downto 0)&s3sma(23 downto 16));
-					when x"1" => s3ssma <= (s3sma(24)&s3shiftslab(7 downto 0)&s3sma(23 downto 8));
-					when others => s3ssma <= s3sma;
-				end case;
-			when others => -- Positivo a>=b : se corre a delta espacios a la derecha y a se queda quieto
-				s3ssma <= s3sma;
-				shiftslab(23 downto 0)<=(others=>s3smb(24));
-				case s3udelta is
-					when x"3" => s3ssmb <= (s3smb(24)&s3shiftslab(23 downto 0));
-					when x"2" => s3ssmb <= (s3smb(24)&s3shiftslab(15 downto 0)&s3smb(23 downto 16));
-					when x"1" => s3ssmb <= (s3smb(24)&s3shiftslab(7 downto 0)&s3smb(23 downto 8));
-					when others => s3ssmb <= s3smb;
-				end case;
+--! ******************************************************************************************************************************
+	--! Etapa2a signar las mantissas y sumarlas.
+	signmantissa:
+	process(s2asign,s2aum1,s2asm0,s2azero)
+	begin 
+		s2axorslab	<= (others => s2asign);
+		s2asm1		<= (s2axorslab(23)&((s2um1(23 downto 0))xor(s2axorslab)))+(x"000000"&s2axorslab(23));
+		case s2azero is
+			when '0'  	=> s2asm <= (s2asm1(s2asm1'high)&s2asm1) +  (s2asm0(s2asm0'high)&s2asm0);
+			when others	=> s2asm <= (s2asm1(s2asm1'high)&s2asm1) or (s2asm0(s2asm0'high)&s2asm0);
 		end case;
-		if s3zero='0' then
-			s3ssm <= (s3ssma(24)&s3ssma)+(s3ssmb(24)&s3ssmb);			  
-		else
-			s3ssm <= (s3ssma(24)&s3ssma)or(s3ssmb(24)&s3ssmb);
-		end if;
-	end process;
+	end process;	
 	
-	--! Mantissas sumadas, designar
+	
+	--! Mantissas sumadas, designar y normalizar
 	unsignmantissa:
-	process(s4ssm)
+	process(s3sm)
+
 	begin
-		for i in 24 downto 0 loop
-			s4usm(i) <= s4ssm(25) xor s4ssm(i);
+		s3xorslab	<= ( others => s3sm(s3sm'high) );
+		s3um(24 downto 0)	<= ( s3sm(24 downto 0) xor s3xorslab ) + (x"000000"&s3xorslab(24));
+		s3sign <= s3sm(s3sm'high);	
+		s3factor <= x"000000"&'0';
+		s3count	 <= '1'&x"f";
+		s3unrmexp <=
+		for i in 24 downto 0 loop 
+			if s3sm(i)='1' then
+				s3factor(24-i)<='1';
+				exit;
+			end if;
+			s3count<=s3count+1;
 		end loop;
-		s4sign <=s4ssm(25);
-		s4uxm <= s4usm+(x"000000"&s4ssm(25)); 		
+		s3nrmexpo<=s3unrmexpo+s3count;
+	end process;		
+				
+			
+		
 	end process;
 	
 	--!Normalizar el  exponente y calcular el factor de corrimiento para la normalizaci&oacute;n de la mantissa

@@ -209,8 +209,8 @@ begin
 		end case;
 	end process;	
 	
-	
-	--! Mantissas sumadas, designar y normalizar
+--! ******************************************************************************************************************************
+	--! Etapa3 : Mantissas sumadas, designar y normalizar
 	unsignmantissa:
 	process(s3sm)
 
@@ -220,52 +220,21 @@ begin
 		s3sign <= s3sm(s3sm'high);	
 		s3factor <= x"000000"&'0';
 		s3count	 <= '1'&x"f";
-		s3unrmexp <=
+
 		for i in 24 downto 0 loop 
-			if s3sm(i)='1' then
+			if s3um(i)='1' then
 				s3factor(24-i)<='1';
+				s3count <= conv_std_logic_vector(24-i,5)+ ('1'&x"f") ;
 				exit;
 			end if;
-			s3count<=s3count+1;
 		end loop;
-		s3nrmexpo<=s3unrmexpo+s3count;
-	end process;		
+	end process;
+			
 				
 			
 		
-	end process;
 	
-	--!Normalizar el  exponente y calcular el factor de corrimiento para la normalizaci&oacute;n de la mantissa
-	process (s4uxm,expunrm)
-		variable xshift : integer range 24 downto 0;
-	begin
-		for i in 24 downto 0 loop
-			if s4uxm(i)='1' then
-				xshift:=24-i;
-			end of;
-		end loop;			
-		s4expnrm <= s4expunrm-((  "000"&conv_std_logic_vector(xshift,5) )+x"ff");
-	end process;	
 	
-	normantissafactor:
-	process (s4expnrm)
-	begin
-		s4factor(0)<=s4expnrm(7);
-		case s4expnrm(7) is
-			when '1' => s4factor(8 downto 1)<=(others=>'0');
-			when others =>
-				case s4expnrm(3 downto 1) is
-					when "000" => s4factor(8 downto 1)<="'00000001";
-					when "001" => s4factor(8 downto 1)<="'00000010";
-					when "010" => s4factor(8 downto 1)<="'00000100";
-					when "011" => s4factor(8 downto 1)<="'00001000";
-					when "100" => s4factor(8 downto 1)<="'00010000";
-					when "101" => s4factor(8 downto 1)<="'00100000";
-					when "110" => s4factor(8 downto 1)<="'01000000";
-					when others  => s4factor(8 downto 1)<="'10000000";
-				end case;
-		end case;	 
-	end process;
 	
 		 	  
 	

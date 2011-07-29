@@ -210,26 +210,52 @@ begin
 	end process;	
 	
 --! ******************************************************************************************************************************
-	--! Etapa3 : Mantissas sumadas, designar y normalizar
+	--! Etapa3 : Quitar el signo a las mantissas y  calcular el factor 
 	unsignmantissa:
 	process(s3sm)
-
 	begin
 		s3xorslab	<= ( others => s3sm(s3sm'high) );
 		s3um(24 downto 0)	<= ( s3sm(24 downto 0) xor s3xorslab ) + (x"000000"&s3xorslab(24));
 		s3sign <= s3sm(s3sm'high);	
-		s3factor <= x"000000"&'0';
-		s3count	 <= '1'&x"f";
-
+		s3count <= "00000";
 		for i in 24 downto 0 loop 
 			if s3um(i)='1' then
-				s3factor(24-i)<='1';
-				s3count <= conv_std_logic_vector(24-i,5)+ ('1'&x"f") ;
+				s3count <= conv_std_logic_vector(24-i,8)+x"ff";
 				exit;
 			end if;
 		end loop;
 	end process;
-			
+--! ******************************************************************************************************************************
+	--! Etapa3a : Decodificar el factor de corrimiento y calcular el exponente normalizado. 
+--! ******************************************************************************************************************************
+	redentioform:
+	process(s4count)
+	begin
+		s4exp <= s4expunrm + s4count;
+		
+		case s4count(4 downto 3) is
+			when "11" => s4factor <= '0'&x"01";
+			when others
+				case s4count(2 downto 0) is
+					when x"0" => s4factor <= '0'&x"02";
+					when x"1" => s4factor <= '0'&x"04";
+					when x"2" => s4factor <= '0'&x"08";
+					when x"3" => s4factor <= '0'&x"10";
+					when x"4" => s4factor <= '0'&x"20";
+					when x"5" => s4factor <= '0'&x"40";
+					when x"6" => s4factor <= '0'&x"80";
+					when others  => s4factor <= '1'&x"00";
+				end case;
+		end case;
+	end process;
+
+	--! Etapa4 : Mantissas sumadas, designar y normalizar
+	hshift: lpm_mult
+	generic	map ("DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9","UNSIGNED","LPM_MULT",9,18,27)
+	port	map (s4factor,"01"&s2smshift(22 downto 0),s2psh);
+	lshift: lpm_mult
+	generic	map ("DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9","UNSIGNED","LPM_MULT",9,9,18)
+	port	map (s2factorshift,"0"&s2smshift(06 downto 0)&'0,s2psl);			
 				
 			
 		

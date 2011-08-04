@@ -178,7 +178,7 @@ begin
 		s5factorhot25 <= (others => '0');
 		for i in 24 downto 0 loop
 			if s5result(i)='1' then
-				--s5factor <= conv_std_logic_vector(24-i,8);
+				s5factor <= conv_std_logic_vector(24-i,8);
 				s5factorhot25(24-i) <= '1';
 				exit;
 			end if;

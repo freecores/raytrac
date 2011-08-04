@@ -102,12 +102,12 @@ begin
 				when "10" =>	s2umantshift <= s1umantshift(23)&x"0000"&s1postshift(23 downto 16);
 				when others => 	s2umantshift <= (others => '0');		
 			end case;
-			s2mantfixed <= s1umantfixed(23) &         ( ( ('1'&s1umantfixed(22 downto 0)) xor s1xorslab) + ( x"00000"&"000"&s1umantfixed(23)  )   ); 
+			s2mantfixed <= s1umantfixed(23) &         ( ( ('1'&s1umantfixed(22 downto 0)) xor s1xorslab)   + ( x"00000"&"000"&s1umantfixed(23)  )   ); 
 			s2exp  <= s1exp;
 			
 			--! Etapa2: Signar la mantissa denormalizada.
 			s3mantfixed <= s2mantfixed;
-			s3mantshift <= s2umantshift(24)&         (  (      s2umantshift(23 downto 0)  xor s2xorslab) + ( x"00000"&"000"&s2umantshift(24)  )   ); 
+			s3mantshift <= s2umantshift(24)&         (  (      s2umantshift(23 downto 0)  xor s2xorslab)   + ( x"00000"&"000"&s2umantshift(24)  )   ); 
 			s3exp 		<= s2exp;
 			
 			--! Etapa 3: Etapa 3 Realizar la suma, quitar el signo de la mantissa y codificar el corrimiento hacia la izquierda.
@@ -115,7 +115,7 @@ begin
 			s4exp 		<= s3exp; 
 			
 			--! Etapa 4: Quitar el signo a la mantissa resultante.
-			s5result	<= s4sresult(25)&((s4sresult(24 downto 0) xor s4xorslab)+(x"000000"&s4sresult(25)));
+			s5result	<= s4sresult(25)&((s4sresult(24 downto 0) xor s4xorslab)  +(x"000000"&s4sresult(25)));
 			s5exp		<= s4exp; 
 			
 			
@@ -192,7 +192,7 @@ begin
 	generic map ("DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9","UNSIGNED","LPM_MULT",9,9,18)
 	port 	map (s5factorhot9,s5result(06 downto 0)&"00",s5pl);
 	s5postshift(22 downto 15) <= s5ph(16 downto 09);
-	s5postshift(14 downto 06) <= s5ph(08 downto 00) or s5pl(17 downto 9);
+	s5postshift(14 downto 06) <= s5ph(08 downto 00); --! Activar este pedazo si se requiere extrema precision	     or s5pl(17 downto 9);
 	s5postshift(05 downto 00) <= s5pl(08 downto 03); 
 	
 	

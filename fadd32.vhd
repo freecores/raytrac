@@ -1,5 +1,5 @@
 ------------------------------------------------
---! @file ema32x2.vhd
+--! @file fadd32.vhd
 --! @brief RayTrac Floating Point Adder  
 --! @author Juli&aacute;n Andr&eacute;s Guar&iacute;n Reyes
 --------------------------------------------------
@@ -7,7 +7,7 @@
 
 -- RAYTRAC (FP BRANCH)
 -- Author Julian Andres Guarin
--- ema32x2.vhd
+-- fadd32.vhd
 -- This file is part of raytrac.
 -- 
 --     raytrac is free software: you can redistribute it and/or modify
@@ -27,19 +27,20 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
 use ieee.std_logic_arith.all;
-
+library lpm;
+use lpm.all;
 
 --! Esta entidad recibe dos n&uacutemeros en formato punto flotante IEEE 754, de precision simple y devuelve las mantissas signadas y corridas, y el exponente correspondiente al resultado antes de normalizarlo al formato float. 
 --!\nLas 2 mantissas y el exponente entran despues a la entidad add2 que suma las mantissas y entrega el resultado en formato IEEE 754.
-entity ema32x2 is 
+entity fadd32 is 
 	port (
 		clk,dpc		: in std_logic;
 		a32,b32		: in std_logic_vector (31 downto 0);
 		c32			: out std_logic_vector(31 downto 0)
 	);
-end ema32x2;
+end fadd32;
 
-architecture ema32x2_arch of ema32x2 is
+architecture fadd32_arch of fadd32 is
 	
 	component lpm_mult 
 	generic (
@@ -57,18 +58,18 @@ architecture ema32x2_arch of ema32x2 is
 	);
 	end component;	
 	
-	signal s1zero														: std_logic;
-	signal s1delta														: std_logic_vector(5 downto 0);
-	signal s0delta,s1exp,s2exp,s3exp,s4exp,s5exp,s5factor,s6exp,s6factor: std_logic_vector(7 downto 0);
-	signal s1shifter,s5factorhot9										: std_logic_vector(8 downto 0);
-	signal s1pl,s5pl													: std_logic_vector(17 downto 0);
-	signal s5postshift,s6postshift										: std_logic_vector(22 downto 0);
-	signal s1umantshift,s1umantfixed,s1postshift,s1xorslab,s2xorslab	: std_logic_vector(23 downto 0);
-	signal s2umantshift,s2mantfixed,s3mantfixed,s3mantshift,s4xorslab	: std_logic_vector(24 downto 0);
-	signal s5factorhot25												: std_logic_vector(24 downto 0);
-	signal s4sresult,s5result,s6result									: std_logic_vector(25 downto 0); -- Signed mantissa result
-	signal s1ph,s5ph													: std_logic_vector(26 downto 0);
-	signal s0a,s0b														: std_logic_vector(31 downto 0); -- Float 32 bit 
+	signal s1zero																		: std_logic;
+	signal s1delta																		: std_logic_vector(5 downto 0);
+	signal s0delta,s1exp,s2exp,s3exp,s4exp,s5exp,s6exp,s5factor,s6factor,s7exp,s7factor	: std_logic_vector(7 downto 0);
+	signal s1shifter,s5factorhot9,s6factorhot9											: std_logic_vector(8 downto 0);
+	signal s1pl,s6pl																	: std_logic_vector(17 downto 0);
+	signal s6postshift,s7postshift														: std_logic_vector(22 downto 0);
+	signal s1umantshift,s1umantfixed,s1postshift,s1xorslab,s2xorslab					: std_logic_vector(23 downto 0);
+	signal s2umantshift,s2mantfixed,s3mantfixed,s3mantshift,s4xorslab					: std_logic_vector(24 downto 0);
+	signal s5factorhot25																: std_logic_vector(24 downto 0);
+	signal s4sresult,s5result,s6result,s7result											: std_logic_vector(25 downto 0); -- Signed mantissa result
+	signal s1ph,s6ph																	: std_logic_vector(26 downto 0);
+	signal s0a,s0b																		: std_logic_vector(31 downto 0); -- Float 32 bit 
 	
 begin
 
@@ -88,7 +89,7 @@ begin
 			else
 				s1zero <= '1';
 			end if;
-			s1delta <= s0delta(7) & (s0delta(7) xor s0delta(4))&(s0delta(7) xor s0delta(4)) & s0delta(2 downto 0);			
+			s1delta <= s0delta(7) & (s0delta(7) xor s0delta(4))&(s0delta(7) xor s0delta(3)) & s0delta(2 downto 0);			
 			case s0delta(7) is
 				when '1'  => 
 					s1exp <= s0b(30 downto 23);
@@ -115,7 +116,7 @@ begin
 			s3mantshift <= s2umantshift(24)&         (  (      s2umantshift(23 downto 0)  xor s2xorslab)   + ( x"00000"&"000"&s2umantshift(24)  )   ); 
 			s3exp 		<= s2exp;
 			
-			--! Etapa 3: Etapa 3 Realizar la suma, quitar el signo de la mantissa y codificar el corrimiento hacia la izquierda.
+			--! Etapa 3: Etapa 3 Realizar la suma, entre la mantissa corrida y la fija.
 			s4sresult	<= (s3mantshift(24)&s3mantshift)+(s3mantfixed(24)&s3mantfixed);
 			s4exp 		<= s3exp; 
 			
@@ -125,18 +126,24 @@ begin
 			
 			
 			--! Etapa 5: Codificar el corrimiento para la normalizacion de la mantissa resultante.
-			s6result 		<= s5result;
-			s6exp			<= s5exp;
+			s6result		<= s5result;
+			s6exp		 	<= s5exp; 
 			s6factor		<= s5factor;
-			s6postshift		<= s5postshift;
+			s6factorhot9	<= s5factorhot9;
 			
-			--! Etapa 6: Entregar el resultado.
-			c32(31)				<= s6result(25);
-			c32(30 downto 23)	<= s6exp+s6factor+x"ff";
-			case s6factor(4 downto 3) is 
-				when "01" 	=> c32(22 downto 0) <= s6postshift(14 downto 00)&x"00";
-				when "10" 	=> c32(22 downto 0) <= s6postshift(06 downto 00)&x"0000";
-				when others => c32(22 downto 0)	<= s6postshift;
+			--! Etapa 6: Ejecutar el corrimiento de la mantissa.
+			s7result 		<= s6result;
+			s7exp			<= s6exp;
+			s7factor		<= s6factor+x"ff";
+			s7postshift		<= s6postshift;
+			
+			--! Etapa 7: Entregar el resultado.
+			c32(31)				<= s7result(25);
+			c32(30 downto 23)	<= s7exp+s7factor;
+			case s7factor(4 downto 3) is 
+				when "01" 	=> c32(22 downto 0) <= s7postshift(14 downto 00)&x"00";
+				when "10" 	=> c32(22 downto 0) <= s7postshift(06 downto 00)&x"0000";
+				when others => c32(22 downto 0)	<= s7postshift;
 			end case; 
 		end if;
 	end process;
@@ -179,8 +186,8 @@ begin
 	normalizerdecodeshift:
 	process (s5result,s5factorhot25)
 	begin
-		s5factor<=(others => '0');
-		s5factorhot25 <= (others => '0');
+		s5factor <= x"00";
+		s5factorhot25 <= '0'&x"000000";
 		for i in 24 downto 0 loop
 			if s5result(i)='1' then
 				s5factor <= conv_std_logic_vector(24-i,8);
@@ -190,20 +197,22 @@ begin
 		end loop;
 		s5factorhot9 <= (s5factorhot25(8 downto 1)or s5factorhot25(16 downto 9)or s5factorhot25(24 downto 17)) & s5factorhot25(0);
 	end process;	
+	
+	--! Etapa 6: Ejecutar el corrimiento para normalizar la mantissa.
 	normhighshiftermult:lpm_mult
 	generic map ("DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9","UNSIGNED","LPM_MULT",9,18,27)
-	port 	map (s5factorhot9,s5result(24 downto 7),s5ph);
+	port 	map (s6factorhot9,s6result(24 downto 7),s6ph);
 	normlowshiftermult:lpm_mult
 	generic map ("DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9","UNSIGNED","LPM_MULT",9,9,18)
-	port 	map (s5factorhot9,s5result(06 downto 0)&"00",s5pl);
-	s5postshift(22 downto 15) <= s5ph(16 downto 09);
-	s5postshift(14 downto 06) <= s5ph(08 downto 00); --! Activar este pedazo si se requiere extrema precision	     or s5pl(17 downto 9);
-	s5postshift(05 downto 00) <= s5pl(08 downto 03); 
+	port 	map (s6factorhot9,s6result(06 downto 0)&"00",s6pl);
+	s6postshift(22 downto 15) <= s6ph(16 downto 09);
+	s6postshift(14 downto 06) <= s6ph(08 downto 00); --! Activar este pedazo si se requiere extrema precision	     or s5pl(17 downto 9);
+	s6postshift(05 downto 00) <= s6pl(08 downto 03); 
 	
 	
 	
 	
 	
-end ema32x2_arch;
+end fadd32_arch;
 
 	

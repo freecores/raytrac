@@ -240,10 +240,7 @@ begin
 				s1signeddata56b(i) <= s1signb xor s1data40b(i);
 			end loop;
 		end if;
-			
 	end process;
-	
-		
 	s1b2b1s:
 	for i in 22 downto 0 generate
 		b1s(i) <= s1b(22-i);
@@ -254,14 +251,11 @@ begin
 	end generate;
 	s1sma(23) <= not(s1a(31));
 	s1sma(24) <= s1a(31);	
-	
-	
 	--! Combinatorial Gremlin, Etapa2: Finalizar la denormalizaci&oacute;n de b.
 	s2signslab:
 	for i in 16 downto 0 generate
 		s2slab(i) <= s2smb(24);
 	end generate s2signslab;
-	
 	--! Combinatorial Gremlin, Etapa 3 Realizar la suma, quitar el signo de la mantissa y codificar el corrimiento hacia la izquierda. 
 	--adder:sadd2
 	--port map (s3sma(24)&s3sma,s3smb(24)&s3smb,dpc,s3res);
@@ -270,7 +264,6 @@ begin
 		--! Magia: La suma ocurre aqui
 		s3res <= (s3sma(24)&s3sma)+(s3smb(24)&s3smb);
 	end process;
-	
 	process(s3res)
 		variable lshift : integer range 24 downto 0; 
 	begin
@@ -285,8 +278,6 @@ begin
 		s3ures(24) <= s3res(24) xor s3res(25);  
 		s3lshift <= conv_std_logic_vector(lshift,5);
 	end process;	
-	
-	
 	--! Combinatorial Gremlin, Etapa 4 corrimientos y normalizaci&oacute;n de la mantissa resultado.
 	normsupershiftermult:lpm_mult
 	generic	map ("DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9","UNSIGNED","LPM_MULT",9,9,18)

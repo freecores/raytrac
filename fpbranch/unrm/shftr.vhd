@@ -57,7 +57,7 @@ architecture ema32x2_arch of ema32x2 is
 	);
 	end component;	
 	
-	
+	signal s1zero														: std_logic;
 	signal s1delta														: std_logic_vector(5 downto 0);
 	signal s0delta,s1exp,s2exp,s3exp,s4exp,s5exp,s5factor,s6exp,s6factor: std_logic_vector(7 downto 0);
 	signal s1shifter,s5factorhot9										: std_logic_vector(8 downto 0);
@@ -83,6 +83,11 @@ begin
 
 			--!Etapa 0,Escoger el mayor exponente que sera el resultado desnormalizado, calcula cuanto debe ser el corrimiento de la mantissa con menor exponente y reorganiza los operandos, si el mayor es b, intercambia las posici&oacute;n si el mayor es a las posiciones la mantiene. Zero check.
 			--!signo,exponente,mantissa
+			if (s0b(30 downto 23)&s0a(30 downto 23))=x"0000" then 
+				s1zero <= '0';
+			else
+				s1zero <= '1';
+			end if;
 			s1delta <= s0delta(7) & (s0delta(7) xor s0delta(4))&(s0delta(7) xor s0delta(4)) & s0delta(2 downto 0);			
 			case s0delta(7) is
 				when '1'  => 
@@ -96,7 +101,7 @@ begin
 			end case;
 			
 			--! Etapa 1: Denormalizaci&oacute;n de la mantissas.  
-			case s0delta(4 downto 3) is
+			case s1delta(4 downto 3) is
 				when "00" =>	s2umantshift <= s1umantshift(23)&s1postshift(23 downto 0);
 				when "01" =>	s2umantshift <= s1umantshift(23)&x"00"&s1postshift(23 downto 8);
 				when "10" =>	s2umantshift <= s1umantshift(23)&x"0000"&s1postshift(23 downto 16);
@@ -127,7 +132,7 @@ begin
 			
 			--! Etapa 6: Entregar el resultado.
 			c32(31)				<= s6result(25);
-			c32(30 downto 23)	<= s6exp+s5factor+x"ff";
+			c32(30 downto 23)	<= s6exp+s6factor+x"ff";
 			case s6factor(4 downto 3) is 
 				when "01" 	=> c32(22 downto 0) <= s6postshift(14 downto 00)&x"00";
 				when "10" 	=> c32(22 downto 0) <= s6postshift(06 downto 00)&x"0000";
@@ -155,7 +160,7 @@ begin
 	end process;
 	denormhighshiftermult:lpm_mult
 	generic	map ("DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9","UNSIGNED","LPM_MULT",9,18,27)
-	port 	map (s1shifter,'1'&s1umantshift(22 downto 06),s1ph);	
+	port 	map (s1shifter,s1zero&s1umantshift(22 downto 06),s1ph);	
 	denormlowshiftermult:lpm_mult
 	generic	map ("DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9","UNSIGNED","LPM_MULT",9,9,18)
 	port 	map (s1shifter,s1umantshift(5 downto 0)&"000",s1pl);	

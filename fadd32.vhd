@@ -58,16 +58,17 @@ architecture fadd32_arch of fadd32 is
 	);
 	end component;	
 	
-	signal s1zero																		: std_logic;
+	signal s1zero,s5tokena,s5tokenb,s5tokenc,s7sign											: std_logic;
+	signal s5token																		: std_logic_vector(2 downto 0);
 	signal s1delta																		: std_logic_vector(5 downto 0);
 	signal s0delta,s1exp,s2exp,s3exp,s4exp,s5exp,s6exp,s5factor,s6factor,s7exp,s7factor	: std_logic_vector(7 downto 0);
 	signal s1shifter,s5factorhot9,s6factorhot9											: std_logic_vector(8 downto 0);
 	signal s1pl,s6pl																	: std_logic_vector(17 downto 0);
 	signal s6postshift,s7postshift														: std_logic_vector(22 downto 0);
 	signal s1umantshift,s1umantfixed,s1postshift,s1xorslab,s2xorslab					: std_logic_vector(23 downto 0);
+	signal s5factorhot24																: std_logic_vector(23 downto 0);
 	signal s2umantshift,s2mantfixed,s3mantfixed,s3mantshift,s4xorslab					: std_logic_vector(24 downto 0);
-	signal s5factorhot25																: std_logic_vector(24 downto 0);
-	signal s4sresult,s5result,s6result,s7result											: std_logic_vector(25 downto 0); -- Signed mantissa result
+	signal s4sresult,s5result,s6result													: std_logic_vector(25 downto 0); -- Signed mantissa result
 	signal s1ph,s6ph																	: std_logic_vector(26 downto 0);
 	signal s0a,s0b																		: std_logic_vector(31 downto 0); -- Float 32 bit 
 	
@@ -132,13 +133,13 @@ begin
 			s6factorhot9	<= s5factorhot9;
 			
 			--! Etapa 6: Ejecutar el corrimiento de la mantissa.
-			s7result 		<= s6result;
+			s7sign 			<= s6result(25);
 			s7exp			<= s6exp;
-			s7factor		<= s6factor+x"ff";
+			s7factor		<= s6factor;
 			s7postshift		<= s6postshift;
 			
 			--! Etapa 7: Entregar el resultado.
-			c32(31)				<= s7result(25);
+			c32(31)				<= s7sign;
 			c32(30 downto 23)	<= s7exp+s7factor;
 			case s7factor(4 downto 3) is 
 				when "01" 	=> c32(22 downto 0) <= s7postshift(14 downto 00)&x"00";
@@ -184,18 +185,54 @@ begin
 	
 	--! Combinatorial Gremlin, Etapa 5: Codificar el factor de normalizacion de la mantissa resultante.
 	normalizerdecodeshift:
-	process (s5result,s5factorhot25)
+	process (s5result,s5factorhot24,s5token,s5tokena,s5tokenb,s5tokenc,s5factorhot9)
 	begin
-		s5factor <= x"00";
-		s5factorhot25 <= '0'&x"000000";
-		for i in 24 downto 0 loop
+		s5tokena <= not(s5result(24));
+		s5tokenb <= not(s5result(24));
+		s5tokenc <= not(s5result(24));
+		s5factor(7 downto 5) <= (others => s5result(24));
+		s5factorhot24 <= x"000000";
+		for i in 23 downto 16 loop
 			if s5result(i)='1' then
-				s5factor <= conv_std_logic_vector(24-i,8);
-				s5factorhot25(24-i) <= '1';
+				s5factorhot24(23-i) <= s5tokena;
+				s5tokenb <= '0';
+				s5tokenc <= '0';
 				exit;
 			end if;
 		end loop;
-		s5factorhot9 <= (s5factorhot25(8 downto 1)or s5factorhot25(16 downto 9)or s5factorhot25(24 downto 17)) & s5factorhot25(0);
+		for i in 15 downto 8 loop
+			if s5result(i)='1' then
+				s5factorhot24(23-i) <= s5tokenb;
+				s5tokenc <= '0';
+				exit;
+			end if;
+		end loop;
+		for i in 7 downto 0 loop
+			if s5result(i)='1' then
+				s5factorhot24(23-i) <= s5tokenc;
+				exit;
+			end if;
+		end loop;
+		s5token <=s5tokena&s5tokenb&s5tokenc; 
+		case (s5token) is
+			when "100"  => s5factor(4 downto 3) <= "10";
+			when "110"  => s5factor(4 downto 3) <= "01";
+			when "111"	=> s5factor(4 downto 3) <= "00";
+			when others => s5factor(4 downto 3) <= (others => s5result(24));
+		end case;
+		s5factorhot9 <= (s5factorhot24(7 downto 0)or s5factorhot24(15 downto 8)or s5factorhot24(23 downto 16)) & s5result(24);
+		case s5factorhot9 is
+			when "100000000" => s5factor(2 downto 0) <= "111";
+			when "010000000" => s5factor(2 downto 0) <= "110";
+			when "001000000" => s5factor(2 downto 0) <= "101";
+			when "000100000" => s5factor(2 downto 0) <= "100";
+			when "000010000" => s5factor(2 downto 0) <= "011";
+			when "000001000" => s5factor(2 downto 0) <= "010";
+			when "000000100" => s5factor(2 downto 0) <= "001";
+			when "000000010" => s5factor(2 downto 0) <= "000";
+			when others => s5factor (2 downto 0) <= (others => s5result(24));
+		end case;
+		
 	end process;	
 	
 	--! Etapa 6: Ejecutar el corrimiento para normalizar la mantissa.
@@ -206,7 +243,7 @@ begin
 	generic map ("DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9","UNSIGNED","LPM_MULT",9,9,18)
 	port 	map (s6factorhot9,s6result(06 downto 0)&"00",s6pl);
 	s6postshift(22 downto 15) <= s6ph(16 downto 09);
-	s6postshift(14 downto 06) <= s6ph(08 downto 00); --! Activar este pedazo si se requiere extrema precision	     or s5pl(17 downto 9);
+	s6postshift(14 downto 06) <= s6ph(08 downto 00) + s6pl(17 downto 09);
 	s6postshift(05 downto 00) <= s6pl(08 downto 03); 
 	
 	

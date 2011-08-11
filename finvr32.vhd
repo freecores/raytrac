@@ -1,10 +1,30 @@
+------------------------------------------------
+--! @file finvr32.vhd
+--! @brief RayTrac Floating Point Adder  
+--! @author Juli&aacute;n Andr&eacute;s Guar&iacute;n Reyes
+--------------------------------------------------
+
+
+-- RAYTRAC (FP BRANCH)
+-- Author Julian Andres Guarin
+-- finvr32.vhd
+-- This file is part of raytrac.
+-- 
+--     raytrac is free software: you can redistribute it and/or modify
+--     it under the terms of the GNU General Public License as published by
+--     the Free Software Foundation, either version 3 of the License, or
+--     (at your option) any later version.
+-- 
+--     raytrac is distributed in the hope that it will be useful,
+--     but WITHOUT ANY WARRANTY; without even the implied warranty of
+--     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+--     GNU General Public License for more details.
+-- 
+--     You should have received a copy of the GNU General Public License
+--     along with raytrac.  If not, see <http://www.gnu.org/licenses/>
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
-
-
-
-
 entity invr32 is 
 	port (
 		
@@ -13,7 +33,6 @@ entity invr32 is
 		qout32: out std_logic_vector(31 downto 0)
 	);
 end invr32;
-
 architecture invr32_arch of invr32 is 
 
 	component altsyncram

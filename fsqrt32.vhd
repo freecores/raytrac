@@ -1,10 +1,30 @@
+------------------------------------------------
+--! @file fsqrt32.vhd
+--! @brief RayTrac Floating Point Adder  
+--! @author Juli&aacute;n Andr&eacute;s Guar&iacute;n Reyes
+--------------------------------------------------
+
+
+-- RAYTRAC (FP BRANCH)
+-- Author Julian Andres Guarin
+-- fsqrt32.vhd
+-- This file is part of raytrac.
+-- 
+--     raytrac is free software: you can redistribute it and/or modify
+--     it under the terms of the GNU General Public License as published by
+--     the Free Software Foundation, either version 3 of the License, or
+--     (at your option) any later version.
+-- 
+--     raytrac is distributed in the hope that it will be useful,
+--     but WITHOUT ANY WARRANTY; without even the implied warranty of
+--     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+--     GNU General Public License for more details.
+-- 
+--     You should have received a copy of the GNU General Public License
+--     along with raytrac.  If not, see <http://www.gnu.org/licenses/>
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
-
-
-
-
 entity sqrt32 is 
 	port (
 		
@@ -13,7 +33,6 @@ entity sqrt32 is
 		sq32: out std_logic_vector(31 downto 0)
 	);
 end sqrt32;
-
 architecture sqrt32_arch of sqrt32 is 
 
 	component altsyncram
@@ -75,7 +94,7 @@ begin
 		address_aclr_a => "NONE",
 		clock_enable_input_a => "BYPASS",
 		clock_enable_output_a => "BYPASS",
-		init_file => "X:/Tesis/Workspace/hw/rt_lib/arith/src/trunk/fpbranch/sqrt/memsqrt.mif",
+		init_file => "X:/Code/Indigo/fp/fp/memsqrt.mif",
 		intended_device_family => "Cyclone III",
 		lpm_hint => "ENABLE_RUNTIME_MOD=NO",
 		lpm_type => "altsyncram",

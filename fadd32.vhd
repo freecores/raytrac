@@ -22,14 +22,11 @@
 -- 
 --     You should have received a copy of the GNU General Public License
 --     along with raytrac.  If not, see <http://www.gnu.org/licenses/>
-
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
-use ieee.std_logic_arith.all;
 library lpm;
 use lpm.all;
-
 --! Esta entidad recibe dos n&uacutemeros en formato punto flotante IEEE 754, de precision simple y devuelve las mantissas signadas y corridas, y el exponente correspondiente al resultado antes de normalizarlo al formato float. 
 --!\nLas 2 mantissas y el exponente entran despues a la entidad add2 que suma las mantissas y entrega el resultado en formato IEEE 754.
 entity fadd32 is 
@@ -39,7 +36,6 @@ entity fadd32 is
 		c32			: out std_logic_vector(31 downto 0)
 	);
 end fadd32;
-
 architecture fadd32_arch of fadd32 is
 	
 	component lpm_mult 

@@ -108,7 +108,7 @@ begin
 		snormfifo_d(qz) <= (hblock and ((cdblock and sparaminput(dz))or(not(cdblock) and sparaminput(cz)))) or (not(hblock) and ((abblock and sparaminput(bz))or(not(abblock) and sparaminput(az))));
 	
 		--! Combinatorio para decidir que operaciones realizan los sumadores / restadores.
-		add32blks <= instr3(0) xor (instr3(1) xor instr3(0)) ;
+		add32blks <= (instr3(0) xor (instr3(1) xor instr3(0)))&(instr3(0) xor (instr3(1) xor instr3(0))) ;
 		
 		--! Por defecto conectar los sumandos en producto punto/cruz
 		ssumando(s0) <= sprd32blk(p0);ssumando(s1) <= sprd32blk(p1);
@@ -128,7 +128,26 @@ begin
 		sfactor(f8) <= sparaminput(by);sfactor(f9) <= sparaminput(dy);
 		sfactor(f10) <= sparaminput(bz);sfactor(f11) <= sparaminput(dz);
 		
-		--!El  
+		--!Los resultados por defecto se acomodan al producto punto y parcialmente a los productos simple y escalar.
+		sresult(ax) <= sadd32blk(aa);
+		sresult(ay) <= sprd32blk(p1);
+		sresult(az) <= sprd32blk(p2);
+		sresult(bx) <= sadd32blk(ac);
+		sresult(by) <= sprd32blk(p4);
+		sresult(bz) <= sprd32blk(p5);
+		
+		if (instr3(2 downto 1)="11" or instr3="100") then
+			sresult(ax) <= sprd32blk(p0);
+			sresult(cx) <= sprd32blk(p3);
+		elsif instr3(0)='1' then
+			sresult(ax) <= sprd32blk(a0);
+			sresult(ay) <= sprd32blk(a1);
+			sresult(az) <= sprd32blk(a2);
+			sresult(bx) <= sadd32blk(aa);
+			sresult(by) <= sprd32blk(ab);
+			sresult(bz) <= sadd32blk(ac);
+		end if;
+			
 
 		if instr3(0)='1' then	--! Producto Cruz, suma, resta, multiplicacion simple
 
@@ -140,8 +159,6 @@ begin
 				ssumando(s4) <= sparaminput(az);ssumando(s5) <= sparaminput(bz);
 				ssumando(s6) <= sparaminput(cx);ssumando(s7) <= sparaminput(dx);				
 				ssumando(s10) <= sparaminput(cz);ssumando(s11) <= sparaminput(dz);
-				
-				
 			
 			else --! Producto Cruz!
 				

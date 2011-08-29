@@ -1,6 +1,6 @@
 --! @file dpc.vhd
 --! @brief Decodificador de operacion. 
---! @author Juli�n Andr�s Guar�n Reyes.
+--! @author Juli&aacute;n Andr&eacute;s Guar&iacute;n Reyes
 --------------------------------------------------------------
 -- RAYTRAC
 -- Author Julian Andres Guarin

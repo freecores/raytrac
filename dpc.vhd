@@ -24,7 +24,8 @@ library ieee;
 use ieee.std_logic_1164.all;
 entity dpc is 
 	generic (
-		width : integer := 32	
+		width : integer := 32;	
+		external_readable_widthad	: integer := integer(ceil(log(real(external_readable_blocks),2.0))))			
 	);
 	port (
 		paraminput				: in	std_logic_vector ((12*width)-1 downto 0);	--! Vectores A,B,C,D
@@ -154,7 +155,7 @@ begin
 			sfactor(f9) <= sinv32blk;
 			sfactor(f10) <= snormfifo_q(az);
 			sfactor(f11) <= sinv32blk;
-		elsif crossprod='0' then 
+		elsif crossprod='1' then 
 			--! Solo productos punto
 			sfactor(f0) <= sparaminput(ay);
 			sfactor(f1) <= sparaminput(bz);
@@ -168,7 +169,7 @@ begin
 			sfactor(f9) <= sparaminput(by);
 			sfactor(f10) <= sparaminput(ay);
 			sfactor(f11) <= sparaminput(bx);
-		elsif scalar='0' then
+		elsif scalar='0' then --! Producto punto 
 			sfactor(f0) <= 	sparaminput(ax) ;
 			sfactor(f1) <= 	sparaminput(bx) ;
 			sfactor(f2) <= 	sparaminput(ay) ;	

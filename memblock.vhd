@@ -39,7 +39,7 @@ entity memblock is
 		
 		clk,dpfifo_flush,normfifo_flush,dpfifo_rd,normfifo_rd,dpfifo_wr,normfifo_wr : in std_logic;
 		dpfifo_empty, normfifo_empty, dpfifo_full, normfifo_full : out std_logic;
-		ext_rd,ext_wr: in std_logic;
+		ext_rd,ext_wr,int_wr: in std_logic;
 		ext_wr_add : in std_logic_vector(external_writeable_widthad+widthadmemblock-1 downto 0);		
 		ext_rd_add : in std_logic_vector(external_readable_widthad+widthadmemblock-1 downto 0);
 		ext_d: in std_logic_vector(width-1 downto 0);
@@ -152,7 +152,7 @@ begin
 		sint_d(i) <= int_d((i+1)*width-1 downto i*width);
 		resultsblock : altsyncram
 		generic map ("NONE","CLOCK0","BYPASS","BYPASS","BYPASS","Cyclone III","altsyncram",2**widthadmemblock,2**widthadmemblock,"DUAL_PORT","NONE","CLOCK0","FALSE","M9K","CLOCK0","OLD_DATA",widthadmemblock,widthadmemblock,width,width,1)
-		port	map (ext_rd,clk,int_wr_add,ext_rd_add(widthadmemblock-1 downto 0),'1',s1ext_q(i),sint_d(i));
+		port	map (int_wr,clk,int_wr_add,ext_rd_add(widthadmemblock-1 downto 0),ext_rd,s1ext_q(i),sint_d(i));
 	end generate results_blocks;
 	
 	operands_blocks: 
@@ -160,7 +160,7 @@ begin
 		int_q((i+1)*width-1 downto width*i) <= s1int_q(i);
 		operandsblock : altsyncram
 		generic map ("NONE","CLOCK0","BYPASS","BYPASS","BYPASS","Cyclone III","altsyncram",2**widthadmemblock,2**widthadmemblock,"DUAL_PORT","NONE","CLOCK0","FALSE","M9K","CLOCK0","OLD_DATA",widthadmemblock,widthadmemblock,width,width,1)
-		port 	map (s0ext_wr_add_one_hot(i),clk,s0ext_wr_add(widthadmemblock-1 downto 0),sint_rd_add(i/6),'1',s1int_q(i),s0ext_d);
+		port 	map (s0ext_wr_add_one_hot(i),clk,s0ext_wr_add(widthadmemblock-1 downto 0),sint_rd_add((i/3) mod 2),'1',s1int_q(i),s0ext_d);
 	end generate operands_blocks;
 	
 	

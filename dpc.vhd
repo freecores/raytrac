@@ -24,8 +24,8 @@ library ieee;
 use ieee.std_logic_1164.all;
 entity dpc is 
 	generic (
-		width : integer := 32;	
-		external_readable_widthad	: integer := integer(ceil(log(real(external_readable_blocks),2.0))))			
+		width : integer := 32
+		--!external_readable_widthad	: integer := integer(ceil(log(real(external_readable_blocks),2.0))))			
 	);
 	port (
 		paraminput				: in	std_logic_vector ((12*width)-1 downto 0);	--! Vectores A,B,C,D
@@ -137,7 +137,7 @@ begin
 	
 	
 	
-	mul:process(unary,addsub,crossprod,scalar,sparaminput,sinv32blk,sprd32blk,sdpfifo_q,snormfifo_q)
+	mul:process(unary,addsub,crossprod,scalar,sparaminput,sinv32blk,sprd32blk,sadd32blk,sdpfifo_q,snormfifo_q)
 	begin
 		
 		
@@ -210,8 +210,13 @@ begin
 		else
 			ssumando(s0) <= sprd32blk(p0);
 			ssumando(s1) <= sprd32blk(p1);
-			ssumando(s2) <= sdpfifo_q(dpfifoab);
-			ssumando(s3) <= sprd32blk(p2);
+			if crossprod='0' then
+				ssumando(s2) <= sadd32blk(a0);
+				ssumando(s3) <= sdpfifo_q(dpfifoab);
+			else
+				ssumando(s2) <= sprd32blk(p2);
+				ssumando(s3) <= sprd32blk(p3);
+			end if;				
 			ssumando(s4) <= sprd32blk(p4);
 			ssumando(s5) <= sprd32blk(p5);
 		end if;					

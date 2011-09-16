@@ -39,6 +39,8 @@ entity memblock is
 		
 		clk,dpfifo_flush,normfifo_flush,dpfifo_rd,normfifo_rd,dpfifo_wr,normfifo_wr : in std_logic;
 		dpfifo_empty, normfifo_empty, dpfifo_full, normfifo_full : out std_logic;
+		instrfifo_flush,instrfifo_rd,instrfifo_wr: in std_logic;
+		instrfifo_empty,instrfifo_full : out std_logic; 
 		ext_rd,ext_wr,int_wr: in std_logic;
 		ext_wr_add : in std_logic_vector(external_writeable_widthad+widthadmemblock-1 downto 0);		
 		ext_rd_add : in std_logic_vector(external_readable_widthad+widthadmemblock-1 downto 0);
@@ -48,6 +50,7 @@ entity memblock is
 		int_q : out std_logic_vector(external_writeable_blocks*width-1 downto 0);
 		int_wr_add : in std_logic_vector(widthadmemblock-1 downto 0);
 		int_rd_add : in std_logic_vector(2*widthadmemblock-1 downto 0);
+		instrfifo_d : in std_logic_vector(width-1 downto 0);
 		dpfifo_d : in std_logic_vector(width*2-1 downto 0);
 		normfifo_d : in std_logic_vector(width*3-1 downto 0);
 		dpfifo_q : out std_logic_vector(width*2-1 downto 0);
@@ -143,6 +146,10 @@ begin
 	normfifo : scfifo
 	generic map ("OFF","Cyclone III","RAM_BLOCK_TYPE=M9K",26,"OFF","SCFIFO",96,5,"OFF","OFF","ON")
 	port	map (normfifo_rd,normfifo_flush,normfifo_empty,clk,normfifo_q,normfifo_wr,normfifo_d,normfifo_full);
+	instrfifo : scififo
+	generic map ("OFF","Cyclone III","RAM_BLOCK_TYPE_M9K",64,"OFF","SCIFIFO",32,6,"OFF","OFF","ON")
+	port 	map (instrfifo_rd,instrfifo_flush,instrfifo_empty,clk,instrfifo_q,instrfifo_wr,instrfifo_d,instrifo_full);
+	
 	
 	sint_rd_add (0)<= int_rd_add(widthadmemblock-1 downto 0);
 	sint_rd_add (1)<= int_rd_add(2*widthadmemblock-1 downto widthadmemblock);

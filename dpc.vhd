@@ -199,7 +199,7 @@ begin
 			
 		end if;
 		
-		ssumando(s6) <= sprd32blk(p3);
+		ssumando(s6) <= sadd32blk(a2);
 		ssumando(s7) <= sdpfifo_q(dpfifocd);
 		if addsub='1' then
 			ssumando(s0) <= sparaminput(ax);

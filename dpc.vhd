@@ -29,14 +29,16 @@ entity dpc is
 		--!external_readable_widthad	: integer := integer(ceil(log(real(external_readable_blocks),2.0))))			
 	);
 	port (
+		clk						: in	std_logic;
 		paraminput				: in	std_logic_vector ((12*width)-1 downto 0);	--! Vectores A,B,C,D
 		prd32blko			 	: in	std_logic_vector ((06*width)-1 downto 0);	--! Salidas de los 6 multiplicadores.
 		add32blko 				: in	std_logic_vector ((04*width)-1 downto 0);	--! Salidas de los 4 sumadores.
-		sqr32blko,inv32blko		: in	std_logic_vector (width-1 downto 0);		--! Salidas de las 2 raices cuadradas y los 2 inversores.
+		sqr32blko,inv32blko		: in	std_logic_vector (width-1 downto 0);		--! Salidas de la raiz cuadradas y el inversor.
 		fifo32x26_q				: in	std_logic_vector (03*width-1 downto 0);		--! Salida de la cola intermedia.
 		fifo32x09_q				: in	std_logic_vector (02*width-1 downto 0); 	--! Salida de las colas de producto punto. 
 		unary,crossprod,addsub	: in	std_logic;									--! Bit con el identificador del bloque AB vs CD e identificador del sub bloque (A/B) o (C/D). 
 		scalar					: in	std_logic;
+		sqr32blki,inv32blki		: out	std_logic_vector (width-1 downto 0);		--! Salidas de las 2 raices cuadradas y los 2 inversores.
 		fifo32x26_d				: out	std_logic_vector (03*width-1 downto 0);		--! Entrada a la cola intermedia para la normalizaci&oacute;n.
 		fifo32x09_d				: out	std_logic_vector (02*width-1 downto 0);		--! Entrada a las colas intermedias del producto punto.  	
 		prd32blki				: out	std_logic_vector ((12*width)-1 downto 0);	--! Entrada de los 12 factores en el bloque de multiplicaci&oacute;n respectivamente.
@@ -93,14 +95,27 @@ begin
 		add32blki(i*width+width-1 downto i*width) <= ssumando(i);
 		resultoutput(i*width+width-1 downto i*width) <= sresult(i);
 	end generate stuff08;
-	stuff06: 
-	for i in 05 downto 0 generate
-		sprd32blk(i)  <= prd32blko(i*width+width-1 downto i*width);
-	end generate stuff06;
+	
+	process (clk)
+	begin
+		if clk'event and clk='1' then
+			for i 05 downto 0 loop 
+				sprd32blk(p0)  <= prd32blko(i*width+width-1 downto i*width);
+			end loop;
+		end if;
+	end process;
+	
 	stuff04: 
-	for i in 03 downto 0 generate
+	for i in 03 downto 1 generate
 		sadd32blk(i)  <= add32blko(i*width+width-1 downto i*width);
 	end generate stuff04;
+	process (clk)
+	begin
+		if clk'event and clk='1' then
+			sadd32blk(a0)  <= add32blko(a0*width+width-1 downto a0*width);
+			sinv32blk <= inv32blko;
+		end if;
+	end process;
 	stuff03:
 	for i in 02 downto 0 generate
 		snormfifo_q(i) <= fifo32x26_q(i*width+width-1 downto i*width);
@@ -115,10 +130,9 @@ begin
 	
 	
 	
-	sinv32blk <= inv32blko;
 	ssqr32blk <= sqr32blko;
 	
-	--! Salidas de los distintos resultados;
+	--! Colas de salida de los distintos resultados;
 	sresult(0) <= ssqr32blk;
 	sresult(1) <= sadd32blk(a0);
 	sresult(2) <= sadd32blk(a1);
@@ -133,9 +147,18 @@ begin
 	snormfifo_d(qy) <= sparaminput(ay);
 	snormfifo_d(qz) <= sparaminput(az);
 	
-	--! Signo de los 3 primeros sumadores
 	
 	
+	--! La entrada al inversor SIEMPRE viene con la salida de la raiz cuadrada
+	inv32blki <= sqr32blko;
+	--! La entrada de la ra’z cuadrada SIEMPRE viene con la salida del sumador 1.
+	sqr32blki <= sadd32blk(a1);
+	
+	
+	
+	--! Conectar las entradas del sumador a, a la salida 
+	ssumando(s6) <= sadd32blk(a2);
+	ssumando(s7) <= sdpfifo_q(dpfifocd);
 	
 	
 	mul:process(unary,addsub,crossprod,scalar,sparaminput,sinv32blk,sprd32blk,sadd32blk,sdpfifo_q,snormfifo_q)
@@ -199,8 +222,7 @@ begin
 			
 		end if;
 		
-		ssumando(s6) <= sadd32blk(a2);
-		ssumando(s7) <= sdpfifo_q(dpfifocd);
+		
 		if addsub='1' then
 			ssumando(s0) <= sparaminput(ax);
 			ssumando(s1) <= sparaminput(bx);

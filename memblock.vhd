@@ -140,8 +140,8 @@ architecture memblock_arch of memblock is
 
 begin 
 
-	dpfifo : scfifo 
-	generic	map ("OFF","Cyclone III","RAM_BLOCK_TYPE=M9K",9,"OFF","SCFIFO",64,4,"OFF","OFF","ON")
+	dpfifo : scfifo --! Debe ir registrada la salida.
+	generic	map ("ON","Cyclone III","RAM_BLOCK_TYPE=M9K",15,"OFF","SCFIFO",64,4,"OFF","OFF","ON")
 	port	map (dpfifo_rd,dpfifo_flush,dpfifo_empty,clk,dpfifo_q,dpfifo_wr,dpfifo_d,dpfifo_full);
 	normfifo : scfifo
 	generic map ("OFF","Cyclone III","RAM_BLOCK_TYPE=M9K",26,"OFF","SCFIFO",96,5,"OFF","OFF","ON")

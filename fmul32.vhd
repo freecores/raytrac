@@ -27,7 +27,7 @@ use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
 entity fmul32 is
 	port (
-		clk 		: in std_logic;
+		clk,ena 	: in std_logic;
 		a32,b32		: in std_logic_vector(31 downto 0);
 		p32			: out std_logic_vector(31 downto 0)
 		
@@ -70,10 +70,10 @@ architecture fmul32_arch of fmul32 is
 	
 begin
 
-	process(clk)
+	process(clk,ena)
 	begin
 	
-		if clk'event and clk='1' then
+		if clk'event and clk='1' and ena='1' then
 			--! Registro de entrada
 			s0sga <= a32(31);
 			s0sgb <= b32(31);
@@ -93,16 +93,20 @@ begin
 			s2sgr <= s1sgr;
 			s2exp <= s1exp;
 			
-			--! Etapa 2 entregar el resultado
-			p32(31) <= s2sgr;
-			p32(30 downto 23) <= s2exp+s2umu(24);
-			if s2umu(24) ='1' then
-				p32(22 downto 0) <= s2umu(23 downto 1);
-			else
-				p32(22 downto 0) <= s2umu(22 downto 0);
-			end if;
+			
 		end if;
 	end process;
+	--! Etapa 2 entregar el resultado
+	p32(31) <= s2sgr;
+	process (s2exp,s2umu)
+	begin
+		p32(30 downto 23) <= s2exp+s2umu(24);
+		if s2umu(24) ='1' then
+			p32(22 downto 0) <= s2umu(23 downto 1);
+		else
+			p32(22 downto 0) <= s2umu(22 downto 0);
+		end if;
+	end process;	
 	
 	--! Combinatorial Gremlin Etapa 0 : multiplicacion de la mantissa, suma de los exponentes y multiplicaci&oacute;n de los signos.
 	

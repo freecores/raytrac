@@ -31,7 +31,7 @@ use lpm.all;
 --!\nLas 2 mantissas y el exponente entran despues a la entidad add2 que suma las mantissas y entrega el resultado en formato IEEE 754.
 entity fadd32 is 
 	port (
-		clk,dpc		: in std_logic;
+		clk,dpc,ena	: in std_logic;
 		a32,b32		: in std_logic_vector (31 downto 0);
 		c32			: out std_logic_vector(31 downto 0)
 	);
@@ -70,9 +70,9 @@ architecture fadd32_arch of fadd32 is
 	
 begin
 
-	process (clk)
+	process (clk,ena)
 	begin
-		if clk'event and clk='1' then 
+		if clk'event and clk='1' and ena='1' then 
 		
 			--!Registro de entrada
 			s0a <= a32;
@@ -134,15 +134,20 @@ begin
 			s7factor		<= s6factor;
 			s7postshift		<= s6postshift;
 			
-			--! Etapa 7: Entregar el resultado.
-			c32(31)				<= s7sign;
-			c32(30 downto 23)	<= s7exp+s7factor;
-			case s7factor(4 downto 3) is 
-				when "01" 	=> c32(22 downto 0) <= s7postshift(14 downto 00)&x"00";
-				when "10" 	=> c32(22 downto 0) <= s7postshift(06 downto 00)&x"0000";
-				when others => c32(22 downto 0)	<= s7postshift;
-			end case; 
+			
 		end if;
+	end process;
+
+	--! Etapa 7: Entregar el resultado.
+	c32(31)	<= s7sign;
+	process(s7exp,s7postshift,s7factor)
+	begin
+		c32(30 downto 23)	<= s7exp+s7factor;
+		case s7factor(4 downto 3) is 
+			when "01" 	=> c32(22 downto 0) <= s7postshift(14 downto 00)&x"00";
+			when "10" 	=> c32(22 downto 0) <= s7postshift(06 downto 00)&x"0000";
+			when others => c32(22 downto 0)	<= s7postshift;
+		end case; 
 	end process;
 	--! Combinatorial gremlin, Etapa 0 el corrimiento de la mantissa con menor exponente y reorganiza los operandos,\n
 	--! si el mayor es b, intercambia las posici&oacute;n si el mayor es a las posiciones la mantiene. 

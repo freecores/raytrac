@@ -28,7 +28,7 @@ use ieee.std_logic_unsigned.all;
 entity invr32 is 
 	port (
 		
-		clk : in std_logic;
+		clk,ena : in std_logic;
 		dvd32: in std_logic_vector(31 downto 0);		
 		qout32: out std_logic_vector(31 downto 0)
 	);
@@ -54,6 +54,7 @@ architecture invr32_arch of invr32 is
 	);
 	port (
 			clock0	: in std_logic ;
+			rden_a	: in std_logic;
 			address_a	: in std_logic_vector (9 downto 0);
 			q_a	: out std_logic_vector (17 downto 0)
 	);
@@ -84,30 +85,31 @@ begin
 	)
 	port map (
 		clock0 => clk,
+		rden_a => ena,
 		address_a => dvd32(22 downto 13),
 		q_a => s0q
 	);
 	--! SNAN?
-	process (clk)
+	process (clk,ena)
 	begin
-		if clk'event and clk='1' then
-			
+		if clk'event and clk='1' and ena='1' then
 			--!Carga de Operando.
 			s0sgn <= dvd32(31);
 			s0uexp <= dvd32(30 downto 23);
-			
-			
-			--! Etapa 0: Calcular direcci&oacute;n a partir del exponente, salida y normalizaci&oacute;n de la mantissa.
-			qout32(31) <= s0sgn;
-			if s0q(17)='1' then
-				qout32(22 downto 7) <= (others => '0');
-				qout32(30 downto 23) <= s0e129+255;
-			else
-				qout32(22 downto 7) <= s0q(15 downto 0);
-				qout32(30 downto 23) <= s0e129+254;
-			end if;	
-		
 		end if;
+	end process;			
+	qout32(31) <= s0sgn;
+	process (s0e129,s0q)
+	begin		
+		--! Etapa 0: Calcular direcci&oacute;n a partir del exponente, salida y normalizaci&oacute;n de la mantissa.
+		if s0q(17)='1' then
+			qout32(22 downto 7) <= (others => '0');
+			qout32(30 downto 23) <= s0e129+255;
+		else
+			qout32(22 downto 7) <= s0q(15 downto 0);
+			qout32(30 downto 23) <= s0e129+254;
+		end if;	
+
 	end process;
 	
 	--! Combinatorial Gremlin: Etapa 0, calculo del exponente. 

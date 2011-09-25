@@ -28,9 +28,9 @@ use ieee.std_logic_unsigned.all;
 entity sqrt32 is 
 	port (
 		
-		clk : in std_logic;
-		rd32: in std_logic_vector(31 downto 0);		
-		sq32: out std_logic_vector(31 downto 0)
+		clk,ena	: in std_logic;
+		rd32	: in std_logic_vector(31 downto 0);		
+		sq32	: out std_logic_vector(31 downto 0)
 	);
 end sqrt32;
 architecture sqrt32_arch of sqrt32 is 
@@ -53,9 +53,10 @@ architecture sqrt32_arch of sqrt32 is
 		width_byteena_a		: natural
 	);
 	port (
-			clock0	: in std_logic ;
-			address_a	: in std_logic_vector (9 downto 0);
-			q_a	: out std_logic_vector (17 downto 0)
+			clock0		:	in std_logic;
+			rden_a		:	in std_logic;
+			address_a	: 	in std_logic_vector (9 downto 0);
+			q_a			: 	out std_logic_vector (17 downto 0)
 	);
 	end component;
 
@@ -66,23 +67,22 @@ architecture sqrt32_arch of sqrt32 is
 begin
 	
 	--! SNAN?
-	process (clk)
+	process (clk,ena)
 	begin
-		if clk'event and clk='1' then
+		if clk'event and clk='1' and ena='1' then
 			
 			--!Carga de Operando.
 			s0sgn <= rd32(31);
 			s0uexp <= rd32(30 downto 23);
-			
-			
-			--! Etapa 0: Calcular direcci&oacute;n a partir del exponente y el exponente.
-			sq32(31) <= s0sgn;
-			sq32(30 downto 23) <= (s0e129(7)&s0e129(7 downto 1))+127;
-			sq32(22 downto 6) <= s0q(16 downto 0);
-			
-		
+
 		end if;
 	end process;
+	
+	--! Etapa 0: Calcular direcci&oacute;n a partir del exponente y el exponente.
+	sq32(31) <= s0sgn;
+	sq32(30 downto 23) <= (s0e129(7)&s0e129(7 downto 1))+127;
+	sq32(22 downto 6) <= s0q(16 downto 0);
+	
 	
 	--! Combinatorial Gremlin: Etapa 0, calculo del exponente. 
 	s0e129<=s0uexp+("1000000"&s0uexp(0));
@@ -106,6 +106,6 @@ begin
 		width_a => 18,
 		width_byteena_a => 1
 	)
-	port map (clock0 => clk,address_a => rd32(23 downto 14),q_a => s0q);
+	port map (rden_a => ena, clock0 => clk, address_a => rd32(23 downto 14), q_a => s0q);
 
 end sqrt32_arch;

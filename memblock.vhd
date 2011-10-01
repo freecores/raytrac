@@ -37,18 +37,18 @@ entity memblock is
 	);
 	port (
 		
-		clk,dpfifo_flush,normfifo_flush,dpfifo_rd,normfifo_rd,dpfifo_wr,normfifo_wr : in std_logic;
+		clk,ena,dpfifo_flush,normfifo_flush,dpfifo_rd,normfifo_rd,dpfifo_wr,normfifo_wr : in std_logic;
 		dpfifo_empty, normfifo_empty, dpfifo_full, normfifo_full : out std_logic;
-		instrfifo_flush,instrfifo_rd,instrfifo_wr: in std_logic;
-		instrfifo_empty,instrfifo_full : out std_logic; 
-		ext_rd,ext_wr,int_wr: in std_logic;
+		instrfifo_flush,instrfifo_rd,instrfifo_wr,resultfifo_flush,resultfifo_wr: in std_logic;
+		instrfifo_empty,instrfifo_full: out std_logic; 
+		ext_rd,ext_wr: in std_logic;
 		ext_wr_add : in std_logic_vector(external_writeable_widthad+widthadmemblock-1 downto 0);		
-		ext_rd_add : in std_logic_vector(external_readable_widthad+widthadmemblock-1 downto 0);
+		ext_rd_add : in std_logic_vector(external_readable_widthad-1 downto 0);
 		ext_d: in std_logic_vector(width-1 downto 0);
+		resultfifo_full,resultfifo_empty : out std_logic_vector(external_readable_blocks-1 downto 0);
 		int_d : in std_logic_vector(external_readable_blocks*width-1 downto 0);
-		ext_q : out std_logic_vector(width-1 downto 0);
+		ext_q,instrfifo_q : out std_logic_vector(width-1 downto 0);
 		int_q : out std_logic_vector(external_writeable_blocks*width-1 downto 0);
-		int_wr_add : in std_logic_vector(widthadmemblock-1 downto 0);
 		int_rd_add : in std_logic_vector(2*widthadmemblock-1 downto 0);
 		instrfifo_d : in std_logic_vector(width-1 downto 0);
 		dpfifo_d : in std_logic_vector(width*2-1 downto 0);
@@ -67,6 +67,8 @@ architecture memblock_arch of memblock is
 	component scfifo
 	generic (
 		add_ram_output_register	:string;
+		almost_full_value		:natural;
+		allow_wrcycle_when_full	:string;
 		intended_device_family	:string;
 		lpm_hint				:string;
 		lpm_numwords			:natural;
@@ -79,14 +81,15 @@ architecture memblock_arch of memblock is
 		use_eab					:string	
 	);
 	port(
-		rdreq	: in std_logic;
-		aclr	: in std_logic;
-		empty	: out std_logic;
-		clock	: in std_logic;
-		q		: out std_logic_vector(lpm_width-1 downto 0);
-		wrreq	: in std_logic;
-		data	: in std_logic_vector(lpm_width-1 downto 0);
-		full	: out std_logic
+		rdreq		: in std_logic;
+		aclr		: in std_logic;
+		empty		: out std_logic;
+		clock		: in std_logic;
+		q			: out std_logic_vector(lpm_width-1 downto 0);
+		wrreq		: in std_logic;
+		data		: in std_logic_vector(lpm_width-1 downto 0);
+		almost_full : out std_logic;
+		full		: out std_logic
 	);
 	end component;
 	
@@ -129,26 +132,24 @@ architecture memblock_arch of memblock is
 	signal s0ext_wr_add			: std_logic_vector(external_writeable_widthad+widthadmemblock-1 downto 0);
 	signal s0ext_rd_add			: std_logic_vector(external_readable_widthad-1 downto 0);
 	signal s0int_rd_add			: std_logic_vector(widthadmemblock-1 downto 0);
-	signal s0int_wr_add			: std_logic_vector(widthadmemblock-1 downto 0);
-	signal s0ext_wr				: std_logic;
+	signal s0ext_wr,s0ext_rd	: std_logic;
 	signal s0ext_d				: std_logic_vector(width-1 downto 0);
-
-	signal s1ext_rd_add			: std_logic_vector(external_readable_widthad-1 downto 0);
-	signal s1ext_q,sint_d		: vectorblock08;
+	signal s0ext_rd_ack			: std_logic_vector(external_readable_blocks-1 downto 0);
+	signal s0ext_q,sint_d		: vectorblock08;
 	signal sint_rd_add			: vectorblock02;
-	signal s1int_q				: vectorblock12;	
+	signal s1int_q				: vectorblock12;
 
 begin 
 
 	dpfifo : scfifo --! Debe ir registrada la salida.
-	generic	map ("ON","Cyclone III","RAM_BLOCK_TYPE=M9K",15,"OFF","SCFIFO",64,4,"OFF","OFF","ON")
+	generic	map ("ON",9,"OFF","Cyclone III","RAM_BLOCK_TYPE=M9K",16,"OFF","SCFIFO",64,4,"OFF","OFF","ON")
 	port	map (dpfifo_rd,dpfifo_flush,dpfifo_empty,clk,dpfifo_q,dpfifo_wr,dpfifo_d,dpfifo_full);
 	normfifo : scfifo
-	generic map ("OFF","Cyclone III","RAM_BLOCK_TYPE=M9K",26,"OFF","SCFIFO",96,5,"OFF","OFF","ON")
+	generic map ("ON",23,"OFF","Cyclone III","RAM_BLOCK_TYPE=M9K",32,"OFF","SCFIFO",96,5,"OFF","OFF","ON")
 	port	map (normfifo_rd,normfifo_flush,normfifo_empty,clk,normfifo_q,normfifo_wr,normfifo_d,normfifo_full);
-	instrfifo : scififo
-	generic map ("OFF","Cyclone III","RAM_BLOCK_TYPE_M9K",64,"OFF","SCIFIFO",32,6,"OFF","OFF","ON")
-	port 	map (instrfifo_rd,instrfifo_flush,instrfifo_empty,clk,instrfifo_q,instrfifo_wr,instrfifo_d,instrifo_full);
+	instrfifo : scfifo
+	generic map ("ON",31,"ON","Cyclone III","RAM_BLOCK_TYPE_M9K",32,"OFF","SCIFIFO",32,5,"ON","OFF","ON")
+	port 	map (instrfifo_rd,instrfifo_flush,instrfifo_empty,clk,instrfifo_q,instrfifo_wr,instrfifo_d,instrfifo_full);
 	
 	
 	sint_rd_add (0)<= int_rd_add(widthadmemblock-1 downto 0);
@@ -157,9 +158,12 @@ begin
 	results_blocks: 
 	for i in 7 downto 0 generate
 		sint_d(i) <= int_d((i+1)*width-1 downto i*width);
-		resultsblock : altsyncram
-		generic map ("NONE","CLOCK0","BYPASS","BYPASS","BYPASS","Cyclone III","altsyncram",2**widthadmemblock,2**widthadmemblock,"DUAL_PORT","NONE","CLOCK0","FALSE","M9K","CLOCK0","OLD_DATA",widthadmemblock,widthadmemblock,width,width,1)
-		port	map (int_wr,clk,int_wr_add,ext_rd_add(widthadmemblock-1 downto 0),ext_rd,s1ext_q(i),sint_d(i));
+		resultsfifo : scfifo
+		generic map	("ON",511,"ON","Cyclone III","RAM_BLOCK_TYPE_M9K",512,"OFF","SCIFIFO",32,9,"ON","OFF","ON")
+		port	map (s0ext_rd_ack(i),resultfifo_flush,resultfifo_empty(i),clk,s0ext_q(i),resultfifo_wr,sint_d(i),open,resultfifo_full(i));
+--		resultsblock : altsyncram
+--		generic map ("NONE","CLOCK0","BYPASS","BYPASS","BYPASS","Cyclone III","altsyncram",2**widthadmemblock,2**widthadmemblock,"DUAL_PORT","NONE","CLOCK0","FALSE","M9K","CLOCK0","OLD_DATA",widthadmemblock,widthadmemblock,width,width,1)
+--		port	map (resultfifo_wr,clk,resultfifo_wr_add,ext_rd_add(widthadmemblock-1 downto 0),ext_rd,s1ext_q(i),sint_d(i));
 	end generate results_blocks;
 	
 	operands_blocks: 
@@ -171,49 +175,66 @@ begin
 	end generate operands_blocks;
 	
 	
-	operands_block_proc: process (clk)
+	operands_block_proc: process (clk,ena)
 	begin
-		if clk'event and clk='1' then
+		if clk'event and clk='1' and ena='1' then
 			 --! Registro de entrada
 			 s0ext_wr_add <= ext_wr_add;
 			 s0ext_wr  <= ext_wr;
-			 s0ext_d  <= ext_d;
-			--! Etapa 0: Decodificacion de las se&ntilde:ales de escritura.
-			case s0ext_wr_add(external_writeable_widthad+widthadmemblock-1 downto widthadmemblock) is 
-				when x"0" => s0ext_wr_add_one_hot <= x"00"&"000"&s0ext_wr;
-				when x"1" => s0ext_wr_add_one_hot <= x"00"&"00"&s0ext_wr&'0';
-				when x"2" => s0ext_wr_add_one_hot <= x"00"&'0'&s0ext_wr&"00";
-				when x"3" => s0ext_wr_add_one_hot <= x"00"&s0ext_wr&"000";
-				when x"4" => s0ext_wr_add_one_hot <= x"0"&"000"&s0ext_wr&x"0";
-				when x"5" => s0ext_wr_add_one_hot <= x"0"&"00"&s0ext_wr&'0'&x"0";
-				when x"6" => s0ext_wr_add_one_hot <= x"0"&'0'&s0ext_wr&"00"&x"0";
-				when x"7" => s0ext_wr_add_one_hot <= x"0"&s0ext_wr&"000"&x"0";
-				when x"8" => s0ext_wr_add_one_hot <= "000"&s0ext_wr&x"00";
-				when x"9" => s0ext_wr_add_one_hot <= "00"&s0ext_wr&'0'&x"00";
-				when x"A" => s0ext_wr_add_one_hot <= '0'&s0ext_wr&"00"&x"00";
-				when others => s0ext_wr_add_one_hot <= s0ext_wr&"000"&x"00";
-			end case;
+			 s0ext_d  <= ext_d;		
 		end if;
 	end process;
-	results_block_proc: process(clk)
+	operands_block_comb: process (s0ext_wr_add,s0ext_wr)
 	begin
-		if clk'event and clk='1' then
+	
+		--! Etapa 0: Decodificacion de las se&ntilde:ales de escritura.
+		case s0ext_wr_add(external_writeable_widthad+widthadmemblock-1 downto widthadmemblock) is 
+			when x"0" => s0ext_wr_add_one_hot <= x"00"&"000"&s0ext_wr;
+			when x"1" => s0ext_wr_add_one_hot <= x"00"&"00"&s0ext_wr&'0';
+			when x"2" => s0ext_wr_add_one_hot <= x"00"&'0'&s0ext_wr&"00";
+			when x"3" => s0ext_wr_add_one_hot <= x"00"&s0ext_wr&"000";
+			when x"4" => s0ext_wr_add_one_hot <= x"0"&"000"&s0ext_wr&x"0";
+			when x"5" => s0ext_wr_add_one_hot <= x"0"&"00"&s0ext_wr&'0'&x"0";
+			when x"6" => s0ext_wr_add_one_hot <= x"0"&'0'&s0ext_wr&"00"&x"0";
+			when x"7" => s0ext_wr_add_one_hot <= x"0"&s0ext_wr&"000"&x"0";
+			when x"8" => s0ext_wr_add_one_hot <= "000"&s0ext_wr&x"00";
+			when x"9" => s0ext_wr_add_one_hot <= "00"&s0ext_wr&'0'&x"00";
+			when x"A" => s0ext_wr_add_one_hot <= '0'&s0ext_wr&"00"&x"00";
+			when others => s0ext_wr_add_one_hot <= s0ext_wr&"000"&x"00";
+		end case;
+	
+	end process;
+	results_block_proc: process(clk,ena)
+	begin
+		if clk'event and clk='1' and ena='1' then
 			--!Registrar entrada
-			s0ext_rd_add <= ext_rd_add(external_readable_widthad+widthadmemblock-1 downto widthadmemblock);
-			--!Etapa 0: Leer memorias
-			s1ext_rd_add <= s0ext_rd_add;
-			--!Etapa 1: Seleccionar dato a leer;
-			case '0'&s1ext_rd_add is
-				when x"0" => ext_q <= s1ext_q(0);
-				when x"1" => ext_q <= s1ext_q(1);
-				when x"2" => ext_q <= s1ext_q(2);
-				when x"3" => ext_q <= s1ext_q(3);
-				when x"4" => ext_q <= s1ext_q(4);
-				when x"5" => ext_q <= s1ext_q(5);
-				when x"6" => ext_q <= s1ext_q(6);
-				when others => ext_q <= s1ext_q(7);
+			s0ext_rd_add	<= ext_rd_add;
+			s0ext_rd		<= ext_rd;	
+			--!Etapa 0: Decodificar la cola que se va a mover (rdack! fifo showahead mode) y por ende leer ese dato.
+			case '0'&s0ext_rd_add is
+				when x"0" => ext_q <= s0ext_q(0); 
+				when x"1" => ext_q <= s0ext_q(1);
+				when x"2" => ext_q <= s0ext_q(2);
+				when x"3" => ext_q <= s0ext_q(3);
+				when x"4" => ext_q <= s0ext_q(4);
+				when x"5" => ext_q <= s0ext_q(5);
+				when x"6" => ext_q <= s0ext_q(6);
+				when others => ext_q <= s0ext_q(7);
 			end case;			
 		end if;
+	end process;
+	results_block_proc_combinatorial_stage: process(s0ext_rd,s0ext_rd_add)
+	begin
+		case '0'&s0ext_rd_add is 
+			when x"0" => s0ext_rd_ack <= x"0"&"000"&s0ext_rd;
+			when x"1" => s0ext_rd_ack <= x"0"&"00"&s0ext_rd&'0';
+			when x"2" => s0ext_rd_ack <= x"0"&"0"&s0ext_rd&"00";
+			when x"3" => s0ext_rd_ack <= x"0"&s0ext_rd&"000";
+			when x"4" => s0ext_rd_ack <= "000"&s0ext_rd&x"0";
+			when x"5" => s0ext_rd_ack <= "00"&s0ext_rd&'0'&x"0";
+			when x"6" => s0ext_rd_ack <= "0"&s0ext_rd&"00"&x"0";
+			when others => s0ext_rd_ack <= s0ext_rd&"000"&x"0";
+		end case;	
 	end process;
 end memblock_arch;
 

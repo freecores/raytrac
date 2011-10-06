@@ -100,7 +100,7 @@ begin
 	process (clk,ena)
 	begin
 		if clk'event and clk='1' and ena='1' then
-			for i 05 downto 0 loop 
+			for i in 05 downto 0 loop 
 				sprd32blk(i)  <= prd32blko(i*width+width-1 downto i*width);
 			end loop;
 		end if;
@@ -156,7 +156,7 @@ begin
 	
 	--! La entrada al inversor SIEMPRE viene con la salida de la raiz cuadrada
 	inv32blki <= sqr32blko;
-	--! La entrada de la ra’z cuadrada SIEMPRE viene con la salida del sumador 1.
+	--! La entrada de la raï¿½z cuadrada SIEMPRE viene con la salida del sumador 1.
 	sqr32blki <= sadd32blk(a1);
 	
 	

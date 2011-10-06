@@ -26,11 +26,14 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
 entity sqrt32 is 
+	generic (
+		propagation_chain : string := "ON"
+	); 
 	port (
 		
-		clk,ena	: in std_logic;
+		clk,prop_in	: in std_logic;
 		rd32	: in std_logic_vector(31 downto 0);		
-		sq32	: out std_logic_vector(31 downto 0)
+		sq32,prop_out	: out std_logic_vector(31 downto 0)
 	);
 end sqrt32;
 architecture sqrt32_arch of sqrt32 is 
@@ -63,13 +66,22 @@ architecture sqrt32_arch of sqrt32 is
 	signal s0sgn			: std_logic;
 	signal s0uexp,s0e129	: std_logic_vector(7 downto 0);
 	signal s0q				: std_logic_vector(17 downto 0);
-	
+	signal sxprop			: std_logic;
 begin
-	
+	propagation:
+	if propagation_chain="ON" generate
+		prop_out <= sxprop;
+		process (clk)
+		begin
+			if clk'event and clk='1' then
+				sxprop <= prop_in; 
+			end if;
+		end process;
+	end generate propagation ;
 	--! SNAN?
-	process (clk,ena)
+	process (clk)
 	begin
-		if clk'event and clk='1' and ena='1' then
+		if clk'event and clk='1'  then
 			
 			--!Carga de Operando.
 			s0sgn <= rd32(31);

@@ -29,11 +29,14 @@ library lpm;
 use lpm.all;
 --! Esta entidad recibe dos n&uacutemeros en formato punto flotante IEEE 754, de precision simple y devuelve las mantissas signadas y corridas, y el exponente correspondiente al resultado antes de normalizarlo al formato float. 
 --!\nLas 2 mantissas y el exponente entran despues a la entidad add2 que suma las mantissas y entrega el resultado en formato IEEE 754.
-entity fadd32 is 
+entity fadd32 is
+	generic (
+		propagation_chain : string := "ON"
+	); 
 	port (
-		clk,dpc,ena	: in std_logic;
+		clk,dpc,prop_in	: in std_logic;
 		a32,b32		: in std_logic_vector (31 downto 0);
-		c32			: out std_logic_vector(31 downto 0)
+		c32,prop_out		: out std_logic_vector(31 downto 0)
 	);
 end fadd32;
 architecture fadd32_arch of fadd32 is
@@ -67,12 +70,25 @@ architecture fadd32_arch of fadd32 is
 	signal s4sresult,s5result,s6result													: std_logic_vector(25 downto 0); -- Signed mantissa result
 	signal s1ph,s6ph																	: std_logic_vector(26 downto 0);
 	signal s0a,s0b																		: std_logic_vector(31 downto 0); -- Float 32 bit 
+	signal sxprop : std_logic_vector(7 downto 0);
 	
 begin
-
-	process (clk,ena)
+	propagation:
+	if propagation_chain="ON" generate
+		prop_out <= sxprop(7);
+		process (clk)
+		begin
+			if clk'event and clk='1' then
+				for i in 7 downto 1 loop
+					sxprop(i) <= sxprop(i-1);
+				end loop;
+				sxprop(0) <= prop_in; 
+			end if;
+		end process;
+	end generate propagation ;
+	process (clk)
 	begin
-		if clk'event and clk='1' and ena='1' then 
+		if clk'event and clk='1'  then 
 		
 			--!Registro de entrada
 			s0a <= a32;

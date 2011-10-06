@@ -26,10 +26,13 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
 entity fmul32 is
+	generic (
+		propagation_chain : string := "ON"
+	); 
 	port (
-		clk,ena 	: in std_logic;
-		a32,b32		: in std_logic_vector(31 downto 0);
-		p32			: out std_logic_vector(31 downto 0)
+		clk,prop_in 		: in std_logic;
+		a32,b32			: in std_logic_vector(31 downto 0);
+		p32,prop_out	: out std_logic_vector(31 downto 0)
 		
 	);
 end fmul32;
@@ -54,9 +57,7 @@ architecture fmul32_arch of fmul32 is
 	end component;	
 
 	--Stage 0 signals
-	
-	
-	
+		
 	signal s0sga,s0sgb,s0zrs,s1sgr,s2sgr:std_logic;
 	signal s0exa,s0exb,s1exp,s2exp:std_logic_vector(7 downto 0);
 	signal s0exp : std_logic_vector(7 downto 0);
@@ -67,13 +68,26 @@ architecture fmul32_arch of fmul32 is
 	
 	signal s1ac,s1umu:std_logic_vector(35 downto 0);
 	signal s2umu:std_logic_vector(24 downto 0);
-	
+	signal sxprop : std_logic_vector(2 downto 0);
 begin
-
-	process(clk,ena)
+	propagation:
+	if propagation_chain="ON" generate
+		prop_out <= sxprop(2);
+		process (clk)
+		begin
+			if clk'event and clk='1' then
+				for i in 2 downto 1 loop
+					sxprop(i) <= sxprop(i-1);
+				end loop;
+				sxprop(0) <= prop_in; 
+			end if;
+		end process;
+	end generate propagation ;
+	
+	process(clk)
 	begin
 	
-		if clk'event and clk='1' and ena='1' then
+		if clk'event and clk='1'  then
 			--! Registro de entrada
 			s0sga <= a32(31);
 			s0sgb <= b32(31);

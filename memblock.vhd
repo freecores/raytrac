@@ -1,4 +1,4 @@
---! @file memblock.vhd
+	--! @file memblock.vhd
 --! @brief Bloque de memoria. 
 --! @author Juli&aacute;n Andr&eacute;s Guar&iacute;n Reyes
 --------------------------------------------------------------

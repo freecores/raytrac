@@ -128,7 +128,7 @@ architecture memblock_arch of memblock is
 		
 	);
 	end component;
-	signal s0ext_wr_add_one_hot : std_logic_vector(external_writeable_blocks-1 downto 0);
+	signal s0ext_wr_add_one_hot : std_logic_vector(external_writeable_blocks-1+1 downto 0); --! La se &ntilde;al extra es para la escritura de la cola de instrucciones.
 	signal s0ext_wr_add			: std_logic_vector(external_writeable_widthad+widthadmemblock-1 downto 0);
 	signal s0ext_rd_add			: std_logic_vector(external_readable_widthad-1 downto 0);
 	signal s0int_rd_add			: std_logic_vector(widthadmemblock-1 downto 0);
@@ -141,31 +141,35 @@ architecture memblock_arch of memblock is
 
 begin 
 
-	dpfifo : scfifo --! Debe ir registrada la salida.
-	generic	map ("ON",9,"OFF","Cyclone III","RAM_BLOCK_TYPE=M9K",16,"OFF","SCFIFO",64,4,"OFF","OFF","ON")
+	--! Cola interna de producto punto, ubicada entre el pipe line aritm&eacute;co. 
+	q0q1 : scfifo --! Debe ir registrada la salida.
+	generic	map ("ON",8,"OFF","Cyclone III","RAM_BLOCK_TYPE=M9K",16,"OFF","SCFIFO",64,4,"OFF","OFF","ON")
 	port	map (dpfifo_rd,dpfifo_flush,dpfifo_empty,clk,dpfifo_q,dpfifo_wr,dpfifo_d,dpfifo_full);
-	normfifo : scfifo
+	
+	--! Cola interna de normalizaci&oacute;n de vectores, ubicada entre el pipeline aritm&eacute
+	qxqyqz : scfifo
 	generic map ("ON",23,"OFF","Cyclone III","RAM_BLOCK_TYPE=M9K",32,"OFF","SCFIFO",96,5,"OFF","OFF","ON")
 	port	map (normfifo_rd,normfifo_flush,normfifo_empty,clk,normfifo_q,normfifo_wr,normfifo_d,normfifo_full);
-	instrfifo : scfifo
+	
+	--! Cola de instrucciones 
+	qi : scfifo
 	generic map ("ON",31,"ON","Cyclone III","RAM_BLOCK_TYPE_M9K",32,"OFF","SCIFIFO",32,5,"ON","OFF","ON")
 	port 	map (instrfifo_rd,instrfifo_flush,instrfifo_empty,clk,instrfifo_q,instrfifo_wr,instrfifo_d,instrfifo_full);
 	
-	
+	--! Conectar los registros de lectura interna del bloque de operandos a los arreglos > abstracci&oacute:n de c&oacute;digo, no influye en la sintesis del circuito.
 	sint_rd_add (0)<= int_rd_add(widthadmemblock-1 downto 0);
 	sint_rd_add (1)<= int_rd_add(2*widthadmemblock-1 downto widthadmemblock);
 	
+	--! Instanciaci&oacute;n de la cola de resultados.
 	results_blocks: 
 	for i in 7 downto 0 generate
 		sint_d(i) <= int_d((i+1)*width-1 downto i*width);
 		resultsfifo : scfifo
 		generic map	("ON",511,"ON","Cyclone III","RAM_BLOCK_TYPE_M9K",512,"OFF","SCIFIFO",32,9,"ON","OFF","ON")
 		port	map (s0ext_rd_ack(i),resultfifo_flush,resultfifo_empty(i),clk,s0ext_q(i),resultfifo_wr,sint_d(i),open,resultfifo_full(i));
---		resultsblock : altsyncram
---		generic map ("NONE","CLOCK0","BYPASS","BYPASS","BYPASS","Cyclone III","altsyncram",2**widthadmemblock,2**widthadmemblock,"DUAL_PORT","NONE","CLOCK0","FALSE","M9K","CLOCK0","OLD_DATA",widthadmemblock,widthadmemblock,width,width,1)
---		port	map (resultfifo_wr,clk,resultfifo_wr_add,ext_rd_add(widthadmemblock-1 downto 0),ext_rd,s1ext_q(i),sint_d(i));
 	end generate results_blocks;
 	
+	--! Instanciaci&oacute;n de la cola de resultados de salida.
 	operands_blocks: 
 	for i in 11 downto 0 generate
 		int_q((i+1)*width-1 downto width*i) <= s1int_q(i);
@@ -174,7 +178,7 @@ begin
 		port 	map (s0ext_wr_add_one_hot(i),clk,s0ext_wr_add(widthadmemblock-1 downto 0),sint_rd_add((i/3) mod 2),'1',s1int_q(i),s0ext_d);
 	end generate operands_blocks;
 	
-	
+	--! Escritura en registros de operandos de entrada.
 	operands_block_proc: process (clk,ena)
 	begin
 		if clk'event and clk='1' and ena='1' then
@@ -184,26 +188,31 @@ begin
 			 s0ext_d  <= ext_d;		
 		end if;
 	end process;
+	
+	--! Decodificaci&oacute;n de se&ntilde;al escritura x bloque de memoria, selecciona la memoria en la que se va a escribir a partir de la direcci&oacute;n de entrada.
 	operands_block_comb: process (s0ext_wr_add,s0ext_wr)
 	begin
 	
-		--! Etapa 0: Decodificacion de las se&ntilde:ales de escritura.
+		--! Etapa 0: Decodificacion de las se&ntilde:ales de escritura.Revisar el capitulo de bloques de memoria para chequear como est&aacute; el pool de direcciones por bloques de vectores.
 		case s0ext_wr_add(external_writeable_widthad+widthadmemblock-1 downto widthadmemblock) is 
-			when x"0" => s0ext_wr_add_one_hot <= x"00"&"000"&s0ext_wr;
-			when x"1" => s0ext_wr_add_one_hot <= x"00"&"00"&s0ext_wr&'0';
-			when x"2" => s0ext_wr_add_one_hot <= x"00"&'0'&s0ext_wr&"00";
-			when x"3" => s0ext_wr_add_one_hot <= x"00"&s0ext_wr&"000";
-			when x"4" => s0ext_wr_add_one_hot <= x"0"&"000"&s0ext_wr&x"0";
-			when x"5" => s0ext_wr_add_one_hot <= x"0"&"00"&s0ext_wr&'0'&x"0";
-			when x"6" => s0ext_wr_add_one_hot <= x"0"&'0'&s0ext_wr&"00"&x"0";
-			when x"7" => s0ext_wr_add_one_hot <= x"0"&s0ext_wr&"000"&x"0";
-			when x"8" => s0ext_wr_add_one_hot <= "000"&s0ext_wr&x"00";
-			when x"9" => s0ext_wr_add_one_hot <= "00"&s0ext_wr&'0'&x"00";
-			when x"A" => s0ext_wr_add_one_hot <= '0'&s0ext_wr&"00"&x"00";
-			when others => s0ext_wr_add_one_hot <= s0ext_wr&"000"&x"00";
+			when x"0" => s0ext_wr_add_one_hot <= '0'&x"00"&"000"&s0ext_wr;
+			when x"1" => s0ext_wr_add_one_hot <= '0'&x"00"&"00"&s0ext_wr&'0';
+			when x"2" => s0ext_wr_add_one_hot <= '0'&x"00"&'0'&s0ext_wr&"00";
+			when x"4" => s0ext_wr_add_one_hot <= '0'&x"00"&s0ext_wr&"000";
+			when x"5" => s0ext_wr_add_one_hot <= '0'&x"0"&"000"&s0ext_wr&x"0";
+			when x"6" => s0ext_wr_add_one_hot <= '0'&x"0"&"00"&s0ext_wr&'0'&x"0";
+			when x"8" => s0ext_wr_add_one_hot <= '0'&x"0"&'0'&s0ext_wr&"00"&x"0";
+			when x"9" => s0ext_wr_add_one_hot <= '0'&x"0"&s0ext_wr&"000"&x"0";
+			when x"A" => s0ext_wr_add_one_hot <= '0'&"000"&s0ext_wr&x"00";
+			when x"C" => s0ext_wr_add_one_hot <= '0'&"00"&s0ext_wr&'0'&x"00";
+			when x"D" => s0ext_wr_add_one_hot <= '0'&'0'&s0ext_wr&"00"&x"00";
+			when x"E" => s0ext_wr_add_one_hot <= '0'&s0ext_wr&"000"&x"00";
+			when others => s0ext_wr_add_one_hot <= '1'&x"000";
 		end case;
 	
 	end process;
+	
+	--! Decodificaci&oacute;n para seleccionar que cola de resultados se conectar&acute; a la salida del RayTrac. 
 	results_block_proc: process(clk,ena)
 	begin
 		if clk'event and clk='1' and ena='1' then
@@ -223,6 +232,8 @@ begin
 			end case;			
 		end if;
 	end process;
+	
+	--! rdack decoder para las colas de resultados de salida.
 	results_block_proc_combinatorial_stage: process(s0ext_rd,s0ext_rd_add)
 	begin
 		case '0'&s0ext_rd_add is 

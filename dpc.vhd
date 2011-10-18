@@ -29,7 +29,7 @@ entity dpc is
 		--!external_readable_widthad	: integer := integer(ceil(log(real(external_readable_blocks),2.0))))			
 	);
 	port (
-		clk,ena					: in	std_logic;
+		clk,ena,rst				: in	std_logic;
 		paraminput				: in	std_logic_vector ((12*width)-1 downto 0);	--! Vectores A,B,C,D
 		prd32blko			 	: in	std_logic_vector ((06*width)-1 downto 0);	--! Salidas de los 6 multiplicadores.
 		add32blko 				: in	std_logic_vector ((04*width)-1 downto 0);	--! Salidas de los 4 sumadores.
@@ -43,8 +43,8 @@ entity dpc is
 		fifo32x09_d				: out	std_logic_vector (02*width-1 downto 0);		--! Entrada a las colas intermedias del producto punto.  	
 		prd32blki				: out	std_logic_vector ((12*width)-1 downto 0);	--! Entrada de los 12 factores en el bloque de multiplicaci&oacute;n respectivamente.
 		add32blki				: out	std_logic_vector ((08*width)-1 downto 0);	--! Entrada de los 8 sumandos del bloque de 4 sumadores.  
-		
-		resultoutput			: out	std_logic_vector ((08*width)-1 downto 0) 	--! 6 salidas de resultados, pues lo m&aacute;ximo que podr&aacute; calcularse por cada clock son 2 vectores. 
+		res567w,res13w,res2w,res0w,res4w,fifo32x09_w,fifo32x23_w,fifo32x09_r,fifo32x23_r: out	std_logic;
+		resultoutput			: out	std_logic_vector ((08*width)-1 downto 0) 	--! 8 salidas de resultados, pues lo m&aacute;ximo que podr&aacute; calcularse por cada clock son 2 vectores. 
 	);
 end dpc;
 
@@ -80,41 +80,67 @@ architecture dpc_arch of dpc is
 	signal sdpfifo_q					: vectorblock02;
 	signal ssqr32blk,sinv32blk			: std_logic_vector(width-1 downto 0);
 	 
+	signal sync_chain					: std_logic_vector(27 downto 0);
+	signal sync_chain_d					: std_logic;
+	constant rstMasterValue : std_logic := '0';
+	
 begin
 	
+	--! Cadena de sincronizaci&oacute;n: 28 posiciones.
+	sync_chain_proc:
+	process(clk,rst)
+	begin
+		if rst=rstMasterValue then
+			sync_chain <= (others => '0');
+		elsif clk'event and clk='1' then 
+			sync_chain(0) <= sync_chain_d;
+			for i in 27 downto 1 loop
+				sync_chain(i) <= sync_chain(i-1);
+			end loop;
+		end if;
+	end process sync_chain_proc;
+	--! Escritura en las colas de resultados y escritura/lectura en las colas intermedias mediante cadena de resultados.
+	fifo32x09_w <= sync_chain(4);
+	fifo32x23_w <= sync_chain(0);
+	fifo32x09_r <= sync_chain();
+	fifo32x23_r <= sync_chain();
+	
+	res0w <= sync_chain(22);
+	res4w <= sync_chain(20);
+	sync_chain_comb:
+	process (sync_chain,addsub,crossprod)
+	begin
+		if unary='1' then
+			res567w <= sync_chain(27);
+		else
+			res567w <= sync_chain(3);
+		end if;
+	
+		if addsub='1' then 
+			res13w <= sync_chain(8);
+		 	res2w <= sync_chain(8);
+		else
+			res13w <= sync_chain(12);
+			if crossprod='1' then
+				res2w <= res13w;
+			else
+				res2w <= sync_chain(21);
+			end if;
+		end if;
+	end process sync_chain_comb;
 	
 	
+	--! El siguiente c&oacute;digo sirve para conectar arreglos a se&ntilde;ales std_logic_1164, simplemente son abstracciones a nivel de c&oacute;digo y no representar&aacute; cambios en la s&iacute;ntesis.
 	stuff12: 
 	for i in 11 downto 0 generate
 		sparaminput(i) <= paraminput(i*width+width-1 downto i*width);
 		prd32blki(i*width+width-1 downto i*width) <= sfactor(i);
 	end generate stuff12;
-	
 	stuff08:
 	for i in 07 downto 0 generate
 		add32blki(i*width+width-1 downto i*width) <= ssumando(i);
 		resultoutput(i*width+width-1 downto i*width) <= sresult(i);
 	end generate stuff08;
-	
-	register_products_outputs:
-	process (clk,ena)
-	begin
-		if clk'event and clk='1' and ena='1' then
-			for i in 05 downto 0 loop 
-				sprd32blk(i)  <= prd32blko(i*width+width-1 downto i*width);
-			end loop;
-		end if;
-	end process;
-	
-	register_adder0_and_inversor_output:
-	process (clk,ena)
-	begin
-		if clk'event and clk='1' and ena='1' then
-			sadd32blk(a0)  <= add32blko(a0*width+width-1 downto a0*width);
-			sinv32blk <= inv32blko;
-		end if;
-	end process;
-	
 	stuff04: 
 	for i in 03 downto 1 generate
 		sadd32blk(i)  <= add32blko(i*width+width-1 downto i*width);
@@ -131,7 +157,29 @@ begin
 	for i in 01 downto 0 generate	
 		sdpfifo_q(i)  <= fifo32x09_q(i*width+width-1 downto i*width);
 	end generate stuff02;
+	
+	--! El siguiente c&oacute;digo sirve para conectar arreglos a se&ntilde;ales std_logic_1164, son abstracciones de c&oacute;digo tambi&eacute;n, sin embargo se realizan a trav&eacute;s de registros. 
+	register_products_outputs:
+	process (clk)
+	begin
+		if clk'event and clk='1' then
+			for i in 05 downto 0 loop 
+				sprd32blk(i)  <= prd32blko(i*width+width-1 downto i*width);
+			end loop;
+		end if;
+	end process;
+	--! Los productos del multiplicador 2 y 3, ya registrados dentro de dpc van a la cola intermedia del producto punto (fifo32x09_d)
 	fifo32x09_d <= sprd32blk(p3)&sprd32blk(p2);
+	register_adder0_and_inversor_output:
+	process (clk)
+	begin
+		if clk'event and clk='1' then
+			sadd32blk(a0)  <= add32blko(a0*width+width-1 downto a0*width);
+			sinv32blk <= inv32blko;
+		end if;
+	end process;
+	
+	
 	
 	
 	

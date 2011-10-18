@@ -194,6 +194,7 @@ begin
 	begin
 	
 		--! Etapa 0: Decodificacion de las se&ntilde:ales de escritura.Revisar el capitulo de bloques de memoria para chequear como est&aacute; el pool de direcciones por bloques de vectores.
+		--! Las direcciones de bloque 3,7,11,15 corresponden a la cola de instrucciones.
 		case s0ext_wr_add(external_writeable_widthad+widthadmemblock-1 downto widthadmemblock) is 
 			when x"0" => s0ext_wr_add_one_hot <= '0'&x"00"&"000"&s0ext_wr;
 			when x"1" => s0ext_wr_add_one_hot <= '0'&x"00"&"00"&s0ext_wr&'0';

@@ -29,7 +29,7 @@ entity dpc is
 		--!external_readable_widthad	: integer := integer(ceil(log(real(external_readable_blocks),2.0))))			
 	);
 	port (
-		clk,ena,rst				: in	std_logic;
+		clk,rst				: in	std_logic;
 		paraminput				: in	std_logic_vector ((12*width)-1 downto 0);	--! Vectores A,B,C,D
 		prd32blko			 	: in	std_logic_vector ((06*width)-1 downto 0);	--! Salidas de los 6 multiplicadores.
 		add32blko 				: in	std_logic_vector ((04*width)-1 downto 0);	--! Salidas de los 4 sumadores.
@@ -37,7 +37,7 @@ entity dpc is
 		fifo32x23_q				: in	std_logic_vector (03*width-1 downto 0);		--! Salida de la cola intermedia.
 		fifo32x09_q				: in	std_logic_vector (02*width-1 downto 0); 	--! Salida de las colas de producto punto. 
 		unary,crossprod,addsub	: in	std_logic;									--! Bit con el identificador del bloque AB vs CD e identificador del sub bloque (A/B) o (C/D). 
-		scalar					: in	std_logic;
+		sync_chain_d			: in	std_logic;									--! Señal de dato valido que se va por toda la cadena de sincronizacion.
 		sqr32blki,inv32blki		: out	std_logic_vector (width-1 downto 0);		--! Salidas de las 2 raices cuadradas y los 2 inversores.
 		fifo32x26_d				: out	std_logic_vector (03*width-1 downto 0);		--! Entrada a la cola intermedia para la normalizaci&oacute;n.
 		fifo32x09_d				: out	std_logic_vector (02*width-1 downto 0);		--! Entrada a las colas intermedias del producto punto.  	
@@ -80,51 +80,52 @@ architecture dpc_arch of dpc is
 	signal sdpfifo_q					: vectorblock02;
 	signal ssqr32blk,sinv32blk			: std_logic_vector(width-1 downto 0);
 	 
-	signal sync_chain					: std_logic_vector(27 downto 0);
-	signal sync_chain_d					: std_logic;
+	signal ssync_chain					: std_logic_vector(28 downto 0);
+	signal ssync_chain_d					: std_logic;
 	constant rstMasterValue : std_logic := '0';
 	
 begin
 	
-	--! Cadena de sincronizaci&oacute;n: 28 posiciones.
+	--! Cadena de sincronizaci&oacute;n: 29 posiciones.
+	ssync_chain_d <= sync_chain_d;
 	sync_chain_proc:
 	process(clk,rst)
 	begin
 		if rst=rstMasterValue then
-			sync_chain <= (others => '0');
+			ssync_chain <= (others => '0');
 		elsif clk'event and clk='1' then 
-			sync_chain(0) <= sync_chain_d;
-			for i in 27 downto 1 loop
-				sync_chain(i) <= sync_chain(i-1);
+			ssync_chain(0) <= ssync_chain_d;
+			for i in 28 downto 1 loop
+				ssync_chain(i) <= ssync_chain(i-1);
 			end loop;
 		end if;
 	end process sync_chain_proc;
 	--! Escritura en las colas de resultados y escritura/lectura en las colas intermedias mediante cadena de resultados.
-	fifo32x09_w <= sync_chain(4);
-	fifo32x23_w <= sync_chain(0);
-	fifo32x09_r <= sync_chain();
-	fifo32x23_r <= sync_chain();
+	fifo32x09_w <= ssync_chain(4);
+	fifo32x23_w <= ssync_chain(0);
+	fifo32x09_r <= ssync_chain(12);
+	fifo32x23_r <= ssync_chain(23);
 	
-	res0w <= sync_chain(22);
-	res4w <= sync_chain(20);
+	res0w <= ssync_chain(22);
+	res4w <= ssync_chain(20);
 	sync_chain_comb:
-	process (sync_chain,addsub,crossprod)
+	process (ssync_chain,addsub,crossprod,unary)
 	begin
 		if unary='1' then
-			res567w <= sync_chain(27);
+			res567w <= ssync_chain(27);
 		else
-			res567w <= sync_chain(3);
+			res567w <= ssync_chain(3);
 		end if;
 	
 		if addsub='1' then 
-			res13w <= sync_chain(8);
-		 	res2w <= sync_chain(8);
+			res13w <= ssync_chain(8);
+		 	res2w <= ssync_chain(8);
 		else
-			res13w <= sync_chain(12);
+			res13w <= ssync_chain(12);
 			if crossprod='1' then
-				res2w <= res13w;
+				res2w <= ssync_chain(12);
 			else
-				res2w <= sync_chain(21);
+				res2w <= ssync_chain(21);
 			end if;
 		end if;
 	end process sync_chain_comb;
@@ -214,57 +215,72 @@ begin
 	ssumando(s7) <= sdpfifo_q(dpfifocd);
 	
 	
-	mul:process(unary,addsub,crossprod,scalar,sparaminput,sinv32blk,sprd32blk,sadd32blk,sdpfifo_q,snormfifo_q)
+	mul:process(unary,addsub,crossprod,sparaminput,sinv32blk,sprd32blk,sadd32blk,sdpfifo_q,snormfifo_q)
 	begin
 		
-		
+		sfactor(f4) <= sparaminput(az);
 		if unary='1' then 
 			--! Magnitud y normalizacion
 			sfactor(f0) <= sparaminput(ax);
 			sfactor(f1) <= sparaminput(ax);
 			sfactor(f2) <= sparaminput(ay);			
 			sfactor(f3) <= sparaminput(ay);
-			sfactor(f4) <= sparaminput(az);
+			
 			sfactor(f5) <= sparaminput(az);
-			sfactor(f6) <= snormfifo_q(ax);
-			sfactor(f7) <= sinv32blk;
-			sfactor(f8) <= snormfifo_q(ay);
-			sfactor(f9) <= sinv32blk;
-			sfactor(f10) <= snormfifo_q(az);
-			sfactor(f11) <= sinv32blk;
-		elsif crossprod='1' then 
-			--! Solo productos punto
-			sfactor(f0) <= sparaminput(ay);
-			sfactor(f1) <= sparaminput(bz);
-			sfactor(f2) <= sparaminput(az);
-			sfactor(f3) <= sparaminput(by);
-			sfactor(f4) <= sparaminput(az);
-			sfactor(f5) <= sparaminput(bx);
-			sfactor(f6) <= sparaminput(ax);
-			sfactor(f7) <= sparaminput(bz);
-			sfactor(f8) <= sparaminput(ax);
-			sfactor(f9) <= sparaminput(by);
-			sfactor(f10) <= sparaminput(ay);
-			sfactor(f11) <= sparaminput(bx);
-		elsif scalar='0' then --! Producto punto 
-			sfactor(f0) <= 	sparaminput(ax) ;
-			sfactor(f1) <= 	sparaminput(bx) ;
-			sfactor(f2) <= 	sparaminput(ay) ;	
-			sfactor(f3) <= 	sparaminput(by) ;
-			sfactor(f4) <= 	sparaminput(az) ;
-			sfactor(f5) <= 	sparaminput(bz) ;
-			sfactor(f6) <= 	sparaminput(cx) ;
-			sfactor(f7) <= 	sparaminput(dx) ;
-			sfactor(f8) <= 	sparaminput(cy) ;
-			sfactor(f9) <= 	sparaminput(dy) ;
-			sfactor(f10) <= sparaminput(cz) ;
-			sfactor(f11) <= sparaminput(dz) ;
+			if crossprod='1' and addsub='1' then
+				sfactor(f6) <= sparaminput(cx);
+				sfactor(f7) <= sparaminput(dx);
+				sfactor(f8) <= sparaminput(cy);
+				sfactor(f9) <= sparaminput(dx);
+				sfactor(f10) <= sparaminput(cz);
+				sfactor(f11) <= sparaminput(dx);
+			else	
+				sfactor(f6) <= snormfifo_q(ax);
+				sfactor(f7) <= sinv32blk;
+				sfactor(f8) <= snormfifo_q(ay);
+				sfactor(f9) <= sinv32blk;
+				sfactor(f10) <= snormfifo_q(az);
+				sfactor(f11) <= sinv32blk;
+			end if;
+			
+			
+		elsif addsub='0' then 
+			--! Solo productos punto o cruz
+			if crossprod='1' then
+			
+				sfactor(f0) <= sparaminput(ay);
+				sfactor(f1) <= sparaminput(bz);
+				sfactor(f2) <= sparaminput(az);
+				sfactor(f3) <= sparaminput(by);
+				
+				sfactor(f5) <= sparaminput(bx);
+				sfactor(f6) <= sparaminput(ax);
+				sfactor(f7) <= sparaminput(bz);
+				sfactor(f8) <= sparaminput(ax);
+				sfactor(f9) <= sparaminput(by);
+				sfactor(f10) <= sparaminput(ay);
+				sfactor(f11) <= sparaminput(bx);
+			
+			else			
+				
+				sfactor(f0) <= 	sparaminput(ax) ;
+				sfactor(f1) <= 	sparaminput(bx) ;
+				sfactor(f2) <= 	sparaminput(ay) ;	
+				sfactor(f3) <= 	sparaminput(by) ;
+				sfactor(f5) <= 	sparaminput(bz) ;
+				sfactor(f6) <= 	sparaminput(cx) ;
+				sfactor(f7) <= 	sparaminput(dx) ;
+				sfactor(f8) <= 	sparaminput(cy) ;
+				sfactor(f9) <= 	sparaminput(dy) ;
+				sfactor(f10) <= sparaminput(cz) ;
+				sfactor(f11) <= sparaminput(dz) ;
+			end if;
+		
 		else
 			sfactor(f0) <= 	sparaminput(ax) ;
 			sfactor(f1) <= 	sparaminput(bx) ;
 			sfactor(f2) <= 	sparaminput(ay) ;	
 			sfactor(f3) <= 	sparaminput(by) ;
-			sfactor(f4) <= 	sparaminput(az) ;
 			sfactor(f5) <= 	sparaminput(bz) ;
 			sfactor(f6) <= 	sparaminput(cx) ;
 			sfactor(f7) <= 	sparaminput(dx) ;
@@ -272,7 +288,6 @@ begin
 			sfactor(f9) <= 	sparaminput(dx) ;
 			sfactor(f10) <= sparaminput(cz) ;
 			sfactor(f11) <= sparaminput(dx) ;
-			
 		end if;
 		
 		

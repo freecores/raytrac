@@ -28,93 +28,111 @@ use ieee.std_logic_unsigned.all;
 
 
 entity sm is
+	generic (
+		width : integer := 32;
+		widthadmemblock : integer := 9
+		--!external_readable_widthad : 				
+	)
 	port (
 		
 		clk,rst:in std_logic;
-		add0,add1:out std_logic_vector (8 downto 0);
-		iq:in std_logic_vector(31 downto 0);
-		read_memory,ird_ack:out std_logic;
-		ucsa:out std_logic(3 downto 0);
-		iempty ,  rfull, opq_empty : in std_logic;
+		
+		adda,addb:out std_logic_vector (widthadmemblock-1 downto 0);
+		sync_chain_d:out std_logic;
+		
+		--! Instruction Q, instruction.
+		instrQq:in std_logic_vector(width-1 downto 0);
+		
+		
+		
+		--! apempty, arithmetical pipeline empty.
+		arithPbusy, instrQempty ,resultQfull: in std_logic;
+		
+		--! DataPath Control uca code.
+		dpc_uca : out std_logic_vector (2 downto 0);
+		
+		
 	);
 end entity;
 
 architecture sm_arch of sm is
 
-	type macState is (IDLE,EXECUTING,FLUSHING);
+	type macState is (FLUSH_TO_NEXT_INSTRUCTION,EXECUTE_INSTRUCTION);
 	signal state : macState;
 	constant rstMasterValue : std_logic:='0';
 	
+	component customCounter
+	generic (		
+		width :	integer
+		
+	);
+	port (
+		clk,rst,go,set	: in std_logic;
+		setValue		: in std_Logic_vector(width-1 downto 0);
+		count			: out std_logic_vector(width-1 downto 0)
+	)
 	
-	 
+	signal addt0_blocka,addt0_blockb,set_Value_A,set_Value_B : std_logic_vector(widthadmemblock-1 downto 0);
+	signal add_condition_a, add_condition_b,set_a,set_b : std_logic;
+	signal s_dpc_uca, s_instrQ_uca : std_logic_vector(2 downto 0);	 
+	signal s_block_start_a, s_block_start_b, s_block_end_a, s_block_end_b : std_logic_vector(4 downto 0);
 	
-	signal sadd0,sadd1:std_logic_vector (8 downto 0);
-	signal schunk0o,schunk0f,schunk1o,schunk1f: std_logic_vector (3 downto 0);
-	signal sadd0_now,sadd0_next,sadd0_reg:std_logic_vector(8 downto 0);
-	signal sadd1_now,sadd1_next,sadd1_reg:std_logic_vector(8 downto 0);
-	signal sadd0_adder_bit,sadd1_adder_bit,sena:std_logic;
-	
-	
+
+		
 begin
-	
-	
-	schunk0o(3 downto 0) <=  iq(19 downto 16);
-	schunk0f(3 downto 0) <=  iq(15 downto 12);
-	schunk1o(3 downto 0) <= iq(11 downto 8);
-	schunk1f(3 downto 0) <= iq(7 downto 4);
-	
-	ucsa <= iq(3 downto 0); 
-	
-	sadd0_next <= sadd0_now+sadd0_adder_bit;
-	sadd1_next <= sadd1_now+sadd1_adder_bit;
-	
-	
-	sm_comb:
-	process (state)
-	begin
-		case state is
-			when IDLE => 
-				sadd0_now <= schunk0o(3 downto 0)&x"0";
-				sadd1_now <= schunk1o(3 downto 0)&x"0";
-			when others => 
-				sadd0_now <= sadd0_next;
-				sadd1_now <= sadd1_next;
-		end case;	
-						
-	end process;
 
-
+	--! Bloques asignados
+	s_block_start_a <= instrQq(width-4 downto width-8);
+	s_block_start_b <= instrQq(width-14 downto width-18);
+	s_block_end_a <= instrQq(width-9 downto width-13);
+	s_block_end_b <= instrQq(width-19 downto width-)
+	
+	--! Address Counters
+	counterA:customCounter
+	port map (clk,rst,add_condition_a,set_a,instrQq(width-4 downto width-8)&x"0",addt0_blocka);
+	counterB:customCounter
+	port map (clk,rst,add_condition_b,set_b,instrQq(width-9 downto width-12)&x"0",addt0_blockb);
+	adda <= addt0_blocka;
+	addb <= addt0_blockb;
+	
+	--! uca code 
+	s_instrQ_uca <= instrQq(31 downto 29);
+	
+	
 	sm_proc:
 	process (clk,rst)
 	begin 
 		if rst=rstMasterValue then
 			state <= IDLE;
 			ird_ack <= '0';
-		elsif clk='1' and clk'event and sena='1' then
+		elsif clk='1' and clk'event then
 		
 			case state is
-				when IDLE =>
-					if rfull='0' and iempty='0' then
-						state <= EXECUTING;
-						read_memory <= '1';
-					end if;
-				when EXCUTING => 
-					if rfull='0' then
-						if sadd1_now=schunk1f&"11111" then
-							if sadd0_now=schunk0f&"11111" then
-								state <= FLUSHING;
-								
-							end if;							
-						end if;
-					end if;
-				when FLUSHING => 
-					if opq_empty='1' then
+				when FLUSH_TO_NEXT_INSTRUCTION =>
+					
+					--! Chequear si hay una instruccion en la salida de la cola de instruccioens.
+					if instrQempty='0' then
 						
+						--! Chequear si la cola de resultados tiene espacio.
+						if resultQfull='0' then
+							
+							--! Si el codigo de instruccion (uca) que se encuentra en el DPC es igual al que se encuentra en la instruccion de la salida de la cola de instrucciones, entonces no hay mas validaciones que hacer. 
+							
+							
+								--! Now check that arithmetic pipline is not busy 
+								if arithPbusy='0' then
+														  
+						
+				when EXECUTE_INSTRUCTION =>
+					if addt1_blockb(4 downto 0)=x"1f" and addt1_blocka=x"1f" then
+						if addt1_blockb(8 downto )
+					else
+					
 					end if; 
 			end case;
 		end if;
-			
 	end process;
-
-
+	
+	nxtadda_proc:
+	process ()
 end architecture;

@@ -28,8 +28,7 @@ entity memblock is
 		
 		width : integer := 32;
 		blocksize : integer := 512;
-		widthadmemblock : integer :=9;
-		
+		widthadmemblock : integer :=9;		
 		external_writeable_blocks : integer := 12;
 		external_readable_blocks  : integer := 8;
 		external_readable_widthad	: integer := 3;				
@@ -45,7 +44,7 @@ entity memblock is
 		ext_wr_add : in std_logic_vector(external_writeable_widthad+widthadmemblock-1 downto 0);		
 		ext_rd_add : in std_logic_vector(external_readable_widthad-1 downto 0);
 		ext_d: in std_logic_vector(width-1 downto 0);
-		resultfifo_full,resultfifo_empty : out std_logic_vector(external_readable_blocks-1 downto 0);
+		--!sresultfifo_full,resultfifo_empty : out std_logic_vector(external_readable_blocks-1 downto 0);
 		int_d : in std_logic_vector(external_readable_blocks*width-1 downto 0);
 		ext_q,instrfifo_q : out std_logic_vector(width-1 downto 0);
 		int_q : out std_logic_vector(external_writeable_blocks*width-1 downto 0);
@@ -166,7 +165,7 @@ begin
 		sint_d(i) <= int_d((i+1)*width-1 downto i*width);
 		resultsfifo : scfifo
 		generic map	("ON",511,"ON","Cyclone III","RAM_BLOCK_TYPE_M9K",512,"OFF","SCIFIFO",32,9,"ON","OFF","ON")
-		port	map (s0ext_rd_ack(i),resultfifo_flush,resultfifo_empty(i),clk,s0ext_q(i),resultfifo_wr,sint_d(i),open,resultfifo_full(i));
+		port	map (s0ext_rd_ack(i),resultfifo_flush,resultfifo_empty(i),clk,s0ext_q(i),resultfifo_wr,sint_d(i),open,sresultfifo_full(i));
 	end generate results_blocks;
 	
 	--! Instanciaci&oacute;n de la cola de resultados de salida.

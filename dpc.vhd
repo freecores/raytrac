@@ -29,7 +29,7 @@ entity dpc is
 		--!external_readable_widthad	: integer := integer(ceil(log(real(external_readable_blocks),2.0))))			
 	);
 	port (
-		clk,rst				: in	std_logic;
+		clk,rst					: in	std_logic;
 		paraminput				: in	std_logic_vector ((12*width)-1 downto 0);	--! Vectores A,B,C,D
 		prd32blko			 	: in	std_logic_vector ((06*width)-1 downto 0);	--! Salidas de los 6 multiplicadores.
 		add32blko 				: in	std_logic_vector ((04*width)-1 downto 0);	--! Salidas de los 4 sumadores.
@@ -43,7 +43,13 @@ entity dpc is
 		fifo32x09_d				: out	std_logic_vector (02*width-1 downto 0);		--! Entrada a las colas intermedias del producto punto.  	
 		prd32blki				: out	std_logic_vector ((12*width)-1 downto 0);	--! Entrada de los 12 factores en el bloque de multiplicaci&oacute;n respectivamente.
 		add32blki				: out	std_logic_vector ((08*width)-1 downto 0);	--! Entrada de los 8 sumandos del bloque de 4 sumadores.  
-		res567w,res13w,res2w,res0w,res4w,fifo32x09_w,fifo32x23_w,fifo32x09_r,fifo32x23_r: out	std_logic;
+		res567w,res13w,res2w	: out	std_logic;									--! Salidas de escritura y lectura en las colas de resultados.
+		res0w,res4w,fifo32x09_w	: out	std_logic;
+		fifo32x23_w,fifo32x09_r	: out	std_logic;
+		fifo32x23_r				: out	std_logic;
+		res567f,res13f			: in 	std_logic;									--! Entradas de la se&ntilde;al de full de las colas de resultados. 
+		res2f,res0f				: in	std_logic;
+		resf					: out	std_logic;									--! Salida decodificada que indica que la cola de resultados de la operaci&oacute;n est&aacute; en curso.
 		resultoutput			: out	std_logic_vector ((08*width)-1 downto 0) 	--! 8 salidas de resultados, pues lo m&aacute;ximo que podr&aacute; calcularse por cada clock son 2 vectores. 
 	);
 end dpc;
@@ -72,6 +78,7 @@ architecture dpc_arch of dpc is
 	type	vectorblock02 is array (01 downto 0) of std_logic_vector(width-1 downto 0);
 	
 	
+	
 	signal sparaminput,sfactor			: vectorblock12;
 	signal ssumando,sresult 			: vectorblock08;
 	signal sprd32blk					: vectorblock06;
@@ -79,9 +86,10 @@ architecture dpc_arch of dpc is
 	signal snormfifo_q,snormfifo_d		: vectorblock03;
 	signal sdpfifo_q					: vectorblock02;
 	signal ssqr32blk,sinv32blk			: std_logic_vector(width-1 downto 0);
-	 
 	signal ssync_chain					: std_logic_vector(28 downto 0);
-	signal ssync_chain_d					: std_logic;
+	signal ssync_chain_d				: std_logic;
+	
+	
 	constant rstMasterValue : std_logic := '0';
 	
 begin
@@ -101,31 +109,30 @@ begin
 		end if;
 	end process sync_chain_proc;
 	--! Escritura en las colas de resultados y escritura/lectura en las colas intermedias mediante cadena de resultados.
-	fifo32x09_w <= ssync_chain(4);
-	fifo32x23_w <= ssync_chain(0);
-	fifo32x09_r <= ssync_chain(12);
-	fifo32x23_r <= ssync_chain(23);
-	
-	res0w <= ssync_chain(22);
-	res4w <= ssync_chain(20);
+	fifo32x09_w <= ssync_chain(5);
+	fifo32x23_w <= ssync_chain(1);
+	fifo32x09_r <= ssync_chain(13);
+	fifo32x23_r <= ssync_chain(24);	
+	res0w <= ssync_chain(23);
+	res4w <= ssync_chain(21);
 	sync_chain_comb:
 	process (ssync_chain,addsub,crossprod,unary)
 	begin
 		if unary='1' then
-			res567w <= ssync_chain(27);
+			res567w <= ssync_chain(28);
 		else
-			res567w <= ssync_chain(3);
+			res567w <= ssync_chain(4);
 		end if;
 	
 		if addsub='1' then 
-			res13w <= ssync_chain(8);
-		 	res2w <= ssync_chain(8);
+			res13w <= ssync_chain(9);
+		 	res2w <= ssync_chain(9);
 		else
-			res13w <= ssync_chain(12);
+			res13w <= ssync_chain(13);
 			if crossprod='1' then
-				res2w <= ssync_chain(12);
+				res2w <= ssync_chain(13);
 			else
-				res2w <= ssync_chain(21);
+				res2w <= ssync_chain(22);
 			end if;
 		end if;
 	end process sync_chain_comb;
@@ -214,6 +221,22 @@ begin
 	ssumando(s6) <= sadd32blk(a2);
 	ssumando(s7) <= sdpfifo_q(dpfifocd);
 	
+	
+	fullQ:process(res0f,res13f,res2f,res567f,unary,crossprod,addsub)
+	begin 
+		if unary='0' then
+			if crossprod='1' or addsub='1' then 
+				resf <= res13f;
+			else
+				resf <= res2f;
+			end if;
+		elsif crossprod='1' or addsub='1' then
+			resf <= res567f;
+		else
+			resf <= res0f;
+		end if;
+	end process;
+			
 	
 	mul:process(unary,addsub,crossprod,sparaminput,sinv32blk,sprd32blk,sadd32blk,sdpfifo_q,snormfifo_q)
 	begin

@@ -28,7 +28,7 @@ use ieee.std_logic_unsigned.all;
 
 entity customCounter is
 	generic (
-		width : integer := 9;
+		width : integer := 9
 	)
 	port (
 		clk,rst,go,set : in std_logic;

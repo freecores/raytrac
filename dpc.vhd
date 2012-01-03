@@ -108,6 +108,7 @@ begin
 			end loop;
 		end if;
 	end process sync_chain_proc;
+	
 	--! Escritura en las colas de resultados y escritura/lectura en las colas intermedias mediante cadena de resultados.
 	fifo32x09_w <= ssync_chain(5);
 	fifo32x23_w <= ssync_chain(1);
@@ -190,7 +191,7 @@ begin
 	
 	
 	
-	
+	--! Raiz Cuadrada.
 	ssqr32blk <= sqr32blko;
 	
 	--! Colas de salida de los distintos resultados;
@@ -221,7 +222,7 @@ begin
 	ssumando(s6) <= sadd32blk(a2);
 	ssumando(s7) <= sdpfifo_q(dpfifocd);
 	
-	
+	--!El siguiente proceso conecta la se&ntilde;al de cola "casi llena", de la cola que corresponde al resultado de la operaci&oacute;n indicada por los bit UCA (Unary, Crossprod, Addsub).
 	fullQ:process(res0f,res13f,res2f,res567f,unary,crossprod,addsub)
 	begin 
 		if unary='0' then
@@ -237,7 +238,7 @@ begin
 		end if;
 	end process;
 			
-	
+	--! Decodificaci&oacute;n del Datapath.
 	mul:process(unary,addsub,crossprod,sparaminput,sinv32blk,sprd32blk,sadd32blk,sdpfifo_q,snormfifo_q)
 	begin
 		
@@ -337,120 +338,5 @@ begin
 	end process;
 	
 	
-	
-	
---	interconnection:process(instr3,hblockslab,abblockslab,cdblockslab,sparaminput,sprd32blk,sadd32blk,sdpfifo_q)
---	begin
---		--! La cola para la normalizacion de los vectores.
---		snormfifo_d(qx) <= (hblockslab and ((cdblockslab and sparaminput(dx))or(not(cdblockslab) and sparaminput(cx)))) or (not(hblockslab) and ((abblockslab and sparaminput(bx))or(not(abblockslab) and sparaminput(ax))));
---		snormfifo_d(qy) <= (hblockslab and ((cdblockslab and sparaminput(dy))or(not(cdblockslab) and sparaminput(cy)))) or (not(hblockslab) and ((abblockslab and sparaminput(by))or(not(abblockslab) and sparaminput(ay))));
---		snormfifo_d(qz) <= (hblockslab and ((cdblockslab and sparaminput(dz))or(not(cdblockslab) and sparaminput(cz)))) or (not(hblockslab) and ((abblockslab and sparaminput(bz))or(not(abblockslab) and sparaminput(az))));
---	
---		--! Combinatorio para decidir que operaciones realizan los sumadores / restadores.
---		add32blks <= (instr3(0) xor (instr3(1) xor instr3(0)))&(instr3(0) xor (instr3(1) xor instr3(0))) ;
---		
---		--! Por defecto conectar los sumandos en producto punto/cruz
---		ssumando(s0) <= sprd32blk(p0);ssumando(s1) <= sprd32blk(p1);
---		ssumando(s6) <= sadd32blk(a0);ssumando(s7) <= sdpfifo_q(dpfifoab);
---		ssumando(s10) <= sdpfifo_q(dpfifocd);ssumando(s11) <= sadd32blk(a2);
---		ssumando(s4) <= sprd32blk(p4);ssumando(s5) <= sprd32blk(p5);
---		ssumando(s2) <= sprd32blk(p2);ssumando(s3) <= sprd32blk(p3);
---		
---		--! El segundo sumador del segundo bloque siempre sera suma o resta independiente de la operacion
---		ssumando(s8) <= sparaminput(cy);ssumando(s9) <= sparaminput(dy);	
---
---		--! Por defecto conectar los factores en producto punto
---		sfactor(f0) <= sparaminput(ax);sfactor(f1) <= sparaminput(bx);
---		sfactor(f2) <= sparaminput(ay);sfactor(f3) <= sparaminput(by);
---		sfactor(f4) <= sparaminput(az);sfactor(f5) <= sparaminput(bz);
---		sfactor(f6) <= sparaminput(bx);sfactor(f7) <= sparaminput(dx);
---		sfactor(f8) <= sparaminput(by);sfactor(f9) <= sparaminput(dy);
---		sfactor(f10) <= sparaminput(bz);sfactor(f11) <= sparaminput(dz);
---		
---		--!Los resultados por defecto se acomodan al producto punto y parcialmente a los productos simple y escalar.
---		sresult(ax) <= sadd32blk(aa);
---		sresult(ay) <= sprd32blk(p1);
---		sresult(az) <= sprd32blk(p2);
---		sresult(bx) <= sadd32blk(ac);
---		sresult(by) <= sprd32blk(p4);
---		sresult(bz) <= sprd32blk(p5);
---		
---		if (instr3(2 downto 1)="11" or instr3="100") then
---			sresult(ax) <= sprd32blk(p0);
---			sresult(bx) <= sprd32blk(p3);
---		elsif instr3(0)='1' then
---			sresult(ax) <= sprd32blk(a0);
---			sresult(ay) <= sprd32blk(a1);
---			sresult(az) <= sprd32blk(a2);
---			sresult(bx) <= sadd32blk(aa);
---			sresult(by) <= sprd32blk(ab);
---			sresult(bz) <= sadd32blk(ac);
---		elsif instr3(1)='1' then
---			sresult(ax) <= ssqr32blk(sqrt320);
---			sresult(bx) <= ssqr32blk(sqrt321);
---		end if;
---			
---
---		if instr3(0)='1' then	--! Producto Cruz, suma, resta, multiplicacion simple
---
---			if (instr3(2) or instr3(1))='1' then --! Suma, Resta, Multiplicacion simple
---				
---				--! Conectar las entradas de los sumadores en suma o resta de vectores 
---				ssumando(s0) <= sparaminput(ax);ssumando(s1) <= sparaminput(bx);
---				ssumando(s2) <= sparaminput(ay);ssumando(s3) <= sparaminput(by);
---				ssumando(s4) <= sparaminput(az);ssumando(s5) <= sparaminput(bz);
---				ssumando(s6) <= sparaminput(cx);ssumando(s7) <= sparaminput(dx);				
---				ssumando(s10) <= sparaminput(cz);ssumando(s11) <= sparaminput(dz);
---			
---			else --! Producto Cruz!
---				
---				if hblock='1' then	--! Producto crux CxD 
---					--!Multiplicadores: 
---					sfactor(f0) <= sparaminput(cy);sfactor(f1) <= sparaminput(dz);sfactor(f2) <= sparaminput(cz);sfactor(f3) <= sparaminput(dy);
---					sfactor(f4) <= sparaminput(cx);sfactor(f5) <= sparaminput(dz);sfactor(f6) <= sparaminput(cz);sfactor(f7) <= sparaminput(dx);
---					sfactor(f8) <= sparaminput(cx);sfactor(f9) <= sparaminput(dy);sfactor(f10) <= sparaminput(cy);sfactor(f11) <= sparaminput(dx);
---				else 				--! Producto crux AxD
---					--!Multiplicadores: 					
---					sfactor(f0) <= sparaminput(ay);sfactor(f1) <= sparaminput(bz);sfactor(f2) <= sparaminput(az);sfactor(f3) <= sparaminput(by);
---					sfactor(f4) <= sparaminput(ax);sfactor(f5) <= sparaminput(bz);sfactor(f6) <= sparaminput(az);sfactor(f7) <= sparaminput(bx);
---					sfactor(f8) <= sparaminput(ax);sfactor(f9) <= sparaminput(by);sfactor(f10) <= sparaminput(ay);sfactor(f11) <= sparaminput(bx);
---				end if;
---
---			end if;
---
---		else					--! Producto Punto, magnitud, producto escalar y normalizacion  
---			if instr3(2)='1' then 		--!Producto Escalar (INSTR3(1)=0) o Normalizacion (INSTR3(1)=1) 
---				
---				sfactor(f0) <= (not instr31slab and sparaminput(ax)) or (instr31slab and ((not(hblockslab) and ((not(abblockslab) and sparaminput(ax)) or(abblockslab and sparaminput(bx))))or( hblockslab and snormfifo_q(qx)) ) );
---				sfactor(f1) <= (not instr31slab and sparaminput(bx)) or (instr31slab and ((not(hblockslab) and ((not(abblockslab) and sparaminput(ax)) or(abblockslab and sparaminput(bx))))or( hblockslab and sinv32blk(invr321)) ) );
---				sfactor(f2) <= (not instr31slab and sparaminput(ay)) or (instr31slab and ((not(hblockslab) and ((not(abblockslab) and sparaminput(ay)) or(abblockslab and sparaminput(by))))or( hblockslab and snormfifo_q(qy)) ) );
---				sfactor(f3) <= (not instr31slab and sparaminput(bx)) or (instr31slab and ((not(hblockslab) and ((not(abblockslab) and sparaminput(ay)) or(abblockslab and sparaminput(by))))or( hblockslab and sinv32blk(invr321)) ) );
---				sfactor(f4) <= (not instr31slab and sparaminput(az)) or (instr31slab and ((not(hblockslab) and ((not(abblockslab) and sparaminput(az)) or(abblockslab and sparaminput(bz))))or( hblockslab and snormfifo_q(qz)) ) );
---				sfactor(f5) <= (not instr31slab and sparaminput(bx)) or (instr31slab and ((not(hblockslab) and ((not(abblockslab) and sparaminput(az)) or(abblockslab and sparaminput(bz))))or( hblockslab and sinv32blk(invr321)) ) );
---				sfactor(f6) <= (not instr31slab and sparaminput(cx)) or (instr31slab and ((hblockslab and ((not(cdblockslab) and sparaminput(cx)) or(cdblockslab and sparaminput(dx))))or( not(hblockslab) and snormfifo_q(qx)) ) );
---				sfactor(f7) <= (not instr31slab and sparaminput(dx)) or (instr31slab and ((hblockslab and ((not(cdblockslab) and sparaminput(cx)) or(cdblockslab and sparaminput(dx))))or( not(hblockslab) and sinv32blk(invr320)) ) );
---				sfactor(f8) <= (not instr31slab and sparaminput(cy)) or (instr31slab and ((hblockslab and ((not(cdblockslab) and sparaminput(cy)) or(cdblockslab and sparaminput(dy))))or( not(hblockslab) and snormfifo_q(qy)) ) );
---				sfactor(f9) <= (not instr31slab and sparaminput(dx)) or (instr31slab and ((hblockslab and ((not(cdblockslab) and sparaminput(cy)) or(cdblockslab and sparaminput(dy))))or( not(hblockslab) and sinv32blk(invr320)) ) );
---				sfactor(f10) <= (not instr31slab and sparaminput(cz)) or (instr31slab and ((hblockslab and ((not(cdblockslab) and sparaminput(cz)) or(cdblockslab and sparaminput(dz))))or( not(hblockslab) and snormfifo_q(qz)) ) );
---				sfactor(f11) <= (not instr31slab and sparaminput(dx)) or (instr31slab and ((hblockslab and ((not(cdblockslab) and sparaminput(cz)) or(cdblockslab and sparaminput(dz))))or( not(hblockslab) and sinv32blk(invr320)) ) );
---			elsif instr3(1)='1' then	--!Magnitud. El producto punto no se computa porque los factores estan por defecto configurados en producto punto.				
---				sfactor(f0) <= (not(abblockslab) and sparaminput(ax))or(abblockslab and sparaminput(bx));
---				sfactor(f1) <= (not(abblockslab) and sparaminput(ax))or(abblockslab and sparaminput(bx));
---				sfactor(f2) <= (not(abblockslab) and sparaminput(ay))or(abblockslab and sparaminput(by));
---				sfactor(f3) <= (not(abblockslab) and sparaminput(ay))or(abblockslab and sparaminput(by));
---				sfactor(f4) <= (not(abblockslab) and sparaminput(az))or(abblockslab and sparaminput(bz));
---				sfactor(f5) <= (not(abblockslab) and sparaminput(az))or(abblockslab and sparaminput(bz));
---				sfactor(f6) <= (not(cdblockslab) and sparaminput(cx))or(cdblockslab and sparaminput(dx));
---				sfactor(f7) <= (not(cdblockslab) and sparaminput(cx))or(cdblockslab and sparaminput(dx));
---				sfactor(f8) <= (not(cdblockslab) and sparaminput(cy))or(cdblockslab and sparaminput(dy));
---				sfactor(f9) <= (not(cdblockslab) and sparaminput(cy))or(cdblockslab and sparaminput(dy));
---				sfactor(f10) <= (not(cdblockslab) and sparaminput(cz))or(cdblockslab and sparaminput(dz));
---				sfactor(f11) <= (not(cdblockslab) and sparaminput(cz))or(cdblockslab and sparaminput(dz));
---					
---			end if;
---		end if;
---				
---	end process;
---	
 	
 end dpc_arch;

@@ -28,11 +28,17 @@ use ieee.std_logic_unsigned.all;
 
 entity customCounter is
 	generic (
-		width : integer := 9
-	)
+		EOBFLAG		: string := "NO";
+		ZEROFLAG	: string := "YES";
+		BACKWARDS	: string := "YES";
+		EQUALFLAG	: string := "NO";	
+		subwidth	: integer := 0;	
+		width 		: integer := 5
+	);
 	port (
 		clk,rst,go,set : in std_logic;
-		setValue : in std_logic_vector(width - 1 downto 0);
+		setValue, cmpBlockValue : in std_logic_vector (width-1 downto subwidth); --! Los 5 bits de arriba.
+		zero_flag,eob_flag, eq_flag : out std_logic;
 		count : out std_logic_vector (width - 1 downto 0)
 	);
 end entity;
@@ -42,17 +48,111 @@ end entity;
 architecture customCounter_arch of customCounter is 
 
 	constant rstMasterValue : std_logic := '0';
-	signal scount_d, scount_q : std_logic_vector(width-1 downto 0);
-	
+	signal scount_d, scount_q, sgo : std_logic_vector(width-1 downto 0);
+	signal seob_flag : std_logic;
 
 begin
+
+	--!Compara los bits superiores solamente, si subwidth es 4 y width es 9 comparara los 9-4=5 bits superiores.
+	steadyEqualFlag:
+	if EQUALFLAG/="YES" generate
+		eq_flag <= '0';
+	end generate steadyEqualFlag;
+	equalFlagsProcess:
+	if EQUALFLAG="YES" generate
+		process (scount_d(width-1 downto subwidth),cmpBlockValue,clk,rst)
+		begin
+			if rst=rstMasterValue then
+				eq_flag <= '0';
+			elsif clk'event and clk='1' then
+				if scount_d(width-1 downto subwidth)=cmpBlockValue then
+					eq_flag <= '1';
+				else
+					eq_flag <= '0';
+				end if;
+			end if;
+		end process;
+	end generate equalFlagsProcess;
+
+	--Backwards or Forwards.
+	forwardGenerator:
+	if BACKWARDS="NO" generate
+		sgo(width-1 downto 1) <= (others => '0');
+		sgo(0) <= go;
+	end generate forwardGenerator;
+
+	backwardGenerator:
+	if BACKWARDS="YES" generate
+		sgo(width-1 downto 0) <= (others => go);		
+	end generate backwardGenerator;  
+		 
+
+	--! Si en los par&aacute;metros no se encuentra especificado que detecte el zero entonces la salida zero_flag estar&aacute; en cero siempre.
+	steadyZeroFlag:
+	if ZEROFLAG/="YES" generate
+		zero_flag <= '0';
+	end generate steadyZeroFlag;
+	
+	--! Si el par&aacute;metro para la bandera de cero se especifica, entonces se instancia un proceso que depende del valor del conteo.	
+	zeroFlagProcess:
+	if ZEROFLAG="YES" generate
+		--! Proceso para calcular la bandera de cero, en el conteo.
+		process (scount_d,clk,rst)
+		begin
+			if rst=rstMasterValue then
+				zero_flag <= '0';
+			elsif clk'event and clk='1' then
+				zero_flag <= '1';				
+				for i in width-1 downto 0 loop
+					if scount_d(i) = '1' then
+						zero_flag <= '0';
+						exit;--the loop;
+					end if;
+				end loop;
+			end if;
+		end process;	
+	end generate zeroFlagProcess;
+	
+	
+	--! Proceso para controlar la salida de la bandera de fin de bloque. Se colocar&aacute; en uno l&oacute;gico cuando el conteo vaya en multiplo de 32 menos 1.
+	steadyEobFlag:
+	if EOBFLAG/="YES" generate
+		eob_flag <= '0';
+	end generate steadyEobFlag;
+	eobFlagProcess:
+	if EOBFLAG="YES" generate
+		process (scount_d(subwidth-1 downto 0),clk,rst)
+		begin
+			if rst=rstMasterValue then
+				eob_flag <= '0';
+			elsif clk'event and clk='1' then
+				eob_flag <= '1';
+				for i in subwidth-1 downto 0 loop 
+					if scount_d(i) /= '1' then 
+						eob_flag <= '0';
+						exit;--the loop
+					end if;
+				end loop;
+			end if;
+		end process;
+	end generate eobFlagProcess;
+		
+	--! Salida combinatoria del contador.
 	count <= scount_d;
+	
+	--! Proceso de control del conteo.
 	add_proc:
-	process (scount_q,go,set,setValue)
+	process (scount_q,sgo,set,setValue)
 	begin
-		case set is 
-			when '1'  => scount_d <= setValue;
-			when others => scount_d <= scount_q+go;
+		case set is
+			--! Si subwidth es cero, p.ej. cuando se quiere hacer un contador simple y no detectar el final de bloques de 4 bits de ancho, el compilador ignora el statement con la expresi&oacute;n por fuera del rango. 
+			when '1'  => scount_d(subwidth-1 downto 0) <= (others => '0');scount_d(width-1 downto subwidth) <= setValue;
+			
+			--! Strange, but yet true. Esto se puede hacer, es practicamente una compilacion condicional pero posiblemente coste una cuantas celdas logicas. 
+--			if subwidth>0 then
+--				scount_d(subwidth-1 downto 0) <= (others => '0');
+--			end if;
+			when others => scount_d <= scount_q+sgo;
 		end case;
 	end process;
 	

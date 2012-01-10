@@ -37,7 +37,7 @@ entity dpc is
 		fifo32x23_q				: in	std_logic_vector (03*width-1 downto 0);		--! Salida de la cola intermedia.
 		fifo32x09_q				: in	std_logic_vector (02*width-1 downto 0); 	--! Salida de las colas de producto punto. 
 		unary,crossprod,addsub	: in	std_logic;									--! Bit con el identificador del bloque AB vs CD e identificador del sub bloque (A/B) o (C/D). 
-		sync_chain_d			: in	std_logic;									--! Señal de dato valido que se va por toda la cadena de sincronizacion.
+		sync_chain_0			: in	std_logic;									--! Señal de dato valido que se va por toda la cadena de sincronizacion.
 		sqr32blki,inv32blki		: out	std_logic_vector (width-1 downto 0);		--! Salidas de las 2 raices cuadradas y los 2 inversores.
 		fifo32x26_d				: out	std_logic_vector (03*width-1 downto 0);		--! Entrada a la cola intermedia para la normalizaci&oacute;n.
 		fifo32x09_d				: out	std_logic_vector (02*width-1 downto 0);		--! Entrada a las colas intermedias del producto punto.  	
@@ -95,14 +95,13 @@ architecture dpc_arch of dpc is
 begin
 	
 	--! Cadena de sincronizaci&oacute;n: 29 posiciones.
-	ssync_chain_d <= sync_chain_d;
+	ssync_chain(0) <= sync_chain_0;
 	sync_chain_proc:
 	process(clk,rst)
 	begin
 		if rst=rstMasterValue then
-			ssync_chain <= (others => '0');
+			ssync_chain(28 downto 1) <= (others => '0');
 		elsif clk'event and clk='1' then 
-			ssync_chain(0) <= ssync_chain_d;
 			for i in 28 downto 1 loop
 				ssync_chain(i) <= ssync_chain(i-1);
 			end loop;

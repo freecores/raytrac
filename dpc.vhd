@@ -38,6 +38,8 @@ entity dpc is
 		fifo32x09_q				: in	std_logic_vector (02*width-1 downto 0); 	--! Salida de las colas de producto punto. 
 		unary,crossprod,addsub	: in	std_logic;									--! Bit con el identificador del bloque AB vs CD e identificador del sub bloque (A/B) o (C/D). 
 		sync_chain_0			: in	std_logic;									--! Señal de dato valido que se va por toda la cadena de sincronizacion.
+		eoi_int					: in 	std_logic;									--! Sennal de interrupción de final de instrucción.
+		eoi_demuxed_int			: out	std_logic_vector (3 downto 0);				--! Señal de interrupción de final de instrucción pero esta vez va asociada a la instruccón UCA.
 		sqr32blki,inv32blki		: out	std_logic_vector (width-1 downto 0);		--! Salidas de las 2 raices cuadradas y los 2 inversores.
 		fifo32x26_d				: out	std_logic_vector (03*width-1 downto 0);		--! Entrada a la cola intermedia para la normalizaci&oacute;n.
 		fifo32x09_d				: out	std_logic_vector (02*width-1 downto 0);		--! Entrada a las colas intermedias del producto punto.  	
@@ -49,7 +51,7 @@ entity dpc is
 		fifo32x23_r				: out	std_logic;
 		res567f,res13f			: in 	std_logic;									--! Entradas de la se&ntilde;al de full de las colas de resultados. 
 		res2f,res0f				: in	std_logic;
-		resf					: out	std_logic;									--! Salida decodificada que indica que la cola de resultados de la operaci&oacute;n est&aacute; en curso.
+		resf					: out	std_logic;									--! Salida decodificada que indica que la cola de resultados de la operaci&oacute;n que est&aacute; en curso.
 		resultoutput			: out	std_logic_vector ((08*width)-1 downto 0) 	--! 8 salidas de resultados, pues lo m&aacute;ximo que podr&aacute; calcularse por cada clock son 2 vectores. 
 	);
 end dpc;
@@ -225,14 +227,18 @@ begin
 	fullQ:process(res0f,res13f,res2f,res567f,unary,crossprod,addsub)
 	begin 
 		if unary='0' then
-			if crossprod='1' or addsub='1' then 
+			if crossprod='1' or addsub='1' then
+				eoi_demuxed_int <= "00"&eoi_int&'0'; 
 				resf <= res13f;
 			else
+				eoi_demuxed_int <= '0'&eoi_int&"00";
 				resf <= res2f;
 			end if;
 		elsif crossprod='1' or addsub='1' then
+			eoi_demuxed_int <= eoi_int&"000";
 			resf <= res567f;
 		else
+			eoi_demuxed_int <= "000"&eoi_int;
 			resf <= res0f;
 		end if;
 	end process;

@@ -147,11 +147,6 @@ begin
 		case set is
 			--! Si subwidth es cero, p.ej. cuando se quiere hacer un contador simple y no detectar el final de bloques de 4 bits de ancho, el compilador ignora el statement con la expresi&oacute;n por fuera del rango. 
 			when '1'  => scount_d(subwidth-1 downto 0) <= (others => '0');scount_d(width-1 downto subwidth) <= setValue;
-			
-			--! Strange, but yet true. Esto se puede hacer, es practicamente una compilacion condicional pero posiblemente coste una cuantas celdas logicas. 
---			if subwidth>0 then
---				scount_d(subwidth-1 downto 0) <= (others => '0');
---			end if;
 			when others => scount_d <= scount_q+sgo;
 		end case;
 	end process;

@@ -37,24 +37,15 @@ entity sm is
 		
 		--! Se&ntilde;ales normales de secuencia.
 		clk,rst:			in std_logic;
-		
-		--! ENTRADAS DE CONTROL DE SINCRONIZACION.
-		--! Se&ntilde;ales de sincronizaci&oacute;n de recursos.
-		--! Las siguientes entradas tienen relevancia y son sensibles en los estados EXECUTE_INSTRUCTION y VERMEER_EXECUTE.
-		
-		
-		
-		--! ENTRADAS 
-		
-		
-		
-		--! Instruction Q, instruction.
+		--! Vector con las instrucción codficada
 		instrQq:in std_logic_vector(width-1 downto 0);
+		--! Señal de cola vacia.
 		instrQ_empty:in std_logic;
 		
 				
 		adda,addb:out std_logic_vector (widthadmemblock-1 downto 0);
 		sync_chain_0,instrRdAckd:out std_logic;
+		
 		
 		full_r: 	in std_logic;	--! Indica que la cola de resultados no puede aceptar mas de 32 elementos.
 	

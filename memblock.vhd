@@ -36,15 +36,14 @@ entity memblock is
 	);
 	port (
 		
-		clk,ena,dpfifo_flush,normfifo_flush,dpfifo_rd,normfifo_rd,dpfifo_wr,normfifo_wr : in std_logic;
-		dpfifo_empty, normfifo_empty, dpfifo_full, normfifo_full : out std_logic;
-		instrfifo_flush,instrfifo_rd,instrfifo_wr,resultfifo_flush,resultfifo_wr: in std_logic;
-		instrfifo_empty,instrfifo_full: out std_logic; 
+		clk,rst,dpfifo_rd,normfifo_rd,dpfifo_wr,normfifo_wr : in std_logic;
+		instrfifo_rd,instrfifo_wr,resultfifo_wr: in std_logic;
+		instrfifo_empty: out std_logic; 
 		ext_rd,ext_wr: in std_logic;
 		ext_wr_add : in std_logic_vector(external_writeable_widthad+widthadmemblock-1 downto 0);		
 		ext_rd_add : in std_logic_vector(external_readable_widthad-1 downto 0);
 		ext_d: in std_logic_vector(width-1 downto 0);
-		--!sresultfifo_full,resultfifo_empty : out std_logic_vector(external_readable_blocks-1 downto 0);
+		resultfifo_full,resultfifo_empty : out std_logic_vector(external_readable_blocks-1 downto 0);
 		int_d : in std_logic_vector(external_readable_blocks*width-1 downto 0);
 		ext_q,instrfifo_q : out std_logic_vector(width-1 downto 0);
 		int_q : out std_logic_vector(external_writeable_blocks*width-1 downto 0);
@@ -62,6 +61,7 @@ architecture memblock_arch of memblock is
 	type	vectorblock12 is array (11 downto 0) of std_logic_vector(width-1 downto 0);
 	type	vectorblock08 is array (07 downto 0) of std_logic_vector(width-1 downto 0);
 	type	vectorblock02 is array (01 downto 0) of std_logic_vector(widthadmemblock-1 downto 0);
+	constant rstMasterValue : std_logic := '0';
 	
 	component scfifo
 	generic (
@@ -91,6 +91,7 @@ architecture memblock_arch of memblock is
 		full		: out std_logic
 	);
 	end component;
+	
 	
 	component altsyncram
 	generic (
@@ -142,49 +143,176 @@ begin
 
 	--! Cola interna de producto punto, ubicada entre el pipe line aritm&eacute;co. 
 	q0q1 : scfifo --! Debe ir registrada la salida.
-	generic	map ("ON",8,"OFF","Cyclone III","RAM_BLOCK_TYPE=M9K",16,"OFF","SCFIFO",64,4,"OFF","OFF","ON")
-	port	map (dpfifo_rd,dpfifo_flush,dpfifo_empty,clk,dpfifo_q,dpfifo_wr,dpfifo_d,dpfifo_full);
+	generic map (
+		add_ram_output_register	=> "OFF",
+		allow_wrcycle_when_full => "OFF",
+		intended_device_family	=> "CycloneIII",
+		lpm_hint				=> "RAM_BLOCK_TYPE=M9K",
+		almost_full_value		=> 8,
+		lpm_numwords			=> 8,
+		lpm_showahead			=> "ON",
+		lpm_type				=> "SCIFIFO",
+		lpm_width				=> 64,
+		lpm_widthu				=> 3,
+		overflow_checking		=> "ON",
+		underflow_checking		=> "ON",
+		use_eab					=> "ON"
+	)
+	port	map (
+		rdreq		=> dpfifo_rd,
+		aclr		=> '0',
+		empty		=> open,
+		clock		=> clk,
+		q			=> dpfifo_q,
+		wrreq		=> dpfifo_wr,
+		data		=> dpfifo_d
+	);
 	
 	--! Cola interna de normalizaci&oacute;n de vectores, ubicada entre el pipeline aritm&eacute
 	qxqyqz : scfifo
-	generic map ("ON",23,"OFF","Cyclone III","RAM_BLOCK_TYPE=M9K",32,"OFF","SCFIFO",96,5,"OFF","OFF","ON")
-	port	map (normfifo_rd,normfifo_flush,normfifo_empty,clk,normfifo_q,normfifo_wr,normfifo_d,normfifo_full);
+	generic map (
+		add_ram_output_register => "OFF",
+		allow_wrcycle_when_full => "OFF",
+		intended_device_family  => "Cyclone III",
+		lpm_hint                => "RAM_BLOCK_TYPE=M9K",
+		almost_full_value		=> 32,
+		lpm_numwords			=> 32,
+		lpm_showahead			=> "ON",
+		lpm_type				=> "SCFIFO",
+		lpm_width				=> 96,
+		lpm_widthu				=> 5,
+		overflow_checking		=> "ON",
+		underflow_checking		=> "ON",
+		use_eab					=> "ON"
+	)
+	port	map (
+		rdreq		=> normfifo_rd,
+		aclr		=> '0',
+		empty	 	=> open,
+		clock		=> clk,
+		q			=> normfifo_q,
+		wrreq		=> normfifo_wr,
+		data		=> normfifo_d,
+		almost_full => open,
+		full		=> open
+	);
 	
 	--! Cola de instrucciones 
 	qi : scfifo
-	generic map ("ON",31,"ON","Cyclone III","RAM_BLOCK_TYPE_M9K",32,"OFF","SCIFIFO",32,5,"ON","OFF","ON")
-	port 	map (instrfifo_rd,instrfifo_flush,instrfifo_empty,clk,instrfifo_q,instrfifo_wr,instrfifo_d,instrfifo_full);
+	generic map (
+		add_ram_output_register => "OFF",
+		allow_wrcycle_when_full => "OFF",
+		intended_device_family	=> "Cyclone III",
+		lpm_hint				=> "RAM_BLOCK_TYPE=M9K",
+		almost_full_value		=> 32,
+		lpm_numwords			=> 32,
+		lpm_showahead			=> "OFF",
+		lpm_type				=> "SCIFIFO",
+		lpm_width				=> 32,
+		lpm_widthu				=> 5,
+		overflow_checking		=> "ON",
+		underflow_checking		=> "ON",
+		use_eab					=> "ON"
+	)
+	port 	map (
+		rdreq		=> instrfifo_rd,
+		aclr		=> '0',
+		empty		=> instrfifo_empty,
+		clock		=> clk,
+		q			=> instrfifo_q,
+		wrreq		=> instrfifo_wr,
+		data		=> instrfifo_d,
+		almost_full => open
+	);
 	
 	--! Conectar los registros de lectura interna del bloque de operandos a los arreglos > abstracci&oacute:n de c&oacute;digo, no influye en la sintesis del circuito.
 	sint_rd_add (0)<= int_rd_add(widthadmemblock-1 downto 0);
 	sint_rd_add (1)<= int_rd_add(2*widthadmemblock-1 downto widthadmemblock);
-	
-	--! Instanciaci&oacute;n de la cola de resultados.
-	results_blocks: 
-	for i in 7 downto 0 generate
-		sint_d(i) <= int_d((i+1)*width-1 downto i*width);
-		resultsfifo : scfifo
-		generic map	("ON",511,"ON","Cyclone III","RAM_BLOCK_TYPE_M9K",512,"OFF","SCIFIFO",32,9,"ON","OFF","ON")
-		port	map (s0ext_rd_ack(i),resultfifo_flush,resultfifo_empty(i),clk,s0ext_q(i),resultfifo_wr,sint_d(i),open,sresultfifo_full(i));
-	end generate results_blocks;
 	
 	--! Instanciaci&oacute;n de la cola de resultados de salida.
 	operands_blocks: 
 	for i in 11 downto 0 generate
 		int_q((i+1)*width-1 downto width*i) <= s1int_q(i);
 		operandsblock : altsyncram
-		generic map ("NONE","CLOCK0","BYPASS","BYPASS","BYPASS","Cyclone III","altsyncram",2**widthadmemblock,2**widthadmemblock,"DUAL_PORT","NONE","CLOCK0","FALSE","M9K","CLOCK0","OLD_DATA",widthadmemblock,widthadmemblock,width,width,1)
-		port 	map (s0ext_wr_add_one_hot(i),clk,s0ext_wr_add(widthadmemblock-1 downto 0),sint_rd_add((i/3) mod 2),'1',s1int_q(i),s0ext_d);
+		generic map (
+			address_aclr_b 						=> "NONE",
+			address_reg_b						=> "CLOCK0",
+			clock_enable_input_a				=> "BYPASS",
+			clock_enable_input_b				=> "BYPASS",
+			clock_enable_output_b				=> "BYPASS",
+			intended_device_family				=> "Cyclone III",
+			lpm_type							=> "altsyncram",
+			numwords_a							=> 2**widthadmemblock,
+			numwords_b							=> 2**widthadmemblock,
+			operation_mode						=> "DUAL_PORT",
+			outdata_aclr_b						=> "NONE",
+			outdata_reg_b						=> "CLOCK0",
+			power_up_uninitialized				=> "FALSE",
+			ram_block_type						=> "M9K",
+			rdcontrol_reg_b						=> "CLOCK0",
+			read_during_write_mode_mixed_ports	=> "OLD_DATA",
+			widthad_a							=> widthadmemblock,
+			widthad_b							=> widthadmemblock,
+			width_a								=> width,
+			width_b								=> width,
+			width_byteena_a						=> 1
+		)
+		port map (
+			wren_a		=> s0ext_wr_add_one_hot(i),
+			clock0		=> clk,
+			address_a	=> s0ext_wr_add(widthadmemblock-1 downto 0),
+			address_b	=> sint_rd_add((i/3) mod 2),
+			rden_b		=> '1',
+			q_b			=> s1int_q(i),
+			data_a		=> s0ext_d
+		);
 	end generate operands_blocks;
 	
+	--! Instanciaci&oacute;n de la cola de resultados.
+	results_blocks: 
+	for i in 7 downto 0 generate
+		sint_d(i) <= int_d((i+1)*width-1 downto i*width);
+		resultsfifo : scfifo
+		generic map	(
+			add_ram_output_register => "OFF",
+			almost_full_value 		=> 480,
+			allow_wrcycle_when_full => "OFF",
+			intended_device_family	=> "Cyclone III",
+			lpm_hint				=> "RAM_BLOCK_TYPE=M9K",
+			lpm_numwords			=> 512,
+			lpm_showahead			=> "ON",
+			lpm_type				=> "SCIFIFO",
+			lpm_width				=> 32,
+			lpm_widthu				=> 9,
+			overflow_checking		=> "ON",
+			underflow_checking		=> "ON",
+			use_eab					=> "ON"
+		)
+		port	map (
+			rdreq		=> s0ext_rd_ack(i),
+			aclr		=> '0',
+			empty		=> resultfifo_empty(i),
+			clock		=> clk,
+			q			=> s0ext_q(i),
+			wrreq		=> resultfifo_wr,
+			data		=> sint_d(i),
+			almost_full	=> resultfifo_full(i),
+			full		=> open
+		);
+	end generate results_blocks;
+	
 	--! Escritura en registros de operandos de entrada.
-	operands_block_proc: process (clk,ena)
+	operands_block_proc: process (clk,rst)
 	begin
-		if clk'event and clk='1' and ena='1' then
-			 --! Registro de entrada
-			 s0ext_wr_add <= ext_wr_add;
-			 s0ext_wr  <= ext_wr;
-			 s0ext_d  <= ext_d;		
+		if rst=rstMasterValue then
+			s0ext_wr_add	<= (others => '0');
+			s0ext_wr 		<= '0';
+			s0ext_d			<= (others => '0'); 
+		elsif clk'event and clk='1' then
+			--! Registro de entrada
+			s0ext_wr_add <= ext_wr_add;
+			s0ext_wr  <= ext_wr;
+			s0ext_d  <= ext_d;		
 		end if;
 	end process;
 	
@@ -213,9 +341,12 @@ begin
 	end process;
 	
 	--! Decodificaci&oacute;n para seleccionar que cola de resultados se conectar&acute; a la salida del RayTrac. 
-	results_block_proc: process(clk,ena)
+	results_block_proc: process(clk,rst)
 	begin
-		if clk'event and clk='1' and ena='1' then
+		if rst=rstMasterValue then
+			s0ext_rd_add	<= (others => '0');
+			s0ext_rd 		<= '0';
+		elsif clk'event and clk='1' then
 			--!Registrar entrada
 			s0ext_rd_add	<= ext_rd_add;
 			s0ext_rd		<= ext_rd;	

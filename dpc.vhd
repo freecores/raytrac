@@ -49,9 +49,8 @@ entity dpc is
 		fifo32x09_w				: out	std_logic;
 		fifo32x23_w,fifo32x09_r	: out	std_logic;
 		fifo32x23_r				: out	std_logic;
-		res567f,res13f			: in 	std_logic;									--! Entradas de la se&ntilde;al de full de las colas de resultados. 
-		res2f,res0f				: in	std_logic;
-		resf					: out	std_logic;									--! Salida decodificada que indica que la cola de resultados de la operaci&oacute;n que est&aacute; en curso.
+		resf_vector				: in 	std_logic_vector (3 downto 0);				--! Entradas de la se&ntilde;al de full de las colas de resultados. 
+		resf_event				: out	std_logic;									--! Salida decodificada que indica que la cola de resultados de la operaci&oacute;n que est&aacute; en curso.
 		resultoutput			: out	std_logic_vector ((08*width)-1 downto 0) 	--! 8 salidas de resultados, pues lo m&aacute;ximo que podr&aacute; calcularse por cada clock son 2 vectores. 
 	);
 end dpc;
@@ -92,6 +91,8 @@ architecture dpc_arch of dpc is
 	signal ssync_chain_d				: std_logic;
 	signal sres567w,sres123w,sres2w		: std_logic;
 	signal sres0w,sres4w				: std_logic;
+	signal sres567f,sres123f			: std_logic; --! Entradas de la se&ntilde;al de full de las colas de resultados. 
+	signal sres24f,sres0f				: std_logic;
 	
 	
 	constant rstMasterValue : std_logic := '0';
@@ -230,22 +231,26 @@ begin
 	ssumando(s7) <= sdpfifo_q(dpfifocd);
 	
 	--!El siguiente proceso conecta la se&ntilde;al de cola "casi llena", de la cola que corresponde al resultado de la operaci&oacute;n indicada por los bit UCA (Unary, Crossprod, Addsub).
-	fullQ:process(res0f,res13f,res2f,res567f,unary,crossprod,addsub)
+	sres0f 		<= resf_vector(0);
+	sres123f	<= resf_vector(1);
+	sres24f		<= resf_vector(2);
+	sres567f	<= resf_vector(3); 	
+	fullQ:process(sres0f,sres123f,sres24f,sres567f,unary,crossprod,addsub,eoi_int)
 	begin 
 		if unary='0' then
 			if crossprod='1' or addsub='1' then
 				eoi_demuxed_int <= "00"&eoi_int&'0'; 
-				resf <= res13f;
+				resf_event <= sres123f;
 			else
 				eoi_demuxed_int <= '0'&eoi_int&"00";
-				resf <= res2f;
+				resf_event <= sres24f;
 			end if;
 		elsif crossprod='1' or addsub='1' then
 			eoi_demuxed_int <= eoi_int&"000";
-			resf <= res567f;
+			resf_event <= sres567f;
 		else
 			eoi_demuxed_int <= "000"&eoi_int;
-			resf <= res0f;
+			resf_event <= sres0f;
 		end if;
 	end process;
 			

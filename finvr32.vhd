@@ -28,9 +28,9 @@ use ieee.std_logic_unsigned.all;
 entity invr32 is 
 	port (
 		
-		clk,prop_in : in std_logic;
-		dvd32: in std_logic_vector(31 downto 0);		
-		qout32,prop_out: out std_logic_vector(31 downto 0)
+		clk		: in std_logic;
+		dvd32	: in std_logic_vector(31 downto 0);		
+		qout32	: out std_logic_vector(31 downto 0)
 	);
 end invr32;
 architecture invr32_arch of invr32 is 
@@ -71,7 +71,8 @@ begin
 		address_aclr_a => "NONE",
 		clock_enable_input_a => "BYPASS",
 		clock_enable_output_a => "BYPASS",
-		init_file => "X:/Tesis/Workspace/hw/rt_lib/arith/src/trunk/fpbranch/invr/meminvr.mif",
+		--init_file => "X:/Tesis/Workspace/hw/rt_lib/arith/src/trunk/fpbranch/invr/meminvr.mif",
+		init_file => "//IMACJULIAN/imac/Code/Indigo/fp/fp/meminvr.mif",
 		intended_device_family => "Cyclone III",
 		lpm_hint => "ENABLE_RUNTIME_MOD=NO",
 		lpm_type => "altsyncram",
@@ -85,20 +86,11 @@ begin
 	)
 	port map (
 		clock0 => clk,
-		rden_a => ena,
+		rden_a => '1',
 		address_a => dvd32(22 downto 13),
 		q_a => s0q
 	);
-	propagation:
-	if propagation_chain="ON" generate
-		prop_out <= sxprop;
-		process (clk)
-		begin
-			if clk'event and clk='1' then
-				sxprop <= prop_in; 
-			end if;
-		end process;
-	end generate propagation ;
+	
 	--! SNAN?
 	process (clk)
 	begin

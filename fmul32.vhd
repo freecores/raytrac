@@ -26,13 +26,11 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
 entity fmul32 is
-	generic (
-		propagation_chain : string := "ON"
-	); 
+	
 	port (
-		clk,prop_in 		: in std_logic;
-		a32,b32			: in std_logic_vector(31 downto 0);
-		p32,prop_out	: out std_logic_vector(31 downto 0)
+		clk 		: in std_logic;
+		a32,b32		: in std_logic_vector(31 downto 0);
+		p32			: out std_logic_vector(31 downto 0)
 		
 	);
 end fmul32;
@@ -70,19 +68,7 @@ architecture fmul32_arch of fmul32 is
 	signal s2umu:std_logic_vector(24 downto 0);
 	signal sxprop : std_logic_vector(2 downto 0);
 begin
-	propagation:
-	if propagation_chain="ON" generate
-		prop_out <= sxprop(2);
-		process (clk)
-		begin
-			if clk'event and clk='1' then
-				for i in 2 downto 1 loop
-					sxprop(i) <= sxprop(i-1);
-				end loop;
-				sxprop(0) <= prop_in; 
-			end if;
-		end process;
-	end generate propagation ;
+	
 	
 	process(clk)
 	begin

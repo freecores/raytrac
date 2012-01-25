@@ -50,7 +50,8 @@ entity sm is
 		full_r: 	in std_logic;	--! Indica que la cola de resultados no puede aceptar mas de 32 elementos.
 	
 		
-		
+		--! End Of Instruction Event
+		eoi	: out std_logic;
 		
 		--! DataPath Control uca code.
 		dpc_uca : out std_logic_vector (2 downto 0)
@@ -187,6 +188,7 @@ begin
 			state <= LOAD_INSTRUCTION;
 			s_set_dly <= '1';
 			sync_chain_0 <= '0';
+			eoi<='0';
 			s_dpc_uca <= (others => '0');
 			
 		
@@ -196,6 +198,8 @@ begin
 					
 				--! Cargar la siguiente instrucción. 
 				when LOAD_INSTRUCTION => 
+				
+					eoi <= '0';
 				
 					if instrQ_empty='0' and full_r='0' then
 						
@@ -221,17 +225,20 @@ begin
 
 					if s_eb_b='1'and s_eq_b='1' and s_eb_a='1' and s_eq_a='1' then	--! Revisar si es el fin de la instruccion
 						
+						
 						--!Ya no ingresaran mas datos al pipeline aritmético, invalidar.
 						sync_chain_0 <= '0';
 						
 						if s_zeroFlag_delay='1' then 
 						
+							--! Notificar fin de procesamiento de la instruccion (End Of Instruction)
+							eoi <= '1';
 							state <= LOAD_INSTRUCTION;
 							s_set_dly <= '1';
 							
 						
 						else	
-						
+							
 							state <= FLUSH_ARITH_PIPELINE;
 							s_set_dly <= '0';
 							
@@ -250,9 +257,10 @@ begin
 					--! Este estado permanece así hasta que, haya una instrucción 
 					if s_zeroFlag_delay='1' then
 					
+						--! Notificar fin de procesamiento de la instruccion (End Of Instruction)
+						eoi <= '1';
 						state <= LOAD_INSTRUCTION;
 						s_set_dly <= '1';
-						
 					
 					end if;
 				

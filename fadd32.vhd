@@ -30,13 +30,11 @@ use lpm.all;
 --! Esta entidad recibe dos n&uacutemeros en formato punto flotante IEEE 754, de precision simple y devuelve las mantissas signadas y corridas, y el exponente correspondiente al resultado antes de normalizarlo al formato float. 
 --!\nLas 2 mantissas y el exponente entran despues a la entidad add2 que suma las mantissas y entrega el resultado en formato IEEE 754.
 entity fadd32 is
-	generic (
-		propagation_chain : string := "ON"
-	); 
+	
 	port (
-		clk,dpc,prop_in	: in std_logic;
-		a32,b32		: in std_logic_vector (31 downto 0);
-		c32,prop_out		: out std_logic_vector(31 downto 0)
+		clk,dpc	: in std_logic;
+		a32,b32	: in std_logic_vector (31 downto 0);
+		c32		: out std_logic_vector(31 downto 0)
 	);
 end fadd32;
 architecture fadd32_arch of fadd32 is
@@ -73,19 +71,7 @@ architecture fadd32_arch of fadd32 is
 	signal sxprop : std_logic_vector(7 downto 0);
 	
 begin
-	propagation:
-	if propagation_chain="ON" generate
-		prop_out <= sxprop(7);
-		process (clk)
-		begin
-			if clk'event and clk='1' then
-				for i in 7 downto 1 loop
-					sxprop(i) <= sxprop(i-1);
-				end loop;
-				sxprop(0) <= prop_in; 
-			end if;
-		end process;
-	end generate propagation ;
+	
 	process (clk)
 	begin
 		if clk'event and clk='1'  then 

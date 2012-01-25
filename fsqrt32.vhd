@@ -26,14 +26,12 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
 entity sqrt32 is 
-	generic (
-		propagation_chain : string := "ON"
-	); 
+	
 	port (
 		
-		clk,prop_in	: in std_logic;
-		rd32	: in std_logic_vector(31 downto 0);		
-		sq32,prop_out	: out std_logic_vector(31 downto 0)
+		clk	: in std_logic;
+		rd32: in std_logic_vector(31 downto 0);		
+		sq32: out std_logic_vector(31 downto 0)
 	);
 end sqrt32;
 architecture sqrt32_arch of sqrt32 is 
@@ -68,16 +66,7 @@ architecture sqrt32_arch of sqrt32 is
 	signal s0q				: std_logic_vector(17 downto 0);
 	signal sxprop			: std_logic;
 begin
-	propagation:
-	if propagation_chain="ON" generate
-		prop_out <= sxprop;
-		process (clk)
-		begin
-			if clk'event and clk='1' then
-				sxprop <= prop_in; 
-			end if;
-		end process;
-	end generate propagation ;
+	
 	--! SNAN?
 	process (clk)
 	begin
@@ -106,7 +95,8 @@ begin
 		address_aclr_a => "NONE",
 		clock_enable_input_a => "BYPASS",
 		clock_enable_output_a => "BYPASS",
-		init_file => "X:/Code/Indigo/fp/fp/memsqrt.mif",
+		--init_file => "X:/Code/Indigo/fp/fp/memsqrt.mif",
+		init_file => "//IMACJULIAN/imac/Code/Indigo/fp/fp/memsqrt.mif",		
 		intended_device_family => "Cyclone III",
 		lpm_hint => "ENABLE_RUNTIME_MOD=NO",
 		lpm_type => "altsyncram",
@@ -118,6 +108,6 @@ begin
 		width_a => 18,
 		width_byteena_a => 1
 	)
-	port map (rden_a => ena, clock0 => clk, address_a => rd32(23 downto 14), q_a => s0q);
+	port map (rden_a => '1', clock0 => clk, address_a => rd32(23 downto 14), q_a => s0q);
 
 end sqrt32_arch;

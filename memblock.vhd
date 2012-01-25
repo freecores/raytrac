@@ -1,4 +1,4 @@
-	--! @file memblock.vhd
+--! @file memblock.vhd
 --! @brief Bloque de memoria. 
 --! @author Juli&aacute;n Andr&eacute;s Guar&iacute;n Reyes
 --------------------------------------------------------------
@@ -37,18 +37,18 @@ entity memblock is
 	port (
 		
 		clk,rst,dpfifo_rd,normfifo_rd,dpfifo_wr,normfifo_wr : in std_logic;
-		instrfifo_rd,instrfifo_wr,resultfifo_wr: in std_logic;
+		instrfifo_rd : in std_logic;
+		resultfifo_wr: in std_logic_vector(external_readable_blocks-1 downto 0);
 		instrfifo_empty: out std_logic; 
 		ext_rd,ext_wr: in std_logic;
 		ext_wr_add : in std_logic_vector(external_writeable_widthad+widthadmemblock-1 downto 0);		
 		ext_rd_add : in std_logic_vector(external_readable_widthad-1 downto 0);
 		ext_d: in std_logic_vector(width-1 downto 0);
-		resultfifo_full,resultfifo_empty : out std_logic_vector(external_readable_blocks-1 downto 0);
+		resultfifo_full  : out std_logic_vector(3 downto 0);
 		int_d : in std_logic_vector(external_readable_blocks*width-1 downto 0);
 		ext_q,instrfifo_q : out std_logic_vector(width-1 downto 0);
 		int_q : out std_logic_vector(external_writeable_blocks*width-1 downto 0);
 		int_rd_add : in std_logic_vector(2*widthadmemblock-1 downto 0);
-		instrfifo_d : in std_logic_vector(width-1 downto 0);
 		dpfifo_d : in std_logic_vector(width*2-1 downto 0);
 		normfifo_d : in std_logic_vector(width*3-1 downto 0);
 		dpfifo_q : out std_logic_vector(width*2-1 downto 0);
@@ -138,6 +138,7 @@ architecture memblock_arch of memblock is
 	signal s0ext_q,sint_d		: vectorblock08;
 	signal sint_rd_add			: vectorblock02;
 	signal s1int_q				: vectorblock12;
+	signal sresultfifo_full		: std_logic_vector(7 downto 0);
 
 begin 
 
@@ -220,8 +221,8 @@ begin
 		empty		=> instrfifo_empty,
 		clock		=> clk,
 		q			=> instrfifo_q,
-		wrreq		=> instrfifo_wr,
-		data		=> instrfifo_d,
+		wrreq		=> s0ext_wr_add_one_hot(12),
+		data		=> s0ext_d,
 		almost_full => open
 	);
 	
@@ -269,6 +270,10 @@ begin
 	end generate operands_blocks;
 	
 	--! Instanciaci&oacute;n de la cola de resultados.
+	resultfifo_full(3) <= sresultfifo_full(7) or sresultfifo_full(6) or sresultfifo_full(5);
+	resultfifo_full(2) <= sresultfifo_full(4) or sresultfifo_full(2);
+	resultfifo_full(1) <= sresultfifo_full(3) or sresultfifo_full(2) or sresultfifo_full(1);
+	resultfifo_full(0) <= sresultfifo_full(0);  
 	results_blocks: 
 	for i in 7 downto 0 generate
 		sint_d(i) <= int_d((i+1)*width-1 downto i*width);
@@ -291,12 +296,12 @@ begin
 		port	map (
 			rdreq		=> s0ext_rd_ack(i),
 			aclr		=> '0',
-			empty		=> resultfifo_empty(i),
+			empty		=> open,
 			clock		=> clk,
 			q			=> s0ext_q(i),
-			wrreq		=> resultfifo_wr,
+			wrreq		=> resultfifo_wr(i),
 			data		=> sint_d(i),
-			almost_full	=> resultfifo_full(i),
+			almost_full	=> sresultfifo_full(i),
 			full		=> open
 		);
 	end generate results_blocks;
@@ -335,7 +340,7 @@ begin
 			when x"C" => s0ext_wr_add_one_hot <= '0'&"00"&s0ext_wr&'0'&x"00";
 			when x"D" => s0ext_wr_add_one_hot <= '0'&'0'&s0ext_wr&"00"&x"00";
 			when x"E" => s0ext_wr_add_one_hot <= '0'&s0ext_wr&"000"&x"00";
-			when others => s0ext_wr_add_one_hot <= '1'&x"000";
+			when others => s0ext_wr_add_one_hot <= s0ext_wr&x"000";
 		end case;
 	
 	end process;

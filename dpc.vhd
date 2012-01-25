@@ -116,7 +116,7 @@ begin
 	fifo32x09_r <= ssync_chain(13);
 	fifo32x23_r <= ssync_chain(24);	
 	res0w <= ssync_chain(23);
-	res4w <= ssync_chain(21);
+	res4w <= ssync_chain(22);
 	sync_chain_comb:
 	process (ssync_chain,addsub,crossprod,unary)
 	begin
@@ -152,7 +152,7 @@ begin
 		resultoutput(i*width+width-1 downto i*width) <= sresult(i);
 	end generate stuff08;
 	stuff04: 
-	for i in 03 downto 1 generate
+	for i in 02 downto 1 generate
 		sadd32blk(i)  <= add32blko(i*width+width-1 downto i*width);
 	end generate stuff04;
 	
@@ -179,12 +179,15 @@ begin
 		end if;
 	end process;
 	--! Los productos del multiplicador 2 y 3, ya registrados dentro de dpc van a la cola intermedia del producto punto (fifo32x09_d)
+	--! Los unicos resultados de sumandos que de nuevo entran al DataPathControl (observar la pesta&ntilde;a del documento de excel) 
+	
 	fifo32x09_d <= sprd32blk(p3)&sprd32blk(p2);
 	register_adder0_and_inversor_output:
 	process (clk)
 	begin
 		if clk'event and clk='1' then
-			sadd32blk(a0)  <= add32blko(a0*width+width-1 downto a0*width);
+			sadd32blk(a0) <= add32blko(a0*width+width-1 downto a0*width);
+			sadd32blk(aa) <= add32blko(aa*width+width-1 downto aa*width); 
 			sinv32blk <= inv32blko;
 		end if;
 	end process;

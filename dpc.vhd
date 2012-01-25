@@ -45,8 +45,8 @@ entity dpc is
 		fifo32x09_d				: out	std_logic_vector (02*width-1 downto 0);		--! Entrada a las colas intermedias del producto punto.  	
 		prd32blki				: out	std_logic_vector ((12*width)-1 downto 0);	--! Entrada de los 12 factores en el bloque de multiplicaci&oacute;n respectivamente.
 		add32blki				: out	std_logic_vector ((08*width)-1 downto 0);	--! Entrada de los 8 sumandos del bloque de 4 sumadores.  
-		res567w,res13w,res2w	: out	std_logic;									--! Salidas de escritura y lectura en las colas de resultados.
-		res0w,res4w,fifo32x09_w	: out	std_logic;
+		resw					: out	std_logic_vector (4 downto 0);				--! Salidas de escritura y lectura en las colas de resultados.
+		fifo32x09_w				: out	std_logic;
 		fifo32x23_w,fifo32x09_r	: out	std_logic;
 		fifo32x23_r				: out	std_logic;
 		res567f,res13f			: in 	std_logic;									--! Entradas de la se&ntilde;al de full de las colas de resultados. 
@@ -90,6 +90,8 @@ architecture dpc_arch of dpc is
 	signal ssqr32blk,sinv32blk			: std_logic_vector(width-1 downto 0);
 	signal ssync_chain					: std_logic_vector(28 downto 0);
 	signal ssync_chain_d				: std_logic;
+	signal sres567w,sres123w,sres2w		: std_logic;
+	signal sres0w,sres4w				: std_logic;
 	
 	
 	constant rstMasterValue : std_logic := '0';
@@ -115,26 +117,27 @@ begin
 	fifo32x23_w <= ssync_chain(1);
 	fifo32x09_r <= ssync_chain(13);
 	fifo32x23_r <= ssync_chain(24);	
-	res0w <= ssync_chain(23);
-	res4w <= ssync_chain(22);
+	sres0w	<= ssync_chain(23);
+	sres4w 	<= ssync_chain(22);
+	resw	<= sres567w&sres4w&sres123w&sres2w&sres0w;
 	sync_chain_comb:
 	process (ssync_chain,addsub,crossprod,unary)
 	begin
 		if unary='1' then
-			res567w <= ssync_chain(28);
+			sres567w <= ssync_chain(28);
 		else
-			res567w <= ssync_chain(4);
+			sres567w <= ssync_chain(4);
 		end if;
 	
 		if addsub='1' then 
-			res13w <= ssync_chain(9);
-		 	res2w <= ssync_chain(9);
+			sres123w <= ssync_chain(9);
+		 	sres2w <= ssync_chain(9);
 		else
-			res13w <= ssync_chain(13);
+			sres123w <= ssync_chain(13);
 			if crossprod='1' then
-				res2w <= ssync_chain(13);
+				sres2w <= ssync_chain(13);
 			else
-				res2w <= ssync_chain(22);
+				sres2w <= ssync_chain(22);
 			end if;
 		end if;
 	end process sync_chain_comb;

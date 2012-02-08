@@ -24,7 +24,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
-
+use work.arithpack.all;
 
 entity customCounter is
 	generic (
@@ -47,7 +47,7 @@ end entity;
 
 architecture customCounter_arch of customCounter is 
 
-	constant rstMasterValue : std_logic := '0';
+	
 	signal scount_d, scount_q, sgo : std_logic_vector(width-1 downto 0);
 	signal seob_flag : std_logic;
 

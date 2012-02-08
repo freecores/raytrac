@@ -25,7 +25,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
-
+use work.arithpack.all;
 entity im is
 	generic (
 		num_events : integer :=4;
@@ -36,29 +36,30 @@ entity im is
 		rfull_events:	in std_logic_vector(num_events-1 downto 0);	--! full results queue events
 		eoi_events:		in std_logic_vector(num_events-1 downto 0);	--! end of instruction related events
 		eoi_int:		out std_logic_vector(num_events-1 downto 0);--! end of instruction related interruptions
-		rfull_int:		out std_logic_vector(num_events-1downto 0)	--! full results queue related interruptions
+		rfull_int:		out std_logic_vector(num_events-1downto 0);	--! full results queue related interruptions
+		state:			out iCtrlState
 		
 	);
 end entity;
 
 architecture im_arch of im is
 
-	type macState is (WAITING_FOR_AN_EVENT,FIRING_INTERRUPTIONS,SUSPEND);
-	signal state : macState;
-	constant rstMasterValue : std_logic:='0';
+	
+	signal s_state : iCtrlState;
+	
 	signal s_event_polling_chain : std_logic_vector(num_events-1 downto 0);
 	signal s_eoi_events : std_logic_vector(num_events-1 downto 0);
 	 
 begin
-
-
+	state <= s_state;
+	
 	sm_proc:
 	process (clk,rst,s_event_polling_chain,rfull_events,eoi_events)
 		variable tempo : integer range 0 to cycles_to_wait:=cycles_to_wait;
 	begin
 		if rst=rstMasterValue then
 			tempo := cycles_to_wait;
-			state  <= WAITING_FOR_AN_EVENT;
+			s_state  <= WAITING_FOR_AN_EVENT;
 			s_event_polling_chain <= (others => '0');
 			s_eoi_events <= (others => '0');
 			rfull_int <= (others => '0');
@@ -75,17 +76,17 @@ begin
 				eoi_int(i) <= s_event_polling_chain(i) and s_eoi_events(i);
 				
 			end loop;
-			case state is
+			case s_state is
 				when WAITING_FOR_AN_EVENT => 
 					for i in num_events-1 downto 0 loop
 						if rfull_events(i)='1' then 
-							state <= FIRING_INTERRUPTIONS;
+							s_state <= FIRING_INTERRUPTIONS;
 							s_event_polling_chain(0) <= '1';
 						end if;
 					end loop;
 				when FIRING_INTERRUPTIONS =>
 					if s_event_polling_chain(num_events-1)='1' then
-						state <= SUSPEND;
+						s_state <= SUSPEND;
 						tempo := cycles_to_wait;
 					end if;
 					for i in num_events-1 downto 1 loop
@@ -94,7 +95,7 @@ begin
 					s_event_polling_chain(0) <= '0';
 				when SUSPEND => 
 					if tempo=0 then
-						state <= WAITING_FOR_AN_EVENT;
+						s_state <= WAITING_FOR_AN_EVENT;
 					else
 						tempo:=tempo-1;
 					end if;

@@ -25,7 +25,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
 
-
+use work.arithpack.all;
 
 entity sm is
 	generic (
@@ -53,6 +53,9 @@ entity sm is
 		--! End Of Instruction Event
 		eoi	: out std_logic;
 		
+		--! State Exposed for testbench purposes.
+		state : out macState;
+		
 		--! DataPath Control uca code.
 		dpc_uca : out std_logic_vector (2 downto 0)
 		
@@ -62,31 +65,14 @@ end entity;
 
 architecture sm_arch of sm is
 
-	type macState is (LOAD_INSTRUCTION,FLUSH_ARITH_PIPELINE,EXECUTE_INSTRUCTION);
+	
 	--! LOAD_INSTRUCTION: Estado en el que se espera que en la cola de instrucciones haya una instrucción para ejecutar.
 	--! EXECUTE_INSTRUCTION: Estado en el que se ejecuta la instrucci&oacute;n de la cola de instrucciones.
 	--! FLUSH_ARITH_PIPELINE: Estado en el que se espera un número específico de ciclos de reloj, para que se desocupe el pipeline aritmético.
 	
-	signal state : macState;
-	constant rstMasterValue : std_logic:='0';
+	signal s_state : macState;
 	
-	component customCounter
-	generic (		
-		EOBFLAG		: string ;
-		ZEROFLAG	: string ;
-		BACKWARDS	: string ;
-		EQUALFLAG	: string ;	
-		subwidth	: integer;	
-		width 		: integer
-		
-	);
-	port (
-		clk,rst,go,set	: in std_logic;
-		setValue,cmpBlockValue		: in std_Logic_vector(width-1 downto subwidth);
-		zero_flag,eob_flag,eq_flag	: out std_logic;
-		count			: out std_logic_vector(width-1 downto 0)
-	);
-	end component;
+	
 	
 	signal s_instr_uca: 	std_logic_vector(2 downto 0);
 	signal s_dpc_uca: 		std_logic_vector(2 downto 0);	 
@@ -107,6 +93,9 @@ architecture sm_arch of sm is
 	signal s_eb_b,s_eb_a:	std_logic; 	--! Indica que se est&aacute; leyendo en memoria el &uacute;ltimo operando del bloque actual, b o a, respectivamente.
 		 	
 begin
+	
+	state <= s_state;
+
 	--! Código UCA, pero en la etapa DPC: La diferencia es que UCA en la etapa DPC, decodifica el datapath dentro del pipeline aritmético.
 	dpc_uca <= s_dpc_uca;
 
@@ -140,7 +129,7 @@ begin
 	
 	
 	sm_comb:
-	process (state, full_r,s_eb_b,s_combinatory,s_zeroFlag_delay,s_eq_b,s_eb_a,s_eq_a,instrQ_empty)
+	process (s_state, full_r,s_eb_b,s_combinatory,s_zeroFlag_delay,s_eq_b,s_eb_a,s_eq_a,instrQ_empty)
 	begin
 		--!Se&ntilde;al de play/pause del contador de direcciones para el par&aacute;metro B/D.
 		s_go_b <= not(full_r and s_eb_b);
@@ -157,13 +146,13 @@ begin
 		s_go_delay  <= not(s_zeroFlag_delay);	
 		
 		--! Si estamos en el final de la instrucción, "descargamos" esta de la máquina de estados con acknowledge read.
-		if s_eb_b='1' and s_eq_b='1' and s_eb_a='1' and s_eq_a='1' and state=EXECUTE_INSTRUCTION then
+		if s_eb_b='1' and s_eq_b='1' and s_eb_a='1' and s_eq_a='1' and s_state=EXECUTE_INSTRUCTION then
 			instrRdAckd <= '1';
 		else
 			instrRdAckd <= '0';
 		end if;
 		
-		if (s_eb_a='1' and s_eq_a='1') or state=LOAD_INSTRUCTION or state=FLUSH_ARITH_PIPELINE then
+		if (s_eb_a='1' and s_eq_a='1') or s_state=LOAD_INSTRUCTION or s_state=FLUSH_ARITH_PIPELINE then
 			s_set_a <= '1';
 		else
 			s_set_a <= '0';
@@ -171,7 +160,7 @@ begin
 		 
 		
 			
-		if (s_eb_b='1' and s_eq_b='1') or state=LOAD_INSTRUCTION or state=FLUSH_ARITH_PIPELINE then
+		if (s_eb_b='1' and s_eq_b='1') or s_state=LOAD_INSTRUCTION or s_state=FLUSH_ARITH_PIPELINE then
 			s_set_b <= '1';
 		else
 			s_set_b <= '0';
@@ -180,12 +169,12 @@ begin
 	end process;
 	
 	sm_proc:
-	process (clk,rst,state, full_r,s_eb_b,s_combinatory,s_zeroFlag_delay,s_eq_b,s_eb_a,s_eq_a,instrQ_empty)
+	process (clk,rst,s_state, full_r,s_eb_b,s_combinatory,s_zeroFlag_delay,s_eq_b,s_eb_a,s_eq_a,instrQ_empty)
 	begin 
 		
 		if rst=rstMasterValue then
 		
-			state <= LOAD_INSTRUCTION;
+			s_state <= LOAD_INSTRUCTION;
 			s_set_dly <= '1';
 			sync_chain_0 <= '0';
 			eoi<='0';
@@ -194,7 +183,7 @@ begin
 		
 		elsif clk='1' and clk'event then
 		
-			case state is
+			case s_state is
 					
 				--! Cargar la siguiente instrucción. 
 				when LOAD_INSTRUCTION => 
@@ -204,7 +193,7 @@ begin
 					if instrQ_empty='0' and full_r='0' then
 						
 						--! Siguiente estado: Ejecutar la instrucción.  
-						state <= EXECUTE_INSTRUCTION;
+						s_state <= EXECUTE_INSTRUCTION;
 						
 						--! Asignar el código UCA para que comience la decodificación.
 						s_dpc_uca <= s_instr_uca;
@@ -233,13 +222,13 @@ begin
 						
 							--! Notificar fin de procesamiento de la instruccion (End Of Instruction)
 							eoi <= '1';
-							state <= LOAD_INSTRUCTION;
+							s_state <= LOAD_INSTRUCTION;
 							s_set_dly <= '1';
 							
 						
 						else	
 							
-							state <= FLUSH_ARITH_PIPELINE;
+							s_state <= FLUSH_ARITH_PIPELINE;
 							s_set_dly <= '0';
 							
 						end if;								
@@ -259,7 +248,7 @@ begin
 					
 						--! Notificar fin de procesamiento de la instruccion (End Of Instruction)
 						eoi <= '1';
-						state <= LOAD_INSTRUCTION;
+						s_state <= LOAD_INSTRUCTION;
 						s_set_dly <= '1';
 					
 					end if;

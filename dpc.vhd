@@ -22,6 +22,7 @@
 
 library ieee;
 use ieee.std_logic_1164.all;
+use work.arithpack.all;
 
 entity dpc is 
 	generic (
@@ -95,7 +96,7 @@ architecture dpc_arch of dpc is
 	signal sres24f,sres0f				: std_logic;
 	
 	
-	constant rstMasterValue : std_logic := '0';
+	
 	
 begin
 	

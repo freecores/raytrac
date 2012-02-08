@@ -22,6 +22,7 @@
 
 library ieee;
 use ieee.std_logic_1164.all;
+use work.arithpack.all;
 
 entity memblock is 
 	generic (
@@ -61,73 +62,10 @@ architecture memblock_arch of memblock is
 	type	vectorblock12 is array (11 downto 0) of std_logic_vector(width-1 downto 0);
 	type	vectorblock08 is array (07 downto 0) of std_logic_vector(width-1 downto 0);
 	type	vectorblock02 is array (01 downto 0) of std_logic_vector(widthadmemblock-1 downto 0);
-	constant rstMasterValue : std_logic := '0';
-	
-	component scfifo
-	generic (
-		add_ram_output_register	:string;
-		almost_full_value		:natural;
-		allow_wrcycle_when_full	:string;
-		intended_device_family	:string;
-		lpm_hint				:string;
-		lpm_numwords			:natural;
-		lpm_showahead			:string;
-		lpm_type				:string;
-		lpm_width				:natural;
-		lpm_widthu				:natural;
-		overflow_checking		:string;
-		underflow_checking		:string;
-		use_eab					:string	
-	);
-	port(
-		rdreq		: in std_logic;
-		aclr		: in std_logic;
-		empty		: out std_logic;
-		clock		: in std_logic;
-		q			: out std_logic_vector(lpm_width-1 downto 0);
-		wrreq		: in std_logic;
-		data		: in std_logic_vector(lpm_width-1 downto 0);
-		almost_full : out std_logic;
-		full		: out std_logic
-	);
-	end component;
 	
 	
-	component altsyncram
-	generic (
-		address_aclr_b			: string;
-		address_reg_b 			: string;
-		clock_enable_input_a 	: string;
-		clock_enable_input_b 	: string;
-		clock_enable_output_b	: string;
-		intended_device_family	: string;
-		lpm_type				: string;
-		numwords_a				: natural;
-		numwords_b				: natural;
-		operation_mode			: string;
-		outdata_aclr_b			: string;
-		outdata_reg_b			: string;
-		power_up_uninitialized	: string;
-		ram_block_type			: string;
-		rdcontrol_reg_b			: string;
-		read_during_write_mode_mixed_ports	: string;
-		widthad_a				: natural;
-		widthad_b				: natural;
-		width_a					: natural;
-		width_b					: natural;
-		width_byteena_a			: natural
-	);
-	port (
-		wren_a		: in std_logic;
-		clock0		: in std_logic;
-		address_a 	: in std_logic_vector(widthad_a-1 downto 0);
-		address_b 	: in std_logic_vector(widthad_b-1 downto 0);
-		rden_b		: in std_logic;
-		q_b			: out std_logic_vector(width-1 downto 0);
-		data_a		: in std_logic_vector(width-1 downto 0)
-		
-	);
-	end component;
+	
+	
 	signal s0ext_wr_add_one_hot : std_logic_vector(external_writeable_blocks-1+1 downto 0); --! La se &ntilde;al extra es para la escritura de la cola de instrucciones.
 	signal s0ext_wr_add			: std_logic_vector(external_writeable_widthad+widthadmemblock-1 downto 0);
 	signal s0ext_rd_add			: std_logic_vector(external_readable_widthad-1 downto 0);

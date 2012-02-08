@@ -5,7 +5,7 @@
 --------------------------------------------------------------
 -- RAYTRAC
 -- Author Julian Andres Guarin
--- memblock.vhd
+-- Rytrac.vhd
 -- This file is part of raytrac.
 -- 
 --     raytrac is free software: you can redistribute it and/or modify
@@ -24,6 +24,7 @@
 
 library ieee;
 use ieee.std_logic_1164.all;
+use work.arithpack.all;
 
 entity raytrac is
 	port (
@@ -47,212 +48,58 @@ entity raytrac is
 		int	: out std_logic_vector (7 downto 0);
 		
 		--! Salidas
-		q : out std_logic_vector (31 downto 0)
+		q : out std_logic_vector (31 downto 0);
 		
+		--! Estado Controlador de Interrupciones
+		intCtrlState : out iCtrlState;
+		
+		--! Estado Maquina de Estados
+		smState	: out macState
 				
 	);
 end entity;
 
 architecture raytrac_arch of raytrac is 
 
---! Definicion de Tipos y de Constantes
-	constant rstMasterValue : std_logic := '0';
-	
---! Definición de componentes del sistema.
-
-	--! Bloque de memorias
-	component memblock
-	generic ( 
-		width						: integer;
-		blocksize					: integer;
-		widthadmemblock				: integer;
-		external_writeable_blocks 	: integer;
-		external_readable_blocks  	: integer;
-		external_readable_widthad	: integer;				
-		external_writeable_widthad	: integer
-	);
-	port (
-		
-		
-		clk,rst,dpfifo_rd,normfifo_rd,dpfifo_wr,normfifo_wr : in std_logic;
-		instrfifo_rd : in std_logic;
-		resultfifo_wr: in std_logic_vector(external_readable_blocks-1 downto 0);
-		instrfifo_empty: out std_logic; ext_rd,ext_wr: in std_logic;
-		ext_wr_add : in std_logic_vector(external_writeable_widthad+widthadmemblock-1 downto 0);		
-		ext_rd_add : in std_logic_vector(external_readable_widthad-1 downto 0);
-		ext_d: in std_logic_vector(width-1 downto 0);
-		int_d : in std_logic_vector(external_readable_blocks*width-1 downto 0);
-		resultfifo_full  : out std_logic_vector(3 downto 0);
-		ext_q,instrfifo_q : out std_logic_vector(width-1 downto 0);
-		int_q : out std_logic_vector(external_writeable_blocks*width-1 downto 0);
-		int_rd_add : in std_logic_vector(2*widthadmemblock-1 downto 0);
-		dpfifo_d : in std_logic_vector(width*2-1 downto 0);
-		normfifo_d : in std_logic_vector(width*3-1 downto 0);
-		dpfifo_q : out std_logic_vector(width*2-1 downto 0);
-		normfifo_q : out std_logic_vector(width*3-1 downto 0)
-	);	
-	end component;
-	--! Bloque decodificacion DataPath Control.
-	component dpc
-	generic (
-		width : integer
-	);
-	port (
-		clk,rst					: in	std_logic;
-		paraminput				: in	std_logic_vector ((12*width)-1 downto 0);	--! Vectores A,B,C,D
-		prd32blko			 	: in	std_logic_vector ((06*width)-1 downto 0);	--! Salidas de los 6 multiplicadores.
-		add32blko 				: in	std_logic_vector ((04*width)-1 downto 0);	--! Salidas de los 4 sumadores.
-		sqr32blko,inv32blko		: in	std_logic_vector (width-1 downto 0);		--! Salidas de la raiz cuadradas y el inversor.
-		fifo32x23_q				: in	std_logic_vector (03*width-1 downto 0);		--! Salida de la cola intermedia.
-		fifo32x09_q				: in	std_logic_vector (02*width-1 downto 0); 	--! Salida de las colas de producto punto. 
-		unary,crossprod,addsub	: in	std_logic;									--! Bit con el identificador del bloque AB vs CD e identificador del sub bloque (A/B) o (C/D). 
-		sync_chain_0			: in	std_logic;									--! Señal de dato valido que se va por toda la cadena de sincronizacion.
-		eoi_int					: in 	std_logic;									--! Sennal de interrupción de final de instrucción.
-		eoi_demuxed_int			: out	std_logic_vector (3 downto 0);				--! Señal de interrupción de final de instrucción pero esta vez va asociada a la instruccón UCA.
-		sqr32blki,inv32blki		: out	std_logic_vector (width-1 downto 0);		--! Salidas de las 2 raices cuadradas y los 2 inversores.
-		fifo32x26_d				: out	std_logic_vector (03*width-1 downto 0);		--! Entrada a la cola intermedia para la normalizaci&oacute;n.
-		fifo32x09_d				: out	std_logic_vector (02*width-1 downto 0);		--! Entrada a las colas intermedias del producto punto.  	
-		prd32blki				: out	std_logic_vector ((12*width)-1 downto 0);	--! Entrada de los 12 factores en el bloque de multiplicaci&oacute;n respectivamente.
-		add32blki				: out	std_logic_vector ((08*width)-1 downto 0);	--! Entrada de los 8 sumandos del bloque de 4 sumadores.  
-		resw					: out	std_logic_vector (4 downto 0);				--! Salidas de escritura y lectura en las colas de resultados.
-		fifo32x09_w				: out	std_logic;
-		fifo32x23_w,fifo32x09_r	: out	std_logic;
-		fifo32x23_r				: out	std_logic;
-		resf_vector				: in 	std_logic_vector(3 downto 0);				--! Entradas de la se&ntilde;al de full de las colas de resultados. 
-		resf_event				: out	std_logic;									--! Salida decodificada que indica que la cola de resultados de la operaci&oacute;n que est&aacute; en curso.
-		resultoutput			: out	std_logic_vector ((08*width)-1 downto 0) 	--! 8 salidas de resultados, pues lo m&aacute;ximo que podr&aacute; calcularse por cada clock son 2 vectores.
-	);
-	end component;
-	--! Bloque Aritmetico de Sumadores y Multiplicadores (madd)
-	component arithblock
-	port (
-		
-		clk	: in std_logic;
-		rst : in std_logic;
-	
-		dpc : in std_logic;
-	
-		f	: in std_logic_vector (12*32-1 downto 0);
-		a	: in std_logic_vector (8*32-1 downto 0);
-		
-		s	: out std_logic_vector (4*32-1 downto 0);
-		p	: out std_logic_vector (6*32-1 downto 0)
-			
-	);
-	end component;
-	--! Bloque de Raiz Cuadrada
-	component sqrt32
-	port (
-		
-		clk	: in std_logic;
-		rd32: in std_logic_vector(31 downto 0);		
-		sq32: out std_logic_vector(31 downto 0)
-	);
-	end component;
-	--! Bloque de Inversores.
-	component invr32
-	port (
-		
-		clk		: in std_logic;
-		dvd32	: in std_logic_vector(31 downto 0);		
-		qout32	: out std_logic_vector(31 downto 0)
-	);
-	end component;
-	--! Maquina de Estados.
-	component sm
-	generic (
-		width : integer ;
-		widthadmemblock : integer 
-		--!external_readable_widthad : 				
-	);
-	port (
-		
-		--! Se&ntilde;ales normales de secuencia.
-		clk,rst:			in std_logic;
-		--! Vector con las instrucción codficada
-		instrQq:in std_logic_vector(width-1 downto 0);
-		--! Señal de cola vacia.
-		instrQ_empty:in std_logic;
-		
-				
-		adda,addb:out std_logic_vector (widthadmemblock-1 downto 0);
-		sync_chain_0,instrRdAckd:out std_logic;
-		
-		
-		full_r: 	in std_logic;	--! Indica que la cola de resultados no puede aceptar mas de 32 elementos.
-	
-		
-		
-		--! End Of Instruction Event
-		eoi	: out std_logic;
-		
-		--! DataPath Control uca code.
-		dpc_uca : out std_logic_vector (2 downto 0)
-	);
-	end component;
-	--! Maquina de Interrupciones
-	component im 
-	generic (
-		num_events : integer ;
-		cycles_to_wait : integer 
-	);
-	port (
-		clk,rst:		in std_logic;
-		rfull_events:	in std_logic_vector(num_events-1 downto 0);	--! full results queue events
-		eoi_events:		in std_logic_vector(num_events-1 downto 0);	--! end of instruction related events
-		eoi_int:		out std_logic_vector(num_events-1 downto 0);--! end of instruction related interruptions
-		rfull_int:		out std_logic_vector(num_events-1downto 0)	--! full results queue related interruptions
-		
-	);
-	end component;
-	
-	
-	--! Se&ntilde;ales de Memblock -> State Machine
-	signal s_iq_empty		: std_logic; 
-	signal s_iq				: std_logic_vector (31 downto 0);
-	
-
-	--! Se&ntilde;ales de Memblock -> Interruption Machine
-	signal s_rfull_events 	: std_logic_vector (3 downto 0); --Estas se&ntilde;ales tambien entran a DPC.
-	
-	--! Se&ntilde;ales de Memblock -> DPC.
-	signal s_q				: std_logic_vector (12*32-1 downto 0);
-	signal s_normfifo_q		: std_logic_vector (3*32-1 downto 0);
-	signal s_dpfifo_q		: std_logic_vector (2*32-1 downto 0);
-	
 	--! Se&ntilde;ales de State Machine -> Memblock
+	--!TBXSTART:SM
 	signal s_adda			: std_logic_vector (8 downto 0);
 	signal s_addb			: std_logic_vector (8 downto 0);
 	signal s_iq_rd_ack		: std_logic;
-	
-	
 	--! Se&ntilde;ales de State Machine -> DataPathControl
 	signal s_sync_chain_0	: std_logic;
 	signal s_dpc_uca		: std_logic_vector(2 downto 0);
 	signal s_eoi			: std_logic;
-	 
+	--! Se&ntilde;ales de State Machine -> Testbench
+	signal s_smState		: macState;
+	--!TBXEND
+	--!TBXSTART:MBLK
+	--! Se&ntilde;ales de Memblock -> State Machine
+	signal s_iq_empty		: std_logic; 
+	signal s_iq				: std_logic_vector (31 downto 0);
+	--! Se&ntilde;ales de Memblock -> Interruption Machine
+	signal s_rfull_events 	: std_logic_vector (3 downto 0); --Estas se&ntilde;ales tambien entran a DPC.
+	--! Se&ntilde;ales de Memblock -> DPC.
+	signal s_q				: std_logic_vector (12*32-1 downto 0);
+	signal s_normfifo_q		: std_logic_vector (3*32-1 downto 0);
+	signal s_dpfifo_q		: std_logic_vector (2*32-1 downto 0);
+	--!TBXEND
+	--!TBXSTART:SQR32
+	--!Se&ntilde;ales de Bloque de Ra&iacute;z Cuadrada a DPC
+	signal s_sq32			: std_logic_vector (31 downto 0);
+	--!TBXEND
+	--!TBXSTART:INV32
+	--!Se&ntilde;ales del bloque inversor a DPC.
+	signal s_qout32			: std_logic_vector (31 downto 0);
+	--!TBXEND
+	--!TBXSTART:DPC
 	--! Se&ntilde;ales de DataPathControl -> State Machine
 	signal s_full_r			: std_logic;
-
-	
-	--! Se&ntilde;ales de State Machin a Interruption Machine.
-	signal s_eoi_events		: std_logic_vector (3 downto 0);
-	
-	--! Se&ntilde;ales de DPC a ArithBlock
-	signal s_f				: std_logic_vector (12*32-1 downto 0);
-	signal s_a 				: std_logic_vector (8*32-1 downto 0);
-	--! Parcialmente las se&ntilde;ales de salida de los sumadores van al data path control.
-	signal s_s				: std_logic_vector (4*32-1 downto 0); 
-	signal s_p				: std_logic_vector (6*32-1 downto 0);
-
 	--! Se&ntilde;ales de DPC a sqrt32.
 	signal s_rd32			: std_logic_vector (31 downto 0);
-	signal s_sq32			: std_logic_vector (31 downto 0);
-
-	--! Se&ntilde;ales de DPC  a invr32.
+	--! Se&ntilde;ales de DPC a inv32.
 	signal s_dvd32			: std_logic_vector (31 downto 0);
-	signal s_qout32			: std_logic_vector (31 downto 0);
-	
+	--! Se&ntilde;ales de DPC  a invr32.
 	--! Se&ntilde que va desde DPC -> Memblock
 	signal s_resultsfifo_w	: std_logic_vector (4 downto 0);
 	signal s_dpfifo_w		: std_logic;
@@ -262,8 +109,25 @@ architecture raytrac_arch of raytrac is
 	signal s_normfifo_r		: std_logic;
 	signal s_results_d		: std_logic_vector (8*32-1 downto 0);
 	signal s_normfifo_d		: std_logic_vector (3*32-1 downto 0);
-	 	
+	--!Se&ntilde;ales de DPC a Interruption Machine
+	signal s_eoi_events		: std_logic_vector (3 downto 0);
+	--! Se&ntilde;ales de DPC a ArithBlock
+	signal s_f				: std_logic_vector (12*32-1 downto 0);
+	signal s_a 				: std_logic_vector (8*32-1 downto 0);
+	--! Parcialmente las se&ntilde;ales de salida de los sumadores van al data path control.
+	signal s_s				: std_logic_vector (4*32-1 downto 0); 
+	signal s_p				: std_logic_vector (6*32-1 downto 0);
+	--!TBXEND
+	--!TBXSTART:IM
+	--! Se&ntilde;ales de Interruption Machine al testbench
+	signal s_iCtrlState		: iCtrlState;
+	--!TBXEND 	
 begin
+	
+	
+	
+
+
 	--! Instanciar el bloque de memorias MEMBLOCK
 	MemoryBlock : memblock
 	generic map (
@@ -349,7 +213,7 @@ begin
 		qout32	=> s_qout32
 	);
 
-	--! Instanciar el bloque de raíz cuadrada.
+	--! Instanciar el bloque de ra&iacute;z cuadrada.
 	square_root : sqrt32
 	port map (
 		clk 	=> clk,
@@ -358,7 +222,7 @@ begin
 	);
 	
 	
-	--! Instanciar el bloque aritmético.
+	--! Instanciar el bloque aritm&eacute;tico.
 	arithmetic_block : arithblock
 	port map (
 		clk => clk,
@@ -382,7 +246,8 @@ begin
 		rfull_events	=> s_rfull_events,
 		eoi_events		=> s_eoi_events,
 		eoi_int 		=> int(3 downto 0),
-		rfull_int		=> int(7 downto 4)
+		rfull_int		=> int(7 downto 4),
+		state			=> s_iCtrlState
 		
 	);
 	--!Instanciar la maquina de estados
@@ -402,7 +267,9 @@ begin
 		instrRdAckd		=> s_iq_rd_ack,
 		full_r			=> s_full_r,
 		eoi				=> s_eoi,
-		dpc_uca			=> s_dpc_uca
+		dpc_uca			=> s_dpc_uca,
+		state			=> s_smState
+		
 	);
 	
 

@@ -48,13 +48,9 @@ entity raytrac is
 		int	: out std_logic_vector (7 downto 0);
 		
 		--! Salidas
-		q : out std_logic_vector (31 downto 0);
+		q : out std_logic_vector (31 downto 0)
 		
-		--! Estado Controlador de Interrupciones
-		intCtrlState : out iCtrlState;
 		
-		--! Estado Maquina de Estados
-		smState	: out macState
 				
 	);
 end entity;
@@ -129,11 +125,10 @@ begin
 
 
 	--! Instanciar el bloque de memorias MEMBLOCK
+	--!TBXINSTANCESTART
 	MemoryBlock : memblock
 	generic map (
-		width 						=> 32,
 		blocksize 					=> 512,
-		widthadmemblock		 		=> 9,
 		external_writeable_blocks 	=> 12,
 		external_readable_blocks	=> 8,
 		external_readable_widthad	=> 3,				
@@ -165,12 +160,11 @@ begin
 		dpfifo_q			=> s_dpfifo_q,
 		normfifo_q			=> s_normfifo_q
 	);
+	--!TBXINSTANCEEND
 
 	--! Instanciar el bloque DPC
+	--!TBXINSTANCESTART
 	DataPathControl_And_Syncronization_Block: dpc
-	generic map (
-		width => 32
-	)
 	port map (
 		
 		clk				=> clk,
@@ -203,26 +197,31 @@ begin
 		resf_event		=> s_full_r,
 		resultoutput	=> s_results_d
 	);
+	--!TBXINSTANCEEND
 	
 
 	--! Instanciar el bloque de inversion
+	--!TBXINSTANCESTART
 	inversion_block : invr32
 	port map (
 		clk		=> clk,
 		dvd32	=> s_dvd32,
 		qout32	=> s_qout32
 	);
+	--!TBXINSTANCEEND
 
 	--! Instanciar el bloque de ra&iacute;z cuadrada.
+	--!TBXINSTANCESTART
 	square_root : sqrt32
 	port map (
 		clk 	=> clk,
 		rd32	=> s_rd32,
 		sq32	=> s_sq32 
 	);
-	
+	--!TBXINSTANCEEND
 	
 	--! Instanciar el bloque aritm&eacute;tico.
+	--!TBXINSTANCESTART
 	arithmetic_block : arithblock
 	port map (
 		clk => clk,
@@ -233,8 +232,10 @@ begin
 		s	=> s_s,
 		p	=> s_p
 	);
+	--!TBXINSTANCEEND
 	 
 	--! Instanciar la maquina de interrupciones
+	--!TBXINSTANCESTART
 	interruption_machine : im
 	generic map (
 		num_events 		=> 4,
@@ -250,12 +251,12 @@ begin
 		state			=> s_iCtrlState
 		
 	);
+	--!TBXINSTANCEEND
 	--!Instanciar la maquina de estados
+	
+	--!TBXINSTANCESTART
 	state_machine : sm
-	generic map (
-		width => 32,
-		widthadmemblock => 9
-	)
+
 	port map (
 		clk 			=> clk,
 		rst 			=> rst,
@@ -271,6 +272,6 @@ begin
 		state			=> s_smState
 		
 	);
-	
+	--!TBXINSTANCEEND
 
 end architecture;

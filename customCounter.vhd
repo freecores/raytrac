@@ -32,8 +32,8 @@ entity customCounter is
 		ZEROFLAG	: string := "YES";
 		BACKWARDS	: string := "YES";
 		EQUALFLAG	: string := "NO";	
-		subwidth	: integer := 0;	
-		width 		: integer := 5
+		width 		: integer := 5;
+		subwidth	: integer := 0	
 	);
 	port (
 		clk,rst,go,set : in std_logic;
@@ -47,9 +47,13 @@ end entity;
 
 architecture customCounter_arch of customCounter is 
 
-	
+	--!TBXSTART:COUNTING_REGISTERS
 	signal scount_d, scount_q, sgo : std_logic_vector(width-1 downto 0);
+	--!TBXEND
+	--!TBXSTART:END_OF_BLOCK_FLAG
 	signal seob_flag : std_logic;
+	--!TBXEND
+	
 
 begin
 

@@ -55,13 +55,15 @@ architecture fmul32_arch of fmul32 is
 	end component;	
 
 	--Stage 0 signals
-		
-	signal s0sga,s0sgb,s0zrs,s1sgr,s2sgr:std_logic;
-	signal s0exa,s0exb,s1exp,s2exp:std_logic_vector(7 downto 0);
+	--!TBXSTART:MULT_STAGE0	
+	signal s0sga,s0sgb,s0zrs : std_logic;
 	signal s0exp : std_logic_vector(7 downto 0);
-	signal s0uma,s0umb:std_logic_vector(22 downto 0);
+	signal s0uma,s0umb : std_logic_vector(22 downto 0);
+	signal s0ac : std_logic_vector(35 downto 0);
+	--!TBXEND
+	signal s1sgr,s2sgr:std_logic;
+	signal s0exa,s0exb,s1exp,s2exp:std_logic_vector(7 downto 0);
 	signal s0ad,s0bc,s1ad,s1bc:std_logic_vector(23 downto 0);
-	signal s0ac:std_logic_vector(35 downto 0);
 	
 	
 	signal s1ac,s1umu:std_logic_vector(35 downto 0);

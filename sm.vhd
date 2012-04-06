@@ -28,17 +28,12 @@ use ieee.std_logic_unsigned.all;
 use work.arithpack.all;
 
 entity sm is
-	generic (
-		width : integer := 32;
-		widthadmemblock : integer := 9
-		--!external_readable_widthad : 				
-	);
 	port (
 		
 		--! Se&ntilde;ales normales de secuencia.
 		clk,rst:			in std_logic;
 		--! Vector con las instrucción codficada
-		instrQq:in std_logic_vector(width-1 downto 0);
+		instrQq:in std_logic_vector(floatwidth-1 downto 0);
 		--! Señal de cola vacia.
 		instrQ_empty:in std_logic;
 		
@@ -101,32 +96,92 @@ begin
 
 
 	--! Bloques asignados en la instrucci´øn
-	s_block_start_a <= instrQq(width-4 downto width-8);
-	s_block_end_a <= instrQq(width-9 downto width-13);
+	s_block_start_a <= instrQq(floatwidth-4 downto floatwidth-8);
+	s_block_end_a <= instrQq(floatwidth-9 downto floatwidth-13);
 	
-	s_block_start_b <= instrQq(width-14 downto width-18);
-	s_block_end_b <= instrQq(width-19 downto width-23);
+	s_block_start_b <= instrQq(floatwidth-14 downto floatwidth-18);
+	s_block_end_b <= instrQq(floatwidth-19 downto floatwidth-23);
 	
 	--! Campo que define si la instrucción es combinatoria
-	s_combinatory <= instrQq(width-24);
+	s_combinatory <= instrQq(floatwidth-24);
 	
 	--! Campo que define cuantos clocks debe esperar el sistema, despues de que se ejecuta una instrucción, para que el pipeline aritmético quede vacio.
-	s_delay_field <= instrQq(width-25 downto width-32);
+	s_delay_field <= instrQq(floatwidth-25 downto floatwidth-32);
 	
 	--! UCA code, código con la instrucción a ejecutar. 
 	s_instr_uca <= instrQq(31 downto 29);
 	
 	--! Address Counters
+	--!TBXINSTANCESTART
 	counterA:customCounter
-	generic map ("YES","NO","NO","YES",4,9)
-	port map (clk,rst,s_go_a,s_set_a,s_block_start_a,s_block_end_a,open,s_eb_a,s_eq_a,adda);
+	generic map (
+		EOBFLAG => "YES",
+		ZEROFLAG => "NO",
+		BACKWARDS => "NO",
+		EQUALFLAG => "YES",
+		subwidth => 4,
+		width => 9
+	)
+	port map (
+		clk => clk,
+		rst => rst,
+		go => s_go_a,
+		set => s_set_a,
+		setValue => s_block_start_a,
+		cmpBlockValue => s_block_end_a,
+		zero_flag => open,
+		eob_flag => s_eb_a,
+		eq_flag => s_eq_a,
+		count => adda
+	);
+	--!TBXINSTANCEEND
+	--!TBXINSTANCESTART
 	counterB:customCounter
-	generic map ("YES","NO","NO","YES",4,9)
-	port map (clk,rst,s_go_b,s_set_b,s_block_start_b,s_block_end_b,open,s_eb_b,s_eq_b,addb);
+	generic map (
+		EOBFLAG => "YES",
+		ZEROFLAG => "NO",
+		BACKWARDS => "NO",
+		EQUALFLAG => "YES",
+		subwidth => 4,
+		width => 9
+	)
+	port map (
+		clk => clk,
+		rst => rst,
+		go => s_go_b,
+		set => s_set_b,
+		setValue => s_block_start_b,
+		cmpBlockValue => s_block_end_b,
+		zero_flag => open,
+		eob_flag => s_eb_b,
+		eq_flag => s_eq_b,
+		count => addb
+	);
+	--!TBXINSTANCEEND
+	--!TBXINSTANCESTART
 	counterDly:customCounter
-	generic map("NO","YES","YES","NO",0,5)
-	port map (clk,rst,s_go_delay,s_set_dly,s_delay_field(4 downto 0),"00000",s_zeroFlag_delay,open,open,open);
-	
+	generic map(
+		EOBFLAG => "NO",
+		ZEROFLAG => "YES",
+		BACWARDS => "YES",
+		EQUALFLAG => "NO",
+		width =>   5,
+		subwidth => 0
+		
+	)
+	port map (
+		clk => clk,
+		rst => rst,
+		go => s_go_delay,
+		set => s_set_dly,
+		setValue => s_delay_field(4 downto 0),
+		cmpBlockValue => "00000",
+		zero_flag => s_zeroFlag_delay,
+		eob_flag => open,
+		eq_flag => open,
+		count => open
+	);
+	--!TBXINSTANCEEND
 	
 	sm_comb:
 	process (s_state, full_r,s_eb_b,s_combinatory,s_zeroFlag_delay,s_eq_b,s_eb_a,s_eq_a,instrQ_empty)

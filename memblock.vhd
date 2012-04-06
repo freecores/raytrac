@@ -1,5 +1,5 @@
 --! @file memblock.vhd
---! @brief Bloque de memoria. 
+--! @brief Bloque de memoria.
 --! @author Juli&aacute;n Andr&eacute;s Guar&iacute;n Reyes
 --------------------------------------------------------------
 -- RAYTRAC
@@ -27,9 +27,8 @@ use work.arithpack.all;
 entity memblock is 
 	generic (
 		
-		width : integer := 32;
 		blocksize : integer := 512;
-		widthadmemblock : integer :=9;		
+			
 		external_writeable_blocks : integer := 12;
 		external_readable_blocks  : integer := 8;
 		external_readable_widthad	: integer := 3;				
@@ -44,43 +43,55 @@ entity memblock is
 		ext_rd,ext_wr: in std_logic;
 		ext_wr_add : in std_logic_vector(external_writeable_widthad+widthadmemblock-1 downto 0);		
 		ext_rd_add : in std_logic_vector(external_readable_widthad-1 downto 0);
-		ext_d: in std_logic_vector(width-1 downto 0);
+		ext_d: in std_logic_vector(floatwidth-1 downto 0);
 		resultfifo_full  : out std_logic_vector(3 downto 0);
-		int_d : in std_logic_vector(external_readable_blocks*width-1 downto 0);
-		ext_q,instrfifo_q : out std_logic_vector(width-1 downto 0);
-		int_q : out std_logic_vector(external_writeable_blocks*width-1 downto 0);
+		int_d : in std_logic_vector(external_readable_blocks*floatwidth-1 downto 0);
+		
+		--!Python
+		ext_q,instr fifo_q : out std_logic_vector(floatwidth-1 downto 0);
+		int_q : out std_logic_vector(external_writeable_blocks*floatwidth-1 downto 0);
 		int_rd_add : in std_logic_vector(2*widthadmemblock-1 downto 0);
-		dpfifo_d : in std_logic_vector(width*2-1 downto 0);
-		normfifo_d : in std_logic_vector(width*3-1 downto 0);
-		dpfifo_q : out std_logic_vector(width*2-1 downto 0);
-		normfifo_q : out std_logic_vector(width*3-1 downto 0)
+		dpfifo_d : in std_logic_vector(floatwidth*2-1 downto 0);
+		normfifo_d : in std_logic_vector(floatwidth*3-1 downto 0);
+		dpfifo_q : out std_logic_vector(floatwidth*2-1 downto 0);
+		normfifo_q : out std_logic_vector(floatwidth*3-1 downto 0)
 	);
 end memblock;
 
 architecture memblock_arch of memblock is 
 
-	type	vectorblock12 is array (11 downto 0) of std_logic_vector(width-1 downto 0);
-	type	vectorblock08 is array (07 downto 0) of std_logic_vector(width-1 downto 0);
-	type	vectorblock02 is array (01 downto 0) of std_logic_vector(widthadmemblock-1 downto 0);
 	
 	
 	
 	
-	signal s0ext_wr_add_one_hot : std_logic_vector(external_writeable_blocks-1+1 downto 0); --! La se &ntilde;al extra es para la escritura de la cola de instrucciones.
+	--!TBXSTART:MEMBLOCK_EXTERNAL_WRITE
+	signal s0ext_wr_add_one_hot : std_logic_vector(external_writeable_blocks-1+1 downto 0); --! La se&ntilde;al extra es para la escritura de la cola de instrucciones.
 	signal s0ext_wr_add			: std_logic_vector(external_writeable_widthad+widthadmemblock-1 downto 0);
+	signal s0ext_wr				: std_logic;
+	signal s0ext_d				: std_logic_vector(floatwidth-1 downto 0);
+	--!TBXEND
+	
+	--!TBXSTART:MEMBLOCK_EXTERNAL_READ
 	signal s0ext_rd_add			: std_logic_vector(external_readable_widthad-1 downto 0);
-	signal s0int_rd_add			: std_logic_vector(widthadmemblock-1 downto 0);
-	signal s0ext_wr,s0ext_rd	: std_logic;
-	signal s0ext_d				: std_logic_vector(width-1 downto 0);
+	signal s0ext_rd				: std_logic;
 	signal s0ext_rd_ack			: std_logic_vector(external_readable_blocks-1 downto 0);
-	signal s0ext_q,sint_d		: vectorblock08;
-	signal sint_rd_add			: vectorblock02;
+	signal s0ext_q				: vectorblock08;
+	--!TBXEND
+	
+	--!TBXSTART:MEMBLOCK_INTERNAL_READ
+	signal s0int_rd_add			: std_logic_vector(widthadmemblock-1 downto 0);
+	signal sint_rd_add			: vectorblockadd02;
 	signal s1int_q				: vectorblock12;
+	--!TBXEND
+	
+	--!TBXSTART:MEMBLOCK_INTERNAL_WRITE
+	signal sint_d				: vectorblock08;
 	signal sresultfifo_full		: std_logic_vector(7 downto 0);
+	--!TBXEND
 
 begin 
 
-	--! Cola interna de producto punto, ubicada entre el pipe line aritm&eacute;co. 
+	--! Cola interna de producto cccccpunto, ubicada entre el pipe line aritm&eacute;co. 
 	q0q1 : scfifo --! Debe ir registrada la salida.
 	generic map (
 		add_ram_output_register	=> "OFF",
@@ -107,7 +118,7 @@ begin
 		data		=> dpfifo_d
 	);
 	
-	--! Cola interna de normalizaci&oacute;n de vectores, ubicada entre el pipeline aritm&eacute
+	--! Cola interna de normalizaci&oacute;n de vectores, ubicada entre el pipeline aritm&eacute;tico
 	qxqyqz : scfifo
 	generic map (
 		add_ram_output_register => "OFF",
@@ -171,7 +182,7 @@ begin
 	--! Instanciaci&oacute;n de la cola de resultados de salida.
 	operands_blocks: 
 	for i in 11 downto 0 generate
-		int_q((i+1)*width-1 downto width*i) <= s1int_q(i);
+		int_q((i+1)*floatwidth-1 downto floatwidth*i) <= s1int_q(i);
 		operandsblock : altsyncram
 		generic map (
 			address_aclr_b 						=> "NONE",
@@ -192,8 +203,8 @@ begin
 			read_during_write_mode_mixed_ports	=> "OLD_DATA",
 			widthad_a							=> widthadmemblock,
 			widthad_b							=> widthadmemblock,
-			width_a								=> width,
-			width_b								=> width,
+			width_a								=> floatwidth,
+			width_b								=> floatwidth,
 			width_byteena_a						=> 1
 		)
 		port map (
@@ -214,7 +225,7 @@ begin
 	resultfifo_full(0) <= sresultfifo_full(0);  
 	results_blocks: 
 	for i in 7 downto 0 generate
-		sint_d(i) <= int_d((i+1)*width-1 downto i*width);
+		sint_d(i) <= int_d((i+1)*floatwidth-1 downto i*floatwidth);
 		resultsfifo : scfifo
 		generic map	(
 			add_ram_output_register => "OFF",

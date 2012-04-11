@@ -34,7 +34,7 @@ entity invr32 is
 		dvd32	: in std_logic_vector(31 downto 0);		
 		qout32	: out std_logic_vector(31 downto 0)
 	);
-end invr32;
+end entity;
 architecture invr32_arch of invr32 is 
 
 	component altsyncram
@@ -125,4 +125,4 @@ begin
 	end process;
 	qout32(6 downto 0) <= (others => '0');
 
-end invr32_arch;
+end architecture;

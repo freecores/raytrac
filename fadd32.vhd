@@ -36,7 +36,7 @@ entity fadd32 is
 		a32,b32	: in std_logic_vector (31 downto 0);
 		c32		: out std_logic_vector(31 downto 0)
 	);
-end fadd32;
+end entity;
 architecture fadd32_arch of fadd32 is
 	
 	component lpm_mult 
@@ -256,6 +256,6 @@ begin
 	
 	
 	
-end fadd32_arch;
+end architecture;
 
 	

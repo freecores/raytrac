@@ -163,7 +163,7 @@ begin
 	generic map(
 		EOBFLAG => "NO",
 		ZEROFLAG => "YES",
-		BACWARDS => "YES",
+		BACKWARDS => "YES",
 		EQUALFLAG => "NO",
 		width =>   5,
 		subwidth => 0

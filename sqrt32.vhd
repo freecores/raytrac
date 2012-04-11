@@ -34,7 +34,7 @@ entity sqrt32 is
 		rd32: in std_logic_vector(31 downto 0);		
 		sq32: out std_logic_vector(31 downto 0)
 	);
-end sqrt32;
+end entity;
 architecture sqrt32_arch of sqrt32 is 
 
 	component altsyncram
@@ -111,4 +111,4 @@ begin
 	)
 	port map (rden_a => '1', clock0 => clk, address_a => rd32(23 downto 14), q_a => s0q);
 
-end sqrt32_arch;
+end architecture;

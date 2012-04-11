@@ -111,55 +111,49 @@ begin
 	mul_i_0 : fmul32 
 	port map (
 		clk => clk,
-		dpc => dpc,
-		a32 => a( 95	downto 64),
-		b32 => a( 127	downto 96),
-		c32 => s( 63	downto 32)
+		a32 => f( 31	downto 0),
+		b32 => f( 63	downto 32),
+		p32 => p( 31	downto 0)
 	);
 	--!TBXINSTANCESTART
 	mul_i_1 : fmul32 
 	port map (
 		clk => clk,
-		dpc => dpc,
-		a32 => a( 159	downto 128),
-		b32 => a( 191	downto 160),
-		c32 => s( 95	downto 64)
+		a32 => f( 95	downto 64),
+		b32 => f( 127	downto 96),
+		p32 => p( 63	downto 32)
 	);
 	--!TBXINSTANCESTART
 	mul_i_2 : fmul32 
 	port map (
 		clk => clk,
-		dpc => dpc,
-		a32 => a( 223	downto 192),
-		b32 => a( 255	downto 224),
-		c32 => s( 127	downto 96)
+		a32 => f( 159	downto 128),
+		b32 => f( 191	downto 160),
+		p32 => p( 95	downto 64)
 	);
 	--!TBXINSTANCESTART
 	mul_i_3 : fmul32 
 	port map (
 		clk => clk,
-		dpc => dpc,
-		a32 => a( 95	downto 64),
-		b32 => a( 127	downto 96),
-		c32 => s( 63	downto 32)
+		a32 => f( 223	downto 192),
+		b32 => f( 255	downto 224),
+		p32 => p( 127	downto 96)
 	);
 	--!TBXINSTANCESTART
 	mul_i_4 : fmul32 
 	port map (
 		clk => clk,
-		dpc => dpc,
-		a32 => a( 159	downto 128),
-		b32 => a( 191	downto 160),
-		c32 => s( 95	downto 64)
+		a32 => f( 287	downto 256),
+		b32 => f( 319	downto 288),
+		p32 => p( 159	downto 128)
 	);
 	--!TBXINSTANCESTART
 	mul_i_5 : fmul32 
 	port map (
 		clk => clk,
-		dpc => dpc,
-		a32 => a( 223	downto 192),
-		b32 => a( 255	downto 224),
-		c32 => s( 127	downto 96)
+		a32 => f( 351	downto 320),
+		b32 => f( 383	downto 352),
+		p32 => p( 191	downto 160)
 	);
 	
 	

@@ -33,7 +33,7 @@ entity fmul32 is
 		p32			: out std_logic_vector(31 downto 0)
 		
 	);
-end fmul32;
+end entity;
 architecture fmul32_arch of fmul32 is 
 
 	
@@ -148,4 +148,4 @@ begin
 	
 	
 	
-end fmul32_arch;
+end architecture;

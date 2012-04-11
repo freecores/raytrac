@@ -51,7 +51,7 @@ entity dpc is
 		resf_event				: out	std_logic;									--! Salida decodificada que indica que la cola de resultados de la operaci&oacute;n que est&aacute; en curso.
 		resultoutput			: out	std_logic_vector ((08*floatwidth)-1 downto 0) 	--! 8 salidas de resultados, pues lo m&aacute;ximo que podr&aacute; calcularse por cada clock son 2 vectores. 
 	);
-end dpc;
+end entity;
 
 architecture dpc_arch of dpc is 
 	
@@ -348,4 +348,4 @@ begin
 	
 	
 	
-end dpc_arch;
+end architecture;

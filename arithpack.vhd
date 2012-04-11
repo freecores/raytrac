@@ -1,5 +1,10 @@
 library ieee;
 use ieee.std_logic_1164.all;
+use ieee.std_logic_arith.all;
+use ieee.math_real.all;
+
+library std;
+use std.textio.all;
 
 --! Memory Compiler Library
 library lpm;
@@ -24,6 +29,9 @@ package arithpack is
 	type	vectorblock03 is array (02 downto 0) of std_logic_vector(floatwidth-1 downto 0);
 	type	vectorblock02 is array (01 downto 0) of std_logic_vector(floatwidth-1 downto 0);
 	type	vectorblockadd02 is array (01 downto 0) of std_logic_vector(widthadmemblock-1 downto 0);
+	
+	type	v3f	is array(02 downto 0) of std_logic_vector(31 downto 0);
+	
 	
 	
 	--! Constante de reseteo
@@ -301,5 +309,120 @@ package arithpack is
 		qout32	: out std_logic_vector(31 downto 0)
 	);
 	end component;
-end package;
 	
+	
+	
+	
+	type apCamera is record
+		resx,resy : integer;
+		width,height : real;
+		dist : real;
+	end record;
+	
+	--! Funci&oacute;n que convierte un std_logic_vector en un numero entero
+	function ap_slv2int(sl:std_logic_vector) return integer;
+	
+	--! Funci&oacute;n que convierte un n&uacute;mero flotante IEE754 single float, en un n&uacute;mero std_logic_vector.
+	function ap_fp2slv (f:real) return std_logic_vector;
+	
+	--! Funci&oacute;n que convierte un n&uacute;mero std_logic_vector en un ieee754 single float.
+	function ap_slv2fp (sl:std_logic_vector) return real;
+	
+	--! Funci&oacute;n que devuelve un vector en punto flotante IEEE754 a trav&eacute;s de un   
+	function ap_slv_calc_xyvec (x,y:integer; cam:apCamera) return v3f;
+	
+	
+	
+	
+	
+end package;
+
+
+package body arithpack is
+
+	function ap_slv2int (sl:std_logic_vector) return integer is
+		alias s : std_logic_vector (sl'high downto sl'low) is sl;
+		variable i : integer; 
+	begin
+		i:=0;
+		for index in s'high downto s'low loop
+			if s(index)='1' then
+				i:=i*2+1;
+			else
+				i:=i*2;
+			end if;
+		end loop;
+		return i;
+			
+	end function;
+	function ap_fp2slv (f:real) return std_logic_vector is
+		variable faux : real;
+		variable sef : std_logic_vector (31 downto 0);
+	begin
+		--! Signo
+		if (f<0.0) then
+			sef(31) := '1';
+		else
+			sef(31) := '0';
+		end if;
+		
+		--! Exponente
+		sef(30 downto 23) := conv_std_logic_vector(integer(floor(log(f,2.0))),8);
+		
+		--! Fraction
+		faux :=f/floor(log(f,2.0));
+		faux := faux - 1.0;
+		
+		sef(22 downto 0)  := conv_std_logic_vector(integer(faux),23);
+		
+		return sef;				
+		 
+	end function;
+
+	function ap_slv2fp(sl:std_logic_vector) return real is
+		variable expo,frc:integer;
+		alias s: std_logic_vector(31 downto 0) is sl;
+		variable f: real;
+		
+	begin
+		
+		
+		expo:=ap_slv2int(s(30 downto 23)) - 127;
+		expo:=2**expo;
+		frc:=ap_slv2int('1'&s(22 downto 0));
+		f:=real(frc)*(2.0**(-23.0));
+		f:=f*real(expo);
+		
+		if s(31)='1' then
+			return -f;
+		else
+			return f;
+		end if; 
+		
+		
+	end function;
+
+	function ap_slv_calc_xyvec (x,y:integer; cam:apCamera) return v3f is
+	
+		
+		variable dx,dy : real;
+		variable v : v3f;
+	begin
+	
+		dx := cam.width/real(cam.resx);
+		dy := cam.height/real(cam.resy);
+		
+		--! Eje X: Tomando el dedo &iacute;ndice de la mano derecha, este eje queda apuntando en la direcci&on en la que mira la c&aacute;mara u observador siempre.
+		v(0):=ap_fp2slv(cam.dist);
+		
+		--! Eje Y: Tomando el dedo coraz&oacute;n de la mano derecha, este eje queda apuntando a la izquierda del observador, desde el observador.
+		v(1):=ap_fp2slv(dx*real(cam.resx)*0.5-dx*0.5);
+		
+		--! Eje Z: Tomando el dedo pulgar de la mano derecha, este eje queda apuntando hacia arriba del observador, desde el observador.
+		v(2):=ap_fp2slv(dy*real(cam.resy)*0.5-dy*0.5);
+		
+		return v;
+	
+	end function;
+
+end package body;

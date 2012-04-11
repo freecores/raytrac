@@ -48,7 +48,7 @@ entity memblock is
 		int_d : in std_logic_vector(external_readable_blocks*floatwidth-1 downto 0);
 		
 		--!Python
-		ext_q,instr fifo_q : out std_logic_vector(floatwidth-1 downto 0);
+		ext_q,instrfifo_q : out std_logic_vector(floatwidth-1 downto 0);
 		int_q : out std_logic_vector(external_writeable_blocks*floatwidth-1 downto 0);
 		int_rd_add : in std_logic_vector(2*widthadmemblock-1 downto 0);
 		dpfifo_d : in std_logic_vector(floatwidth*2-1 downto 0);
@@ -56,7 +56,7 @@ entity memblock is
 		dpfifo_q : out std_logic_vector(floatwidth*2-1 downto 0);
 		normfifo_q : out std_logic_vector(floatwidth*3-1 downto 0)
 	);
-end memblock;
+end entity;
 
 architecture memblock_arch of memblock is 
 
@@ -332,5 +332,5 @@ begin
 			when others => s0ext_rd_ack <= s0ext_rd&"000"&x"0";
 		end case;	
 	end process;
-end memblock_arch;
+end architecture;
 

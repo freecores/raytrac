@@ -112,6 +112,23 @@ package arithpack is
 	);
 	end component;
 	
+	--! LPM_MULTIPLIER
+	component lpm_mult 
+	generic (
+		lpm_hint			: string;
+		lpm_pipeline		: natural;
+		lpm_representation	: string;
+		lpm_type			: string;
+		lpm_widtha			: natural;
+		lpm_widthb			: natural;
+		lpm_widthp			: natural
+	);
+	port (
+		dataa	: in std_logic_vector ( lpm_widtha-1 downto 0 );
+		datab	: in std_logic_vector ( lpm_widthb-1 downto 0 );
+		result	: out std_logic_vector( lpm_widthp-1 downto 0 )
+	);
+	end component;	
 	--! LPM Memory Compiler.
 	component scfifo
 	generic (
@@ -331,7 +348,11 @@ package arithpack is
 	--! Funci&oacute;n que devuelve un vector en punto flotante IEEE754 a trav&eacute;s de un   
 	function ap_slv_calc_xyvec (x,y:integer; cam:apCamera) return v3f;
 	
+	--! Funci&oacute;n que devuelve una cadena con el n&uacute;mero flotante IEEE 754.
+	function ap_slvf2string(sl:std_logic_vector) return string;
 	
+	--! Funci&oacute;n para escribir en una sola l&iacute;nea una cadena de caracteres.
+	procedure ap_print(f:in text;s:in string);
 	
 	
 	
@@ -339,6 +360,13 @@ end package;
 
 
 package body arithpack is
+
+	procedure ap_print(f:in text;s:in string) is
+		variable l:line;
+	begin
+		write(l,s);
+		writeline(f,l);
+	end procedure
 
 	function ap_slv2int (sl:std_logic_vector) return integer is
 		alias s : std_logic_vector (sl'high downto sl'low) is sl;
@@ -424,5 +452,19 @@ package body arithpack is
 		return v;
 	
 	end function;
+	
+	function ap_slvf2string(sl:std_logic_vector) return string is 
+		alias f: std_logic_vector(31 downto 0) is sl;
+		variable r: real;
+		
+	begin 
+		
+		r:=ap_slv2fp(f);
+		return real'image(r);
+		
+	end function;   
+	
+	
+	
 
 end package body;

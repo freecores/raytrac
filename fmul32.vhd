@@ -25,6 +25,9 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
+use work.arithpack.all;
+
+
 entity fmul32 is
 	
 	port (
@@ -37,23 +40,7 @@ end entity;
 architecture fmul32_arch of fmul32 is 
 
 	
-	component lpm_mult 
-	generic (
-		lpm_hint			: string;
-		lpm_pipeline		: natural;
-		lpm_representation	: string;
-		lpm_type			: string;
-		lpm_widtha			: natural;
-		lpm_widthb			: natural;
-		lpm_widthp			: natural
-	);
-	port (
-		dataa	: in std_logic_vector ( lpm_widtha-1 downto 0 );
-		datab	: in std_logic_vector ( lpm_widthb-1 downto 0 );
-		result	: out std_logic_vector ( lpm_widthp-1 downto 0 )
-	);
-	end component;	
-
+	
 	--Stage 0 signals
 	--!TBXSTART:MULT_STAGE0	
 	signal s0sga,s0sgb,s0zrs : std_logic;
@@ -114,14 +101,50 @@ begin
 	
 	--! Multipliers
 	mult18x18ac:lpm_mult
-	generic	map ("DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9",0,"UNSIGNED","LPM_MULT",18,18,36)
-	port 	map (s0zrs&s0uma(22 downto 6),s0zrs&s0umb(22 downto 6),s0ac);
+	generic	map (
+		lpm_hint => "DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9",
+		lpm_pipeline => 0,
+		lpm_representation => "UNSIGNED",
+		lpm_type => "LPM_MULT",
+		lpm_widtha => 18,
+		lpm_widthb => 18,
+		lpm_widthp => 36
+	)
+	port map (
+		dataa => s0zrs&s0uma(22 downto 6),
+		datab => s0zrs&s0umb(22 downto 6),
+		result => s0ac
+	);
 	mult18x6ad:lpm_mult
-	generic	map ("DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9",0,"UNSIGNED","LPM_MULT",18,6,24)
-	port 	map (s0zrs&s0uma(22 downto 6),s0umb(5 downto 0),s0ad);
+	generic	map (
+		lpm_hint => "DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9",
+		lpm_pipeline => 0,
+		lpm_representation => "UNSIGNED",
+		lpm_type => "LPM_MULT",
+		lpm_widtha => 18,
+		lpm_widthb => 6,
+		lpm_widthp => 24
+	)
+	port map (
+		dataa => s0zrs&s0uma(22 downto 6),
+		datab => s0umb(5 downto 0),
+		result => s0ad
+	);
 	mult18x6bc:lpm_mult
-	generic	map ("DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9",0,"UNSIGNED","LPM_MULT",18,6,24)
-	port 	map (s0zrs&s0umb(22 downto 6),s0uma(5 downto 0),s0bc);
+	generic	map (
+		lpm_hint => "DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9",
+		lpm_pipeline => 0,
+		lpm_representation => "UNSIGNED",
+		lpm_type => "LPM_MULT",
+		lpm_widtha => 18,
+		lpm_widthb => 6,
+		lpm_widthp => 24
+	)
+	port map (
+		dataa => s0zrs&s0umb(22 downto 6),
+		datab => s0uma(5 downto 0),
+		result => s0bc
+	);
 	
 	--! Exponent Addition 
 	process (s0sga,s0sgb,s0exa,s0exb)

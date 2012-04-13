@@ -25,8 +25,9 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
-library lpm;
-use lpm.all;
+
+use work.arithpack.all;
+
 --! Esta entidad recibe dos n&uacutemeros en formato punto flotante IEEE 754, de precision simple y devuelve las mantissas signadas y corridas, y el exponente correspondiente al resultado antes de normalizarlo al formato float. 
 --!\nLas 2 mantissas y el exponente entran despues a la entidad add2 que suma las mantissas y entrega el resultado en formato IEEE 754.
 entity fadd32 is
@@ -39,21 +40,7 @@ entity fadd32 is
 end entity;
 architecture fadd32_arch of fadd32 is
 	
-	component lpm_mult 
-	generic (
-		lpm_hint			: string;
-		lpm_representation	: string;
-		lpm_type			: string;
-		lpm_widtha			: natural;
-		lpm_widthb			: natural;
-		lpm_widthp			: natural
-	);
-	port (
-		dataa	: in std_logic_vector ( lpm_widtha-1 downto 0 );
-		datab	: in std_logic_vector ( lpm_widthb-1 downto 0 );
-		result	: out std_logic_vector( lpm_widthp-1 downto 0 )
-	);
-	end component;	
+	
 	
 	signal s1zero,s7sign											: std_logic;
 	--!TBXSTART:STAGE5
@@ -173,11 +160,35 @@ begin
 		end case;
 	end process;
 	denormhighshiftermult:lpm_mult
-	generic	map ("DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9","UNSIGNED","LPM_MULT",9,18,27)
-	port 	map (s1shifter,s1zero&s1umantshift(22 downto 06),s1ph);	
+	generic	map (
+		lpm_hint => "DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9",
+		lpm_pipeline => 0,
+		lpm_representation => "UNSIGNED",
+		lpm_type => "LPM_MULT",
+		lpm_widtha => 9,
+		lpm_widthb => 18,
+		lpm_widthp => 27
+	)
+	port map (
+		dataa => s1shifter,
+		datab => s1zero&s1umantshift(22 downto 06),
+		result => s1ph
+	);	
 	denormlowshiftermult:lpm_mult
-	generic	map ("DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9","UNSIGNED","LPM_MULT",9,9,18)
-	port 	map (s1shifter,s1umantshift(5 downto 0)&"000",s1pl);	
+	generic map (
+		lpm_hint => "DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9",
+		lpm_pipeline => 0,
+		lpm_representation => "UNSIGNED",
+		lpm_type => "LPM_MULT",
+		lpm_widtha => 9,
+		lpm_widthb => 9,
+		lpm_widthp => 18
+	)
+	port map (
+		dataa => s1shifter,
+		datab => s1umantshift(5 downto 0)&"000",
+		result => s1pl
+	);	
 	
 	s1postshift(23 downto 7) <= s1ph(25 downto 9);
 	s1postshift(06 downto 0) <= s1ph(08 downto 2) or s1pl(17 downto 11);
@@ -243,11 +254,35 @@ begin
 	
 	--! Etapa 6: Ejecutar el corrimiento para normalizar la mantissa.
 	normhighshiftermult:lpm_mult
-	generic map ("DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9","UNSIGNED","LPM_MULT",9,18,27)
-	port 	map (s6factorhot9,s6result(24 downto 7),s6ph);
+	generic map (
+		lpm_hint => "DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9",
+		lpm_pipeline => 0,
+		lpm_representation => "UNSIGNED",
+		lpm_type => "LPM_MULT",
+		lpm_widtha => 9,
+		lpm_widthb => 18,
+		lpm_widthp => 27
+	)
+	port map (
+		dataa => s6factorhot9,
+		datab => s6result(24 downto 7),
+		result => s6ph
+	);
 	normlowshiftermult:lpm_mult
-	generic map ("DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9","UNSIGNED","LPM_MULT",9,9,18)
-	port 	map (s6factorhot9,s6result(06 downto 0)&"00",s6pl);
+	generic map (
+		lpm_hint => "DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9",
+		lpm_pipeline => 0,
+		lpm_representation => "UNSIGNED",
+		lpm_type => "LPM_MULT",
+		lpm_widtha => 9,
+		lpm_widthb => 9,
+		lpm_widthp => 18
+	)
+	port map (
+		dataa => s6factorhot9,
+		datab => s6result(06 downto 0)&"00",
+		result => s6pl
+	);
 	s6postshift(22 downto 15) <= s6ph(16 downto 09);
 	s6postshift(14 downto 06) <= s6ph(08 downto 00) + s6pl(17 downto 09);
 	s6postshift(05 downto 00) <= s6pl(08 downto 03); 

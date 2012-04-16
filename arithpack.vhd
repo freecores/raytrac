@@ -22,15 +22,23 @@ package arithpack is
 	constant floatwidth : integer := 32;
 	constant widthadmemblock : integer := 9;
 	
-	type	vectorblock12 is array (11 downto 0) of std_logic_vector(floatwidth-1 downto 0);
-	type	vectorblock08 is array (07 downto 0) of std_logic_vector(floatwidth-1 downto 0);
+	
+	subtype	xfloat32 is std_logic_vector(31 downto 0);
+	type	v3f	is array(02 downto 0) of xfloat32;
+	
+	--! Constantes para definir 
+	
+	--!type	vectorblock12 is array (11 downto 0) of std_logic_vector(floatwidth-1 downto 0);
+	type	vectorblock12 is array (11 downto 0) of xfloat32;
+	
+	type	vectorblock08 is array (07 downto 0) of xfloat32;
 	type	vectorblock06 is array (05 downto 0) of std_logic_vector(floatwidth-1 downto 0);
 	type	vectorblock04 is array (03 downto 0) of std_logic_vector(floatwidth-1 downto 0);
 	type	vectorblock03 is array (02 downto 0) of std_logic_vector(floatwidth-1 downto 0);
 	type	vectorblock02 is array (01 downto 0) of std_logic_vector(floatwidth-1 downto 0);
 	type	vectorblockadd02 is array (01 downto 0) of std_logic_vector(widthadmemblock-1 downto 0);
 	
-	type	v3f	is array(02 downto 0) of std_logic_vector(31 downto 0);
+	
 	
 	
 	
@@ -348,25 +356,127 @@ package arithpack is
 	--! Funci&oacute;n que devuelve un vector en punto flotante IEEE754 a trav&eacute;s de un   
 	function ap_slv_calc_xyvec (x,y:integer; cam:apCamera) return v3f;
 	
-	--! Funci&oacute;n que devuelve una cadena con el n&uacute;mero flotante IEEE 754.
+	--! Funci&oacute;n que devuelve una cadena con el n&uacute;mero flotante IEEE 754 &oacute; a una cadena de cifras hexadecimales.
 	function ap_slvf2string(sl:std_logic_vector) return string;
+	function ap_slv2hex (s:std_logic_vector) return string;
+	--! Funci&oacute;n que devuelve una cadena con el estado de macState.
+	function ap_macState2string(s:macState) return string;
 	
-	--! Funci&oacute;n para escribir en una sola l&iacute;nea una cadena de caracteres.
-	procedure ap_print(f:in text;s:in string);
+	--! Funci&oacute;n que devuelve la cadena de caracteres de 8 datos en punto flotante IEEE 754.
+	function ap_vblk082string(v8:vectorblock08) return string;
 	
+	--! Funci&oacute;n que devuelve la cadena de caracteres de 12 datos en punto flotante IEEE 754.
+	function ap_vblk122string(v12:vectorblock12) return string;
 	
+	--! Funci&oacute;n que convierte un array de 2 std_logic_vectors que contienen un par de direcciones en string
+	function ap_vnadd022string(va2:vectorblockadd02) return string;
 	
+	--! Funci&oacute;n que devuelve una cadena de caracteres con el estado de la maquina de estados que controla las interrupciones
+	function ap_iCtrlState2string(i:iCtrlState) return string;	
+	
+	--! Funci&oacute;n que devuelve una cadena con los componentes de un vector R3 en punto flotante IEEE754	
+	function ap_v3f2string(v:v3f) return string;
+	 
 end package;
 
 
 package body arithpack is
 
-	procedure ap_print(f:in text;s:in string) is
-		variable l:line;
+	function ap_v3f2string(v:v3f) return string is
+		variable tmp:string;
 	begin
-		write(l,s);
-		writeline(f,l);
-	end procedure
+		tmp:="[X]"&ap_slvf2string(v(0))&"[Y]"&ap_slvf2string(v(1))&"[Z]"&ap_slvf2string(v(2));
+		return tmp;
+	end function;
+
+	function ap_iCtrlState2string(i:iCtrlState) return string is
+	
+		variable tmp:string;
+	
+	begin
+	
+		case i is 
+			when WAITING_FOR_AN_EVENT =>
+				tmp:="WAIT_EVNT";
+			when FIRING_INTERRUPTIONS => 
+				tmp:="FIRE_INTx";
+			when SUSPEND => 
+				tmp:="SUSPENDED";
+			when others => 
+				tmp:="Pandora Box Opened -- Illegal iCtrlState value";
+		end case;
+		
+		return tmp;
+		
+	end function;
+	
+	function ap_vnadd022string(va2:vectorblockadd02) return string is
+		variable tmp:string;
+	begin
+		tmp:="[01]"&ap_slv2hex(va2(1))&" [00]"&ap_slv2hex(va2(0));
+		return tmp;
+	end function;
+	
+	function ap_vblk122string(v12:vectorblock12) return string is
+		variable tmp:string;
+	begin
+	
+		tmp:="["&integer'image(11)&"]";
+		for i in 11 downto 0 loop
+			tmp:=tmp&ap_slvf2string(v12(i));
+			if i>0 then
+				tmp:=tmp&"["&integer'image(i)&"]";
+			end if;
+		end loop;
+		return tmp;
+			
+	
+	end function;
+	
+	function ap_vblk082string(v8:vectorblock08) return string is
+		variable tmp:string;
+	begin
+	
+		tmp:="["&integer'image(7)&"]";
+		for i in 7 downto 0 loop
+			tmp:=tmp&ap_slvf2string(v8(i));
+			if i>0 then
+				tmp:=tmp&"["&integer'image(i)&"]";
+			end if;
+		end loop;
+		return tmp;
+			
+	
+	end function;
+	
+	
+	function ap_macState2string(s:macState) return string is
+		variable tmp:string;
+	begin
+		case s is
+			when LOAD_INSTRUCTION => 
+				tmp:="LD_INS";
+			when FLUSH_ARITH_PIPELINE => 
+				tmp:="FL_ARP";
+			when EXECUTE_INSTRUCTION => 
+				tmp:="EX_INS";
+			when others => 
+				tmp:="macStateException:HELL_ON_EARTH";
+		end case;
+		return tmp;
+	end function;
+	
+	constant hexchars : string (1 to 16) := "0123456789ABCDEF";
+	function ap_slv2hex (s:std_logic_vector) return string is 
+		variable x64 : std_logic_vector(63 downto 0):=x"0000000000000000";
+		variable str : string (1 to 16);
+	begin
+		x64(s'high downto s'low):=s;
+		for i in 15 downto 0 loop
+			str(i+1):=hexchars(1+ieee.std_logic_unsigned.conv_integer(x64(i*4+3 downto i*4)));
+		end loop;
+		return str;	
+	end function;
 
 	function ap_slv2int (sl:std_logic_vector) return integer is
 		alias s : std_logic_vector (sl'high downto sl'low) is sl;

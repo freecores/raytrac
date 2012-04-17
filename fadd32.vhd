@@ -34,8 +34,8 @@ entity fadd32 is
 	
 	port (
 		clk,dpc	: in std_logic;
-		a32,b32	: in std_logic_vector (31 downto 0);
-		c32		: out std_logic_vector(31 downto 0)
+		a32,b32	: in xfloat32;
+		c32		: out xfloat32
 	);
 end entity;
 architecture fadd32_arch of fadd32 is

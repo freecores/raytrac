@@ -32,8 +32,8 @@ entity fmul32 is
 	
 	port (
 		clk 		: in std_logic;
-		a32,b32		: in std_logic_vector(31 downto 0);
-		p32			: out std_logic_vector(31 downto 0)
+		a32,b32		: in xfloat32;
+		p32			: out xfloat32
 		
 	);
 end entity;

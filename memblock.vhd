@@ -29,8 +29,6 @@ entity memblock is
 		
 		blocksize : integer := 512;
 			
-		external_writeable_blocks : integer := 12;
-		external_readable_blocks  : integer := 8;
 		external_readable_widthad	: integer := 3;				
 		external_writeable_widthad	: integer := 4		
 	);
@@ -38,18 +36,18 @@ entity memblock is
 		
 		clk,rst,dpfifo_rd,normfifo_rd,dpfifo_wr,normfifo_wr : in std_logic;
 		instrfifo_rd : in std_logic;
-		resultfifo_wr: in std_logic_vector(external_readable_blocks-1 downto 0);
+		resultfifo_wr: in std_logic_vector(8-1 downto 0);
 		instrfifo_empty: out std_logic; 
 		ext_rd,ext_wr: in std_logic;
-		ext_wr_add : in std_logic_vector(external_writeable_widthad+widthadmemblock-1 downto 0);		
+		ext_wr_add : in std_logic_vector(4+widthadmemblock-1 downto 0);		
 		ext_rd_add : in std_logic_vector(2 downto 0);
 		ext_d: in std_logic_vector(floatwidth-1 downto 0);
 		resultfifo_full  : out std_logic_vector(3 downto 0);
-		int_d : in std_logic_vector(external_readable_blocks*floatwidth-1 downto 0);
+		int_d : in vectorblock08;
 		
 		--!Python
 		ext_q,instrfifo_q : out std_logic_vector(floatwidth-1 downto 0);
-		int_q : out std_logic_vector(external_writeable_blocks*floatwidth-1 downto 0);
+		int_q : out vectorblock12; 
 		int_rd_add : in std_logic_vector(2*widthadmemblock-1 downto 0);
 		dpfifo_d : in std_logic_vector(floatwidth*2-1 downto 0);
 		normfifo_d : in std_logic_vector(floatwidth*3-1 downto 0);
@@ -65,8 +63,8 @@ architecture memblock_arch of memblock is
 	
 	
 	--!TBXSTART:MEMBLOCK_EXTERNAL_WRITE
-	signal s0ext_wr_add_one_hot : std_logic_vector(external_writeable_blocks-1+1 downto 0); --! La se&ntilde;al extra es para la escritura de la cola de instrucciones.
-	signal s0ext_wr_add			: std_logic_vector(external_writeable_widthad+widthadmemblock-1 downto 0);
+	signal s0ext_wr_add_one_hot : std_logic_vector(12-1+1 downto 0); --! La se&ntilde;al extra es para la escritura de la cola de instrucciones.
+	signal s0ext_wr_add			: std_logic_vector(4+widthadmemblock-1 downto 0);
 	signal s0ext_wr				: std_logic;
 	signal s0ext_d				: std_logic_vector(floatwidth-1 downto 0);
 	--!TBXEND
@@ -76,7 +74,7 @@ architecture memblock_arch of memblock is
 	--!TBXSTART:MEMBLOCK_EXTERNAL_READ
 	signal s0ext_rd_add			: std_logic_vector(2 downto 0);
 	signal s0ext_rd				: std_logic;
-	signal s0ext_rd_ack			: std_logic_vector(external_readable_blocks-1 downto 0);
+	signal s0ext_rd_ack			: std_logic_vector(8-1 downto 0);
 	signal s0ext_q				: vectorblock08;
 	--!TBXEND
 	--! Se&ntilde;al de soporte
@@ -185,9 +183,10 @@ begin
 	sint_rd_add (1)<= int_rd_add(2*widthadmemblock-1 downto widthadmemblock);
 	
 	--! Instanciaci&oacute;n de la cola de resultados de salida.
+	int_q <= s1int_q;
 	operands_blocks: 
 	for i in 11 downto 0 generate
-		int_q((i+1)*floatwidth-1 downto floatwidth*i) <= s1int_q(i);
+		--!int_q((i+1)*floatwidth-1 downto floatwidth*i) <= s1int_q(i);
 		operandsblock : altsyncram
 		generic map (
 			address_aclr_b 						=> "NONE",
@@ -228,9 +227,9 @@ begin
 	resultfifo_full(2) <= sresultfifo_full(4) or sresultfifo_full(2);
 	resultfifo_full(1) <= sresultfifo_full(3) or sresultfifo_full(2) or sresultfifo_full(1);
 	resultfifo_full(0) <= sresultfifo_full(0);  
+	sint_d <= int_d;
 	results_blocks: 
 	for i in 7 downto 0 generate
-		sint_d(i) <= int_d((i+1)*floatwidth-1 downto i*floatwidth);
 		resultsfifo : scfifo
 		generic map	(
 			add_ram_output_register => "OFF",
@@ -276,7 +275,7 @@ begin
 	end process;
 	
 	--! Decodificaci&oacute;n de se&ntilde;al escritura x bloque de memoria, selecciona la memoria en la que se va a escribir a partir de la direcci&oacute;n de entrada.
-	s0ext_wr_add_choice <= s0ext_wr_add(external_writeable_widthad+widthadmemblock-1 downto widthadmemblock);
+	s0ext_wr_add_choice <= s0ext_wr_add(4+widthadmemblock-1 downto widthadmemblock);
 	operands_block_comb: process (s0ext_wr_add_choice,s0ext_wr)
 	begin
 	

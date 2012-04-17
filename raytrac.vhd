@@ -77,7 +77,7 @@ architecture raytrac_arch of raytrac is
 	--! Se&ntilde;ales de Memblock -> Interruption Machine
 	signal s_rfull_events 	: std_logic_vector (3 downto 0); --Estas se&ntilde;ales tambien entran a DPC.
 	--! Se&ntilde;ales de Memblock -> DPC.
-	signal s_q				: std_logic_vector (12*32-1 downto 0);
+	signal s_q				: vectorblock12;
 	signal s_normfifo_q		: std_logic_vector (3*32-1 downto 0);
 	signal s_dpfifo_q		: std_logic_vector (2*32-1 downto 0);
 	--!TBXEND
@@ -105,16 +105,16 @@ architecture raytrac_arch of raytrac is
 	signal s_dpfifo_d		: std_logic_vector (2*32-1 downto 0);
 	signal s_normfifo_w		: std_logic;
 	signal s_normfifo_r		: std_logic;
-	signal s_results_d		: std_logic_vector (8*32-1 downto 0);
+	signal s_results_d		: vectorblock08;
 	signal s_normfifo_d		: std_logic_vector (3*32-1 downto 0);
 	--!Se&ntilde;ales de DPC a Interruption Machine
 	signal s_eoi_events		: std_logic_vector (3 downto 0);
 	--! Se&ntilde;ales de DPC a ArithBlock
-	signal s_f				: std_logic_vector (12*32-1 downto 0);
-	signal s_a 				: std_logic_vector (8*32-1 downto 0);
+	signal s_f				: vectorblock12;
+	signal s_a 				: vectorblock08;
 	--! Parcialmente las se&ntilde;ales de salida de los sumadores van al data path control.
-	signal s_s				: std_logic_vector (4*32-1 downto 0); 
-	signal s_p				: std_logic_vector (6*32-1 downto 0);
+	signal s_s				: vectorblock04; 
+	signal s_p				: vectorblock06;
 	--!TBXEND
 	--!TBXSTART:IM
 	--! Se&ntilde;ales de Interruption Machine al testbench
@@ -133,8 +133,6 @@ begin
 	MemoryBlock : memblock
 	generic map (
 		blocksize 					=> 512,
-		external_writeable_blocks 	=> 12,
-		external_readable_blocks	=> 8,
 		external_readable_widthad	=> 3,				
 		external_writeable_widthad	=> 4			
 	)

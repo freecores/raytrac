@@ -25,14 +25,14 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
-
+use work.arithpack.all;
 
 entity invr32 is 
 	port (
 		
 		clk		: in std_logic;
-		dvd32	: in std_logic_vector(31 downto 0);		
-		qout32	: out std_logic_vector(31 downto 0)
+		dvd32	: in xfloat32;		
+		qout32	: out xfloat32
 	);
 end entity;
 architecture invr32_arch of invr32 is 

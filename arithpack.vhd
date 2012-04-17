@@ -85,17 +85,17 @@ package arithpack is
 	port (
 		clk : in std_logic;
 		dpc : in std_logic;
-		a32 : in std_logic_vector (31 downto 0);
-		b32 : in std_logic_vector (31 downto 0);
-		c32 : out std_logic_vector (31 downto 0)
+		a32 : in xfloat32;
+		b32 : in xfloat32;
+		c32 : out xfloat32
 	);
 	end component;
 	component fmul32 
 	port (
 		clk : in std_logic;
-		a32 : in std_logic_vector (31 downto 0);
-		b32 : in std_logic_vector (31 downto 0);
-		p32 : out std_logic_vector (31 downto 0)
+		a32 : in xfloat32;
+		b32 : in xfloat32;
+		p32 : out xfloat32
 	);
 	end component;
 	
@@ -245,8 +245,6 @@ package arithpack is
 	component memblock
 	generic ( 
 		blocksize					: integer;
-		external_writeable_blocks 	: integer;
-		external_readable_blocks  	: integer;
 		external_readable_widthad	: integer;				
 		external_writeable_widthad	: integer
 	);
@@ -255,15 +253,15 @@ package arithpack is
 		
 		clk,rst,dpfifo_rd,normfifo_rd,dpfifo_wr,normfifo_wr : in std_logic;
 		instrfifo_rd : in std_logic;
-		resultfifo_wr: in std_logic_vector(external_readable_blocks-1 downto 0);
+		resultfifo_wr: in std_logic_vector(8-1 downto 0);
 		instrfifo_empty: out std_logic; ext_rd,ext_wr: in std_logic;
 		ext_wr_add : in std_logic_vector(external_writeable_widthad+widthadmemblock-1 downto 0);		
 		ext_rd_add : in std_logic_vector(external_readable_widthad-1 downto 0);
 		ext_d: in std_logic_vector(floatwidth-1 downto 0);
-		int_d : in std_logic_vector(external_readable_blocks*floatwidth-1 downto 0);
+		int_d : in vectorblock08;
 		resultfifo_full  : out std_logic_vector(3 downto 0);
 		ext_q,instrfifo_q : out std_logic_vector(floatwidth-1 downto 0);
-		int_q : out std_logic_vector(external_writeable_blocks*floatwidth-1 downto 0);
+		int_q : out vectorblock12;
 		int_rd_add : in std_logic_vector(2*widthadmemblock-1 downto 0);
 		dpfifo_d : in std_logic_vector(floatwidth*2-1 downto 0);
 		normfifo_d : in std_logic_vector(floatwidth*3-1 downto 0);
@@ -275,9 +273,9 @@ package arithpack is
 	component dpc
 	port (
 		clk,rst					: in	std_logic;
-		paraminput				: in	std_logic_vector ((12*floatwidth)-1 downto 0);	--! Vectores A,B,C,D
-		prd32blko			 	: in	std_logic_vector ((06*floatwidth)-1 downto 0);	--! Salidas de los 6 multiplicadores.
-		add32blko 				: in	std_logic_vector ((04*floatwidth)-1 downto 0);	--! Salidas de los 4 sumadores.
+		paraminput				: in	vectorblock12;	--! Vectores A,B,C,D
+		prd32blko			 	: in	vectorblock06;	--! Salidas de los 6 multiplicadores.
+		add32blko 				: in	vectorblock04;	--! Salidas de los 4 sumadores.
 		sqr32blko,inv32blko		: in	std_logic_vector (floatwidth-1 downto 0);		--! Salidas de la raiz cuadradas y el inversor.
 		fifo32x23_q				: in	std_logic_vector (03*floatwidth-1 downto 0);		--! Salida de la cola intermedia.
 		fifo32x09_q				: in	std_logic_vector (02*floatwidth-1 downto 0); 	--! Salida de las colas de producto punto. 
@@ -288,15 +286,15 @@ package arithpack is
 		sqr32blki,inv32blki		: out	std_logic_vector (floatwidth-1 downto 0);		--! Salidas de las 2 raices cuadradas y los 2 inversores.
 		fifo32x26_d				: out	std_logic_vector (03*floatwidth-1 downto 0);		--! Entrada a la cola intermedia para la normalizaci&oacute;n.
 		fifo32x09_d				: out	std_logic_vector (02*floatwidth-1 downto 0);		--! Entrada a las colas intermedias del producto punto.  	
-		prd32blki				: out	std_logic_vector ((12*floatwidth)-1 downto 0);	--! Entrada de los 12 factores en el bloque de multiplicaci&oacute;n respectivamente.
-		add32blki				: out	std_logic_vector ((08*floatwidth)-1 downto 0);	--! Entrada de los 8 sumandos del bloque de 4 sumadores.  
+		prd32blki				: out	vectorblock12;	--! Entrada de los 12 factores en el bloque de multiplicaci&oacute;n respectivamente.
+		add32blki				: out	vectorblock08;	--! Entrada de los 8 sumandos del bloque de 4 sumadores.  
 		resw					: out	std_logic_vector (4 downto 0);				--! Salidas de escritura y lectura en las colas de resultados.
 		fifo32x09_w				: out	std_logic;
 		fifo32x23_w,fifo32x09_r	: out	std_logic;
 		fifo32x23_r				: out	std_logic;
 		resf_vector				: in 	std_logic_vector(3 downto 0);				--! Entradas de la se&ntilde;al de full de las colas de resultados. 
 		resf_event				: out	std_logic;									--! Salida decodificada que indica que la cola de resultados de la operaci&oacute;n que est&aacute; en curso.
-		resultoutput			: out	std_logic_vector ((08*floatwidth)-1 downto 0) 	--! 8 salidas de resultados, pues lo m&aacute;ximo que podr&aacute; calcularse por cada clock son 2 vectores.
+		resultoutput			: out	vectorblock08 	--! 8 salidas de resultados, pues lo m&aacute;ximo que podr&aacute; calcularse por cada clock son 2 vectores.
 	);
 	end component;
 	--! Bloque Aritmetico de Sumadores y Multiplicadores (madd)
@@ -308,11 +306,11 @@ package arithpack is
 	
 		dpc : in std_logic;
 	
-		f	: in std_logic_vector (12*32-1 downto 0);
-		a	: in std_logic_vector (8*32-1 downto 0);
+		f	: in vectorblock12;
+		a	: in vectorblock08;
 		
-		s	: out std_logic_vector (4*32-1 downto 0);
-		p	: out std_logic_vector (6*32-1 downto 0)
+		s	: out vectorblock04;
+		p	: out vectorblock06
 			
 	);
 	end component;
@@ -321,8 +319,8 @@ package arithpack is
 	port (
 		
 		clk	: in std_logic;
-		rd32: in std_logic_vector(31 downto 0);		
-		sq32: out std_logic_vector(31 downto 0)
+		rd32: in xfloat32;		
+		sq32: out xfloat32
 	);
 	end component;
 	--! Bloque de Inversores.
@@ -330,8 +328,8 @@ package arithpack is
 	port (
 		
 		clk		: in std_logic;
-		dvd32	: in std_logic_vector(31 downto 0);		
-		qout32	: out std_logic_vector(31 downto 0)
+		dvd32	: in xfloat32;		
+		qout32	: out xfloat32
 	);
 	end component;
 	
@@ -471,7 +469,7 @@ package body arithpack is
 
 	function ap_iCtrlState2string(i:iCtrlState) return string is
 	
-		variable tmp:string (1 to 1024);
+		variable tmp:string (1 to 9);
 	
 	begin
 	
@@ -483,7 +481,7 @@ package body arithpack is
 			when SUSPEND => 
 				tmp:="SUSPENDED";
 			when others => 
-				tmp:="Pandora Box Opened -- Illegal iCtrlState value";
+				tmp:="ILGL__VAL";
 		end case;
 		
 		return tmp;
@@ -531,7 +529,7 @@ package body arithpack is
 	
 	
 	function ap_macState2string(s:macState) return string is
-		variable tmp:string (1 to 1024);
+		variable tmp:string (1 to 6);
 	begin
 		case s is
 			when LOAD_INSTRUCTION => 
@@ -541,7 +539,7 @@ package body arithpack is
 			when EXECUTE_INSTRUCTION => 
 				tmp:="EX_INS";
 			when others => 
-				tmp:="macStateException:HELL_ON_EARTH";
+				tmp:="HEL_ON";
 		end case;
 		return tmp;
 	end function;

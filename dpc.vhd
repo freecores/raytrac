@@ -22,15 +22,17 @@
 
 library ieee;
 use ieee.std_logic_1164.all;
+
 use work.arithpack.all;
+
 
 entity dpc is 
 	
 	port (
 		clk,rst					: in	std_logic;
-		paraminput				: in	std_logic_vector ((12*floatwidth)-1 downto 0);	--! Vectores A,B,C,D
-		prd32blko			 	: in	std_logic_vector ((06*floatwidth)-1 downto 0);	--! Salidas de los 6 multiplicadores.
-		add32blko 				: in	std_logic_vector ((04*floatwidth)-1 downto 0);	--! Salidas de los 4 sumadores.
+		paraminput				: in	vectorblock12;									--! Vectores A,B,C,D
+		prd32blko			 	: in	vectorblock06;	--! Salidas de los 6 multiplicadores.
+		add32blko 				: in	vectorblock04;	--! Salidas de los 4 sumadores.
 		sqr32blko,inv32blko		: in	std_logic_vector (floatwidth-1 downto 0);		--! Salidas de la raiz cuadradas y el inversor.
 		fifo32x23_q				: in	std_logic_vector (03*floatwidth-1 downto 0);		--! Salida de la cola intermedia.
 		fifo32x09_q				: in	std_logic_vector (02*floatwidth-1 downto 0); 	--! Salida de las colas de producto punto. 
@@ -41,15 +43,15 @@ entity dpc is
 		sqr32blki,inv32blki		: out	std_logic_vector (floatwidth-1 downto 0);		--! Salidas de las 2 raices cuadradas y los 2 inversores.
 		fifo32x26_d				: out	std_logic_vector (03*floatwidth-1 downto 0);		--! Entrada a la cola intermedia para la normalizaci&oacute;n.
 		fifo32x09_d				: out	std_logic_vector (02*floatwidth-1 downto 0);		--! Entrada a las colas intermedias del producto punto.  	
-		prd32blki				: out	std_logic_vector ((12*floatwidth)-1 downto 0);	--! Entrada de los 12 factores en el bloque de multiplicaci&oacute;n respectivamente.
-		add32blki				: out	std_logic_vector ((08*floatwidth)-1 downto 0);	--! Entrada de los 8 sumandos del bloque de 4 sumadores.  
+		prd32blki				: out	vectorblock12;	--! Entrada de los 12 factores en el bloque de multiplicaci&oacute;n respectivamente.
+		add32blki				: out	vectorblock08;	--! Entrada de los 8 sumandos del bloque de 4 sumadores.  
 		resw					: out	std_logic_vector (4 downto 0);				--! Salidas de escritura y lectura en las colas de resultados.
 		fifo32x09_w				: out	std_logic;
 		fifo32x23_w,fifo32x09_r	: out	std_logic;
 		fifo32x23_r				: out	std_logic;
 		resf_vector				: in 	std_logic_vector (3 downto 0);				--! Entradas de la se&ntilde;al de full de las colas de resultados. 
 		resf_event				: out	std_logic;									--! Salida decodificada que indica que la cola de resultados de la operaci&oacute;n que est&aacute; en curso.
-		resultoutput			: out	std_logic_vector ((08*floatwidth)-1 downto 0) 	--! 8 salidas de resultados, pues lo m&aacute;ximo que podr&aacute; calcularse por cada clock son 2 vectores. 
+		resultoutput			: out	vectorblock08 --! 8 salidas de resultados, pues lo m&aacute;ximo que podr&aacute; calcularse por cada clock son 2 vectores. 
 	);
 end entity;
 
@@ -138,19 +140,15 @@ begin
 	
 	
 	--! El siguiente c&oacute;digo sirve para conectar arreglos a se&ntilde;ales std_logic_1164, simplemente son abstracciones a nivel de c&oacute;digo y no representar&aacute; cambios en la s&iacute;ntesis.
-	stuff12: 
-	for i in 11 downto 0 generate
-		sparaminput(i) <= paraminput(i*floatwidth+floatwidth-1 downto i*floatwidth);
-		prd32blki(i*floatwidth+floatwidth-1 downto i*floatwidth) <= sfactor(i);
-	end generate stuff12;
-	stuff08:
-	for i in 07 downto 0 generate
-		add32blki(i*floatwidth+floatwidth-1 downto i*floatwidth) <= ssumando(i);
-		resultoutput(i*floatwidth+floatwidth-1 downto i*floatwidth) <= sresult(i);
-	end generate stuff08;
+	sparaminput	<= paraminput;
+	prd32blki	<= sfactor;
+	add32blki	<= ssumando;
+	resultoutput<= sresult;
+	
+	
 	stuff04: 
 	for i in 02 downto 1 generate
-		sadd32blk(i)  <= add32blko(i*floatwidth+floatwidth-1 downto i*floatwidth);
+		sadd32blk(i)  <= add32blko(i);
 	end generate stuff04;
 	
 	
@@ -170,9 +168,7 @@ begin
 	process (clk)
 	begin
 		if clk'event and clk='1' then
-			for i in 05 downto 0 loop 
-				sprd32blk(i)  <= prd32blko(i*floatwidth+floatwidth-1 downto i*floatwidth);
-			end loop;
+			sprd32blk  <= prd32blko;
 		end if;
 	end process;
 	--! Los productos del multiplicador 2 y 3, ya registrados dentro de dpc van a la cola intermedia del producto punto (fifo32x09_d)
@@ -183,8 +179,8 @@ begin
 	process (clk)
 	begin
 		if clk'event and clk='1' then
-			sadd32blk(a0) <= add32blko(a0*floatwidth+floatwidth-1 downto a0*floatwidth);
-			sadd32blk(aa) <= add32blko(aa*floatwidth+floatwidth-1 downto aa*floatwidth); 
+			sadd32blk(a0) <= add32blko(a0);
+			sadd32blk(aa) <= add32blko(aa); 
 			sinv32blk <= inv32blko;
 		end if;
 	end process;

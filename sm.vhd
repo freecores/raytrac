@@ -1,5 +1,5 @@
 --! @file sm.vhd
---! @brief Maquina de Estados. Controla la operación interna y genera los mecanismos de sincronización con el exterior (interrupciones). 
+--! @brief Maquina de Estados. Controla la operaci&oacute;n interna y genera los mecanismos de sincronizaci&oacute;n con el exterior (interrupciones). 
 --! @author Juli&aacute;n Andr&eacute;s Guar&iacute;n Reyes
 --------------------------------------------------------------
 -- RAYTRAC
@@ -32,9 +32,9 @@ entity sm is
 		
 		--! Se&ntilde;ales normales de secuencia.
 		clk,rst:			in std_logic;
-		--! Vector con las instrucción codficada
+		--! Vector con las instrucci&oacute;n codficada
 		instrQq:in std_logic_vector(floatwidth-1 downto 0);
-		--! Señal de cola vacia.
+		--! Se&ntilde;al de cola vacia.
 		instrQ_empty:in std_logic;
 		
 				
@@ -61,9 +61,9 @@ end entity;
 architecture sm_arch of sm is
 
 	
-	--! LOAD_INSTRUCTION: Estado en el que se espera que en la cola de instrucciones haya una instrucción para ejecutar.
+	--! LOAD_INSTRUCTION: Estado en el que se espera que en la cola de instrucciones haya una instrucci&oacute;n para ejecutar.
 	--! EXECUTE_INSTRUCTION: Estado en el que se ejecuta la instrucci&oacute;n de la cola de instrucciones.
-	--! FLUSH_ARITH_PIPELINE: Estado en el que se espera un número específico de ciclos de reloj, para que se desocupe el pipeline aritmético.
+	--! FLUSH_ARITH_PIPELINE: Estado en el que se espera un n&uacute;mero espec&iacute;fico de ciclos de reloj, para que se desocupe el pipeline aritm&eacute;tico.
 	
 	signal s_state : macState;
 	
@@ -91,7 +91,7 @@ begin
 	
 	state <= s_state;
 
-	--! Código UCA, pero en la etapa DPC: La diferencia es que UCA en la etapa DPC, decodifica el datapath dentro del pipeline aritmético.
+	--! C&oacute;digo UCA, pero en la etapa DPC: La diferencia es que UCA en la etapa DPC, decodifica el datapath dentro del pipeline aritm&eacute;tico.
 	dpc_uca <= s_dpc_uca;
 
 
@@ -102,13 +102,13 @@ begin
 	s_block_start_b <= instrQq(floatwidth-14 downto floatwidth-18);
 	s_block_end_b <= instrQq(floatwidth-19 downto floatwidth-23);
 	
-	--! Campo que define si la instrucción es combinatoria
+	--! Campo que define si la instrucci&oacute;n es combinatoria
 	s_combinatory <= instrQq(floatwidth-24);
 	
-	--! Campo que define cuantos clocks debe esperar el sistema, despues de que se ejecuta una instrucción, para que el pipeline aritmético quede vacio.
+	--! Campo que define cuantos clocks debe esperar el sistema, despues de que se ejecuta una instrucci&oacute;n, para que el pipeline aritm&eacute;tico quede vacio.
 	s_delay_field <= instrQq(floatwidth-25 downto floatwidth-32);
 	
-	--! UCA code, código con la instrucción a ejecutar. 
+	--! UCA code, c&oacute;digo con la instrucci&oacute;n a ejecutar. 
 	s_instr_uca <= instrQq(31 downto 29);
 	
 	--! Address Counters
@@ -200,7 +200,7 @@ begin
 		--!Se&ntilde;al de play/pause del contador del arithmetic pipeline flush counter.
 		s_go_delay  <= not(s_zeroFlag_delay);	
 		
-		--! Si estamos en el final de la instrucción, "descargamos" esta de la máquina de estados con acknowledge read.
+		--! Si estamos en el final de la instrucci&oacute;n, "descargamos" esta de la m&aacute;quina de estados con acknowledge read.
 		if s_eb_b='1' and s_eq_b='1' and s_eb_a='1' and s_eq_a='1' and s_state=EXECUTE_INSTRUCTION then
 			instrRdAckd <= '1';
 		else
@@ -240,20 +240,20 @@ begin
 		
 			case s_state is
 					
-				--! Cargar la siguiente instrucción. 
+				--! Cargar la siguiente instrucci&oacute;n. 
 				when LOAD_INSTRUCTION => 
 				
 					eoi <= '0';
 				
 					if instrQ_empty='0' and full_r='0' then
 						
-						--! Siguiente estado: Ejecutar la instrucción.  
+						--! Siguiente estado: Ejecutar la instrucci&oacute;n.  
 						s_state <= EXECUTE_INSTRUCTION;
 						
-						--! Asignar el código UCA para que comience la decodificación.
+						--! Asignar el c&oacute;digo UCA para que comience la decodificaci&oacute;n.
 						s_dpc_uca <= s_instr_uca;
 						
-						--! Validar el siguiente dato dentro del pipeline aritmético.
+						--! Validar el siguiente dato dentro del pipeline aritm&eacute;tico.
 						sync_chain_0 <= '1';
 						
 						--! En el estado EXECUTE, el valor del contador de delay se debe mantener fijo, y puesto en el valor de delay que contiene la instruccion.
@@ -263,14 +263,14 @@ begin
 						
 					end if;
 					
-				--! Ejecución de la instruccion		
+				--! Ejecuci&oacute;n de la instruccion		
 				when EXECUTE_INSTRUCTION =>
 					
 
 					if s_eb_b='1'and s_eq_b='1' and s_eb_a='1' and s_eq_a='1' then	--! Revisar si es el fin de la instruccion
 						
 						
-						--!Ya no ingresaran mas datos al pipeline aritmético, invalidar.
+						--!Ya no ingresaran mas datos al pipeline aritm&eacute;tico, invalidar.
 						sync_chain_0 <= '0';
 						
 						if s_zeroFlag_delay='1' then 
@@ -288,17 +288,17 @@ begin
 							
 						end if;								
 					
-					--! Invalidar/validar datos dentro del pipeline aritmético.
+					--! Invalidar/validar datos dentro del pipeline aritm&eacute;tico.
 					elsif s_eb_b='1' and full_r='1' then
-						--! Invalidar el siguiente dato dentro del pipeline aritmético.
+						--! Invalidar el siguiente dato dentro del pipeline aritm&eacute;tico.
 						sync_chain_0 <= '0';
 					else
 						sync_chain_0 <= '1';
 					end if;
 				
-				--! Ejecución de la instrucción 		
+				--! Ejecuci&oacute;n de la instrucci&oacute;n 		
 				when FLUSH_ARITH_PIPELINE =>
-					--! Este estado permanece así hasta que, haya una instrucción 
+					--! Este estado permanece as&iacute; hasta que, haya una instrucci&oacute;n 
 					if s_zeroFlag_delay='1' then
 					
 						--! Notificar fin de procesamiento de la instruccion (End Of Instruction)

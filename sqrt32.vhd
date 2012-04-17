@@ -25,14 +25,14 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
-
+use work.arithpack.all;
 entity sqrt32 is 
 	
 	port (
 		
 		clk	: in std_logic;
-		rd32: in std_logic_vector(31 downto 0);		
-		sq32: out std_logic_vector(31 downto 0)
+		rd32: in xfloat32;		
+		sq32: out xfloat32
 	);
 end entity;
 architecture sqrt32_arch of sqrt32 is 

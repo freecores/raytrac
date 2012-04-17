@@ -98,7 +98,7 @@ begin
 	q0q1 : scfifo --! Debe ir registrada la salida.
 	generic map (
 		add_ram_output_register	=> "OFF",
-		allow_wrcycle_when_full => "OFF",
+		allow_rwcycle_when_full => "OFF",
 		intended_device_family	=> "CycloneIII",
 		lpm_hint				=> "RAM_BLOCK_TYPE=M9K",
 		almost_full_value		=> 8,
@@ -125,7 +125,7 @@ begin
 	qxqyqz : scfifo
 	generic map (
 		add_ram_output_register => "OFF",
-		allow_wrcycle_when_full => "OFF",
+		allow_rwcycle_when_full => "OFF",
 		intended_device_family  => "Cyclone III",
 		lpm_hint                => "RAM_BLOCK_TYPE=M9K",
 		almost_full_value		=> 32,
@@ -154,7 +154,7 @@ begin
 	qi : scfifo
 	generic map (
 		add_ram_output_register => "OFF",
-		allow_wrcycle_when_full => "OFF",
+		allow_rwcycle_when_full => "OFF",
 		intended_device_family	=> "Cyclone III",
 		lpm_hint				=> "RAM_BLOCK_TYPE=M9K",
 		almost_full_value		=> 32,
@@ -234,7 +234,7 @@ begin
 		generic map	(
 			add_ram_output_register => "OFF",
 			almost_full_value 		=> 480,
-			allow_wrcycle_when_full => "OFF",
+			allow_rwcycle_when_full => "OFF",
 			intended_device_family	=> "Cyclone III",
 			lpm_hint				=> "RAM_BLOCK_TYPE=M9K",
 			lpm_numwords			=> 512,

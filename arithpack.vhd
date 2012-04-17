@@ -6,7 +6,11 @@ use ieee.math_real.all;
 library std;
 use std.textio.all;
 
+
+
 --! Memory Compiler Library
+library altera_mf;
+use altera_mf.all;
 library lpm;
 use lpm.all;
 
@@ -142,7 +146,7 @@ package arithpack is
 	generic (
 		add_ram_output_register	:string;
 		almost_full_value		:natural;
-		allow_wrcycle_when_full	:string;
+		allow_rwcycle_when_full	:string;
 		intended_device_family	:string;
 		lpm_hint				:string;
 		lpm_numwords			:natural;

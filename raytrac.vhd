@@ -59,6 +59,7 @@ architecture raytrac_arch of raytrac is
 
 	--! Se&ntilde;ales de State Machine -> Memblock
 	--!TBXSTART:SM
+	signal s_int_rd_add		: std_logic_vector (17 downto 0);
 	signal s_adda			: std_logic_vector (8 downto 0);
 	signal s_addb			: std_logic_vector (8 downto 0);
 	signal s_iq_rd_ack		: std_logic;
@@ -97,6 +98,7 @@ architecture raytrac_arch of raytrac is
 	signal s_dvd32			: std_logic_vector (31 downto 0);
 	--! Se&ntilde;ales de DPC  a invr32.
 	--! Se&ntilde que va desde DPC -> Memblock
+	signal s_resultfifo_wr	: std_logic_vector (7 downto 0);
 	signal s_resultsfifo_w	: std_logic_vector (4 downto 0);
 	signal s_dpfifo_w		: std_logic;
 	signal s_dpfifo_r		: std_logic;
@@ -125,6 +127,8 @@ begin
 
 
 	--! Instanciar el bloque de memorias MEMBLOCK
+	s_resultfifo_wr <= s_resultsfifo_w(4)&s_resultsfifo_w(4)&s_resultsfifo_w(4)&s_resultsfifo_w(3)&s_resultsfifo_w(2)&s_resultsfifo_w(1)&s_resultsfifo_w(2)&s_resultsfifo_w(0);
+	s_int_rd_add  <= s_addb&s_adda;
 	--!TBXINSTANCESTART
 	MemoryBlock : memblock
 	generic map (
@@ -142,7 +146,7 @@ begin
 		dpfifo_wr			=> s_dpfifo_w,
 		normfifo_wr			=> s_normfifo_w,
 		instrfifo_rd		=> s_iq_rd_ack,
-		resultfifo_wr		=> s_resultsfifo_w(4)&s_resultsfifo_w(4)&s_resultsfifo_w(4)&s_resultsfifo_w(3)&s_resultsfifo_w(2)&s_resultsfifo_w(1)&s_resultsfifo_w(2)&s_resultsfifo_w(0),
+		resultfifo_wr		=> s_resultfifo_wr,
 		instrfifo_empty		=> s_iq_empty,
 		ext_rd				=> rd,
 		ext_wr				=> wr,
@@ -154,7 +158,7 @@ begin
 		ext_q				=> q,
 		instrfifo_q			=> s_iq,
 		int_q				=> s_q,
-		int_rd_add			=> s_addb&s_adda,
+		int_rd_add			=> s_int_rd_add,
 		dpfifo_d			=> s_dpfifo_d,
 		normfifo_d			=> s_normfifo_d,
 		dpfifo_q			=> s_dpfifo_q,

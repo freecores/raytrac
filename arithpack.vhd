@@ -376,14 +376,94 @@ package arithpack is
 	
 	--! Funci&oacute;n que devuelve una cadena con los componentes de un vector R3 en punto flotante IEEE754	
 	function ap_v3f2string(v:v3f) return string;
+	
+	--! Funci&oacute;n que formatea una instrucci&oacute;n
+	function ap_format_instruction(i:string;ac_o,bd_o,ac_f,bd_f:std_logic_vector;comb:std_logic) return std_logic_vector;
+	
+	--! Funci&oacute;n que devuelve una cadena de caracteres de un solo caracter con el valor de un bit std_logic
+	function ap_sl2string(s:std_logic) return string;
 	 
 end package;
 
 
 package body arithpack is
 
+	function ap_sl2string(s:std_logic) return string is
+		variable tmp:string(1 to 1);
+	begin
+		
+		case s is
+			when '1' => 
+				tmp:="1";
+			when '0' => 
+				tmp:="0";
+			when 'U' => 
+				tmp:="U";
+			when 'X' => 
+				tmp:="X";
+			when 'Z' => 
+				tmp:="Z";
+			when 'W' => 
+				tmp:="W";
+			when 'L' => 
+				tmp:="L";
+			when 'H' => 
+				tmp:="H";
+			when others => 
+				tmp:="-"; -- Don't care
+		end case;
+		
+		return tmp;
+	end function;
+
+	function ap_format_instruction(i:string;ac_o,bd_o,ac_f,bd_f:std_logic_vector;comb:std_logic) return std_logic_vector is
+		
+		alias aco : std_logic_vector (4 downto 0) is ac_o;
+		alias acf : std_logic_vector (4 downto 0) is ac_f;
+		alias bdo : std_logic_vector (4 downto 0) is bd_o;
+		alias bdf : std_logic_vector (4 downto 0) is bd_f;
+		variable ins : std_logic_vector (31 downto 0);
+		alias it : string (1 to 3) is i;
+	begin
+	
+		case it is 
+			when "mag" => 
+				ins(31 downto 29) := "100";
+				ins(04 downto 00) := x"18";
+			when "nrm" => 
+				ins(31 downto 29) := "101";
+				ins(04 downto 00) := x"1d";
+			when "add" => 
+				ins(31 downto 29) := "001";
+				ins(04 downto 00) := x"0a";
+			when "sub" => 
+				ins(31 downto 29) := "011";
+				ins(04 downto 00) := x"0a";
+			when "dot" => 
+				ins(31 downto 29) := "000";
+				ins(04 downto 00) := x"17";
+			when "crs" => 
+				ins(31 downto 29) := "010";
+				ins(04 downto 00) := x"0e";
+			when others => 
+				ins(31 downto 29) := "111";
+				ins(04 downto 00) := x"05";
+		end case;
+		ins(28 downto 24) := aco;
+		ins(23 downto 19) := acf;
+		ins(18 downto 14) := bdo;
+		ins(13 downto 09) := bdf;
+		ins(08) := comb;
+		ins(07 downto 05) := "000";	
+		return ins;
+		
+	
+	end function;
+	
+	
+
 	function ap_v3f2string(v:v3f) return string is
-		variable tmp:string;
+		variable tmp:string (1 to 1024);
 	begin
 		tmp:="[X]"&ap_slvf2string(v(0))&"[Y]"&ap_slvf2string(v(1))&"[Z]"&ap_slvf2string(v(2));
 		return tmp;
@@ -391,7 +471,7 @@ package body arithpack is
 
 	function ap_iCtrlState2string(i:iCtrlState) return string is
 	
-		variable tmp:string;
+		variable tmp:string (1 to 1024);
 	
 	begin
 	
@@ -411,14 +491,14 @@ package body arithpack is
 	end function;
 	
 	function ap_vnadd022string(va2:vectorblockadd02) return string is
-		variable tmp:string;
+		variable tmp:string (1 to 1024);
 	begin
 		tmp:="[01]"&ap_slv2hex(va2(1))&" [00]"&ap_slv2hex(va2(0));
 		return tmp;
 	end function;
 	
 	function ap_vblk122string(v12:vectorblock12) return string is
-		variable tmp:string;
+		variable tmp:string (1 to 1024);
 	begin
 	
 		tmp:="["&integer'image(11)&"]";
@@ -434,7 +514,7 @@ package body arithpack is
 	end function;
 	
 	function ap_vblk082string(v8:vectorblock08) return string is
-		variable tmp:string;
+		variable tmp:string (1 to 1024);
 	begin
 	
 		tmp:="["&integer'image(7)&"]";
@@ -451,7 +531,7 @@ package body arithpack is
 	
 	
 	function ap_macState2string(s:macState) return string is
-		variable tmp:string;
+		variable tmp:string (1 to 1024);
 	begin
 		case s is
 			when LOAD_INSTRUCTION => 

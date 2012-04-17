@@ -49,8 +49,8 @@ architecture fadd32_arch of fadd32 is
 	--!TBXEND
 	signal s1delta																		: std_logic_vector(5 downto 0);
 	signal s0delta,s1exp,s2exp,s3exp,s4exp,s5exp,s6exp,s5factor,s6factor,s7exp,s7factor	: std_logic_vector(7 downto 0);
-	signal s1shifter,s5factorhot9,s6factorhot9											: std_logic_vector(8 downto 0);
-	signal s1pl,s6pl																	: std_logic_vector(17 downto 0);
+	signal s1shifter,s5factorhot9,s6factorhot9,s1datab_8x,s6datab_4x					: std_logic_vector(8 downto 0);
+	signal s1pl,s6pl,s1datab,s6datab													: std_logic_vector(17 downto 0);
 	signal s6postshift,s7postshift														: std_logic_vector(22 downto 0);
 	signal s1umantshift,s1umantfixed,s1postshift,s1xorslab,s2xorslab					: std_logic_vector(23 downto 0);
 	signal s5factorhot24																: std_logic_vector(23 downto 0);
@@ -159,6 +159,7 @@ begin
 			when others => s1shifter(8 downto 0) <=    not(s1delta(5))&"0000000"&s1delta(5);
 		end case;
 	end process;
+	s1datab <= s1zero&s1umantshift(22 downto 06);
 	denormhighshiftermult:lpm_mult
 	generic	map (
 		lpm_hint => "DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9",
@@ -171,9 +172,10 @@ begin
 	)
 	port map (
 		dataa => s1shifter,
-		datab => s1zero&s1umantshift(22 downto 06),
+		datab => s1datab,
 		result => s1ph
 	);	
+	s1datab_8x <= s1umantshift(5 downto 0)&"000";
 	denormlowshiftermult:lpm_mult
 	generic map (
 		lpm_hint => "DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9",
@@ -186,7 +188,7 @@ begin
 	)
 	port map (
 		dataa => s1shifter,
-		datab => s1umantshift(5 downto 0)&"000",
+		datab(8 downto 0) => s1datab_8x,
 		result => s1pl
 	);	
 	
@@ -253,6 +255,7 @@ begin
 	end process;	
 	
 	--! Etapa 6: Ejecutar el corrimiento para normalizar la mantissa.
+	s6datab <= s6result(24 downto 7);
 	normhighshiftermult:lpm_mult
 	generic map (
 		lpm_hint => "DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9",
@@ -265,9 +268,10 @@ begin
 	)
 	port map (
 		dataa => s6factorhot9,
-		datab => s6result(24 downto 7),
+		datab => s6datab,
 		result => s6ph
 	);
+	s6datab_4x <= s6result(06 downto 0)&"00";
 	normlowshiftermult:lpm_mult
 	generic map (
 		lpm_hint => "DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9",
@@ -280,7 +284,7 @@ begin
 	)
 	port map (
 		dataa => s6factorhot9,
-		datab => s6result(06 downto 0)&"00",
+		datab => s6datab_4x,
 		result => s6pl
 	);
 	s6postshift(22 downto 15) <= s6ph(16 downto 09);

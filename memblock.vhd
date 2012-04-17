@@ -42,7 +42,7 @@ entity memblock is
 		instrfifo_empty: out std_logic; 
 		ext_rd,ext_wr: in std_logic;
 		ext_wr_add : in std_logic_vector(external_writeable_widthad+widthadmemblock-1 downto 0);		
-		ext_rd_add : in std_logic_vector(external_readable_widthad-1 downto 0);
+		ext_rd_add : in std_logic_vector(2 downto 0);
 		ext_d: in std_logic_vector(floatwidth-1 downto 0);
 		resultfifo_full  : out std_logic_vector(3 downto 0);
 		int_d : in std_logic_vector(external_readable_blocks*floatwidth-1 downto 0);
@@ -70,13 +70,18 @@ architecture memblock_arch of memblock is
 	signal s0ext_wr				: std_logic;
 	signal s0ext_d				: std_logic_vector(floatwidth-1 downto 0);
 	--!TBXEND
+	--! Se&ntilde;al de soporte
+	signal s0ext_wr_add_choice	: std_logic_vector(3 downto 0);
 	
 	--!TBXSTART:MEMBLOCK_EXTERNAL_READ
-	signal s0ext_rd_add			: std_logic_vector(external_readable_widthad-1 downto 0);
+	signal s0ext_rd_add			: std_logic_vector(2 downto 0);
 	signal s0ext_rd				: std_logic;
 	signal s0ext_rd_ack			: std_logic_vector(external_readable_blocks-1 downto 0);
 	signal s0ext_q				: vectorblock08;
 	--!TBXEND
+	--! Se&ntilde;al de soporte
+	signal s0ext_rd_add_choice	: std_logic_vector(3 downto 0);
+	
 	
 	--!TBXSTART:MEMBLOCK_INTERNAL_READ
 	signal s0int_rd_add			: std_logic_vector(widthadmemblock-1 downto 0);
@@ -271,30 +276,45 @@ begin
 	end process;
 	
 	--! Decodificaci&oacute;n de se&ntilde;al escritura x bloque de memoria, selecciona la memoria en la que se va a escribir a partir de la direcci&oacute;n de entrada.
-	operands_block_comb: process (s0ext_wr_add,s0ext_wr)
+	s0ext_wr_add_choice <= s0ext_wr_add(external_writeable_widthad+widthadmemblock-1 downto widthadmemblock);
+	operands_block_comb: process (s0ext_wr_add_choice,s0ext_wr)
 	begin
 	
 		--! Etapa 0: Decodificacion de las se&ntilde:ales de escritura.Revisar el capitulo de bloques de memoria para chequear como est&aacute; el pool de direcciones por bloques de vectores.
 		--! Las direcciones de bloque 3,7,11,15 corresponden a la cola de instrucciones.
-		case s0ext_wr_add(external_writeable_widthad+widthadmemblock-1 downto widthadmemblock) is 
-			when x"0" => s0ext_wr_add_one_hot <= '0'&x"00"&"000"&s0ext_wr;
-			when x"1" => s0ext_wr_add_one_hot <= '0'&x"00"&"00"&s0ext_wr&'0';
-			when x"2" => s0ext_wr_add_one_hot <= '0'&x"00"&'0'&s0ext_wr&"00";
-			when x"4" => s0ext_wr_add_one_hot <= '0'&x"00"&s0ext_wr&"000";
-			when x"5" => s0ext_wr_add_one_hot <= '0'&x"0"&"000"&s0ext_wr&x"0";
-			when x"6" => s0ext_wr_add_one_hot <= '0'&x"0"&"00"&s0ext_wr&'0'&x"0";
-			when x"8" => s0ext_wr_add_one_hot <= '0'&x"0"&'0'&s0ext_wr&"00"&x"0";
-			when x"9" => s0ext_wr_add_one_hot <= '0'&x"0"&s0ext_wr&"000"&x"0";
-			when x"A" => s0ext_wr_add_one_hot <= '0'&"000"&s0ext_wr&x"00";
-			when x"C" => s0ext_wr_add_one_hot <= '0'&"00"&s0ext_wr&'0'&x"00";
-			when x"D" => s0ext_wr_add_one_hot <= '0'&'0'&s0ext_wr&"00"&x"00";
-			when x"E" => s0ext_wr_add_one_hot <= '0'&s0ext_wr&"000"&x"00";
-			when others => s0ext_wr_add_one_hot <= s0ext_wr&x"000";
+		case s0ext_wr_add_choice is
+			when "0000" => 
+				s0ext_wr_add_one_hot <= '0'&x"00"&"000"&s0ext_wr;
+			when x"1" => 
+				s0ext_wr_add_one_hot <= '0'&x"00"&"00"&s0ext_wr&'0';
+			when x"2" => 
+				s0ext_wr_add_one_hot <= '0'&x"00"&'0'&s0ext_wr&"00";
+			when x"4" => 
+				s0ext_wr_add_one_hot <= '0'&x"00"&s0ext_wr&"000";
+			when x"5" => 
+				s0ext_wr_add_one_hot <= '0'&x"0"&"000"&s0ext_wr&x"0";
+			when x"6" => 
+				s0ext_wr_add_one_hot <= '0'&x"0"&"00"&s0ext_wr&'0'&x"0";
+			when x"8" => 
+				s0ext_wr_add_one_hot <= '0'&x"0"&'0'&s0ext_wr&"00"&x"0";
+			when x"9" => 
+				s0ext_wr_add_one_hot <= '0'&x"0"&s0ext_wr&"000"&x"0";
+			when x"A" => 
+				s0ext_wr_add_one_hot <= '0'&"000"&s0ext_wr&x"00";
+			when x"C" => 
+				s0ext_wr_add_one_hot <= '0'&"00"&s0ext_wr&'0'&x"00";
+			when x"D" => 
+				s0ext_wr_add_one_hot <= '0'&'0'&s0ext_wr&"00"&x"00";
+			when x"E" => 
+				s0ext_wr_add_one_hot <= '0'&s0ext_wr&"000"&x"00";
+			when others => 
+				s0ext_wr_add_one_hot <= s0ext_wr&x"000";
 		end case;
 	
 	end process;
 	
 	--! Decodificaci&oacute;n para seleccionar que cola de resultados se conectar&acute; a la salida del RayTrac. 
+	s0ext_rd_add_choice <= '0'&s0ext_rd_add;
 	results_block_proc: process(clk,rst)
 	begin
 		if rst=rstMasterValue then
@@ -305,7 +325,7 @@ begin
 			s0ext_rd_add	<= ext_rd_add;
 			s0ext_rd		<= ext_rd;	
 			--!Etapa 0: Decodificar la cola que se va a mover (rdack! fifo showahead mode) y por ende leer ese dato.
-			case '0'&s0ext_rd_add is
+			case s0ext_rd_add_choice is
 				when x"0" => ext_q <= s0ext_q(0); 
 				when x"1" => ext_q <= s0ext_q(1);
 				when x"2" => ext_q <= s0ext_q(2);
@@ -319,9 +339,9 @@ begin
 	end process;
 	
 	--! rdack decoder para las colas de resultados de salida.
-	results_block_proc_combinatorial_stage: process(s0ext_rd,s0ext_rd_add)
+	results_block_proc_combinatorial_stage: process(s0ext_rd,s0ext_rd_add_choice)
 	begin
-		case '0'&s0ext_rd_add is 
+		case s0ext_rd_add_choice is 
 			when x"0" => s0ext_rd_ack <= x"0"&"000"&s0ext_rd;
 			when x"1" => s0ext_rd_ack <= x"0"&"00"&s0ext_rd&'0';
 			when x"2" => s0ext_rd_ack <= x"0"&"0"&s0ext_rd&"00";

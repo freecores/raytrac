@@ -42,6 +42,7 @@ architecture fmul32_arch of fmul32 is
 	
 	
 	--Stage 0 signals
+	signal s0dataa_alfa,s0dataa_beta,s0dataa_gama,s0datab : std_logic_vector(17 downto 0);
 	--!TBXSTART:MULT_STAGE0	
 	signal s0sga,s0sgb,s0zrs : std_logic;
 	signal s0exp : std_logic_vector(7 downto 0);
@@ -100,6 +101,8 @@ begin
 	--! Combinatorial Gremlin Etapa 0 : multiplicacion de la mantissa, suma de los exponentes y multiplicaci&oacute;n de los signos.
 	
 	--! Multipliers
+	s0dataa_alfa <= s0zrs&s0uma(22 downto 6);
+	s0datab <= s0zrs&s0umb(22 downto 6);
 	mult18x18ac:lpm_mult
 	generic	map (
 		lpm_hint => "DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9",
@@ -111,10 +114,11 @@ begin
 		lpm_widthp => 36
 	)
 	port map (
-		dataa => s0zrs&s0uma(22 downto 6),
-		datab => s0zrs&s0umb(22 downto 6),
+		dataa => s0dataa_alfa,
+		datab => s0datab,
 		result => s0ac
 	);
+	s0dataa_beta <= s0zrs&s0uma(22 downto 6);
 	mult18x6ad:lpm_mult
 	generic	map (
 		lpm_hint => "DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9",
@@ -126,10 +130,11 @@ begin
 		lpm_widthp => 24
 	)
 	port map (
-		dataa => s0zrs&s0uma(22 downto 6),
+		dataa => s0dataa_beta,
 		datab => s0umb(5 downto 0),
 		result => s0ad
 	);
+	s0dataa_gama <= s0zrs&s0umb(22 downto 6);
 	mult18x6bc:lpm_mult
 	generic	map (
 		lpm_hint => "DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9",
@@ -141,7 +146,7 @@ begin
 		lpm_widthp => 24
 	)
 	port map (
-		dataa => s0zrs&s0umb(22 downto 6),
+		dataa => s0dataa_gama,
 		datab => s0uma(5 downto 0),
 		result => s0bc
 	);

@@ -43,7 +43,7 @@ architecture fadd32_arch of fadd32 is
 	
 	
 	signal s1zero,s7sign											: std_logic;
-	--!TBXSTART:STAGE5
+	--!TXBXSTART:STAGE5
 	signal s5token																		: std_logic_vector(2 downto 0);
 	signal s5tokena,s5tokenb,s5tokenc													: std_logic;
 	--!TBXEND

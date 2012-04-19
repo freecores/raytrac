@@ -43,7 +43,7 @@ architecture fmul32_arch of fmul32 is
 	
 	--Stage 0 signals
 	signal s0dataa_alfa,s0dataa_beta,s0dataa_gama,s0datab : std_logic_vector(17 downto 0);
-	--!TBXSTART:MULT_STAGE0	
+	--!TXBXSTART:MULT_STAGE0	
 	signal s0sga,s0sgb,s0zrs : std_logic;
 	signal s0exp : std_logic_vector(7 downto 0);
 	signal s0uma,s0umb : std_logic_vector(22 downto 0);

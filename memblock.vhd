@@ -71,7 +71,7 @@ architecture memblock_arch of memblock is
 	--! Se&ntilde;al de soporte
 	signal s0ext_wr_add_choice	: std_logic_vector(3 downto 0);
 	
-	--!TBXSTART:MEMBLOCK_EXTERNAL_READ
+	--!TXBXSTART:MEMBLOCK_EXTERNAL_READ
 	signal s0ext_rd_add			: std_logic_vector(2 downto 0);
 	signal s0ext_rd				: std_logic;
 	signal s0ext_rd_ack			: std_logic_vector(8-1 downto 0);
@@ -87,7 +87,7 @@ architecture memblock_arch of memblock is
 	signal s1int_q				: vectorblock12;
 	--!TBXEND
 	
-	--!TBXSTART:MEMBLOCK_INTERNAL_WRITE
+	--!TXBXSTART:MEMBLOCK_INTERNAL_WRITE
 	signal sint_d				: vectorblock08;
 	signal sresultfifo_full		: std_logic_vector(7 downto 0);
 	--!TBXEND
@@ -159,7 +159,7 @@ begin
 		lpm_hint				=> "RAM_BLOCK_TYPE=M9K",
 		almost_full_value		=> 32,
 		lpm_numwords			=> 32,
-		lpm_showahead			=> "OFF",
+		lpm_showahead			=> "ON",
 		lpm_type				=> "SCIFIFO",
 		lpm_width				=> 32,
 		lpm_widthu				=> 5,

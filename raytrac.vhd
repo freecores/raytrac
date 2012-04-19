@@ -81,15 +81,15 @@ architecture raytrac_arch of raytrac is
 	signal s_normfifo_q		: std_logic_vector (3*32-1 downto 0);
 	signal s_dpfifo_q		: std_logic_vector (2*32-1 downto 0);
 	--!TBXEND
-	--!TBXSTART:SQR32
+	--!TXBXSTART:SQR32
 	--!Se&ntilde;ales de Bloque de Ra&iacute;z Cuadrada a DPC
 	signal s_sq32			: std_logic_vector (31 downto 0);
 	--!TBXEND
-	--!TBXSTART:INV32
+	--!TXBXSTART:INV32
 	--!Se&ntilde;ales del bloque inversor a DPC.
 	signal s_qout32			: std_logic_vector (31 downto 0);
 	--!TBXEND
-	--!TBXSTART:DPC
+	--!TXBXSTART:DPC
 	--! Se&ntilde;ales de DataPathControl -> State Machine
 	signal s_full_r			: std_logic;
 	--! Se&ntilde;ales de DPC a sqrt32.

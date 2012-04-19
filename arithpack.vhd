@@ -359,38 +359,87 @@ package arithpack is
 	function ap_slv_calc_xyvec (x,y:integer; cam:apCamera) return v3f;
 	
 	--! Funci&oacute;n que devuelve una cadena con el n&uacute;mero flotante IEEE 754 &oacute; a una cadena de cifras hexadecimales.
-	function ap_slvf2string(sl:std_logic_vector) return string;
-	function ap_slv2hex (s:std_logic_vector) return string;
+	procedure ap_slvf2string(l:inout line;sl:std_logic_vector);
+	procedure ap_slv2hex (l:inout line;h:in std_logic_vector) ;
 	--! Funci&oacute;n que devuelve una cadena con el estado de macState.
-	function ap_macState2string(s:macState) return string;
-	
-	--! Funci&oacute;n que devuelve la cadena de caracteres de 8 datos en punto flotante IEEE 754.
-	function ap_vblk082string(v8:vectorblock08) return string;
-	
-	--! Funci&oacute;n que devuelve la cadena de caracteres de 12 datos en punto flotante IEEE 754.
-	function ap_vblk122string(v12:vectorblock12) return string;
+	procedure ap_macState2string(l:inout line;s:in macState);
 	
 	--! Funci&oacute;n que convierte un array de 2 std_logic_vectors que contienen un par de direcciones en string
-	function ap_vnadd022string(va2:vectorblockadd02) return string;
+	procedure ap_vnadd022string(l:inout line; va2:in vectorblockadd02);
 	
 	--! Funci&oacute;n que devuelve una cadena de caracteres con el estado de la maquina de estados que controla las interrupciones
-	function ap_iCtrlState2string(i:iCtrlState) return string;	
+	procedure ap_iCtrlState2string(l:inout line;i:in iCtrlState) ;	
 	
 	--! Funci&oacute;n que devuelve una cadena con los componentes de un vector R3 en punto flotante IEEE754	
-	function ap_v3f2string(v:v3f) return string;
+	procedure ap_v3f2string(l:inout line;v:in v3f);
 	
 	--! Funci&oacute;n que formatea una instrucci&oacute;n
 	function ap_format_instruction(i:string;ac_o,bd_o,ac_f,bd_f:std_logic_vector;comb:std_logic) return std_logic_vector;
 	
 	--! Funci&oacute;n que devuelve una cadena de caracteres de un solo caracter con el valor de un bit std_logic
-	function ap_sl2string(s:std_logic) return string;
+	procedure ap_sl2string(l:inout line;s:std_logic);
+	
+	--! Procedure
+	procedure ap_xfp122string(l:inout line;vb12:in vectorblock12);
+	procedure ap_xfp082string(l:inout line;vb08:in vectorblock08);
+	procedure ap_xfp062string(l:inout line;vb06:in vectorblock06);
+	procedure ap_xfp042string(l:inout line;vb04:in vectorblock04);
 	 
 end package;
 
 
 package body arithpack is
+	
+	procedure ap_xfp122string(l:inout line; vb12:in vectorblock12) is
 
-	function ap_sl2string(s:std_logic) return string is
+	begin
+		write(l,string'("<< "));
+		for i in 11 downto 0 loop
+			write(l,string'(integer'image(i)));
+			write(l,string'(" "));
+			ap_slvf2string(l,vb12(i));
+		end loop;  
+		write(l,string'(" >>"));
+	end procedure;
+	
+	procedure ap_xfp082string(l:inout line; vb08:in vectorblock08) is
+
+	begin
+		write(l,string'("<< "));
+		for i in 07 downto 0 loop
+			write(l,string'(" ["&integer'image(i)&"]"));
+			write(l,string'(" "));
+			ap_slvf2string(l,vb08(i));
+		end loop;  
+		write(l,string'(" >>"));
+	end procedure;
+	
+	procedure ap_xfp062string(l:inout line; vb06:in vectorblock06) is
+
+	begin
+		write(l,string'("<< "));
+		for i in 05 downto 0 loop
+			write(l,string'(integer'image(i)));
+			write(l,string'(" "));
+			ap_slvf2string(l,vb06(i));
+		end loop;  
+		write(l,string'(" >>"));
+	end procedure;
+	
+	procedure ap_xfp042string(l:inout line; vb04:in vectorblock04) is
+
+	begin
+		write(l,string'("<< "));
+		for i in 03 downto 0 loop
+			write(l,string'(integer'image(i)));
+			write(l,string'(" "));
+			ap_slvf2string(l,vb04(i));
+		end loop;  
+		write(l,string'(" >>"));
+	end procedure;
+	
+	
+	procedure ap_sl2string(l:inout line; s:in std_logic)is
 		variable tmp:string(1 to 1);
 	begin
 		
@@ -414,9 +463,13 @@ package body arithpack is
 			when others => 
 				tmp:="-"; -- Don't care
 		end case;
+		write(l,string'("<< "));
+		write(l,string'(tmp));
+		write(l,string'(" >>"));
 		
-		return tmp;
-	end function;
+		
+		
+	end procedure;
 
 	function ap_format_instruction(i:string;ac_o,bd_o,ac_f,bd_f:std_logic_vector;comb:std_logic) return std_logic_vector is
 		
@@ -431,25 +484,25 @@ package body arithpack is
 		case it is 
 			when "mag" => 
 				ins(31 downto 29) := "100";
-				ins(04 downto 00) := x"18";
+				ins(04 downto 00) := '1'&x"8";
 			when "nrm" => 
 				ins(31 downto 29) := "101";
-				ins(04 downto 00) := x"1d";
+				ins(04 downto 00) := '1'&x"d";
 			when "add" => 
 				ins(31 downto 29) := "001";
-				ins(04 downto 00) := x"0a";
+				ins(04 downto 00) := '0'&x"a";
 			when "sub" => 
 				ins(31 downto 29) := "011";
-				ins(04 downto 00) := x"0a";
+				ins(04 downto 00) := '0'&x"a";
 			when "dot" => 
 				ins(31 downto 29) := "000";
-				ins(04 downto 00) := x"17";
+				ins(04 downto 00) := '1'&x"7";
 			when "crs" => 
 				ins(31 downto 29) := "010";
-				ins(04 downto 00) := x"0e";
+				ins(04 downto 00) := '0'&x"e";
 			when others => 
 				ins(31 downto 29) := "111";
-				ins(04 downto 00) := x"05";
+				ins(04 downto 00) := '0'&x"5";
 		end case;
 		ins(28 downto 24) := aco;
 		ins(23 downto 19) := acf;
@@ -464,19 +517,24 @@ package body arithpack is
 	
 	
 
-	function ap_v3f2string(v:v3f) return string is
-		variable tmp:string (1 to 1024);
+	procedure ap_v3f2string(l:inout line;v:in v3f) is
+		
 	begin
-		tmp:="[X]"&ap_slvf2string(v(0))&"[Y]"&ap_slvf2string(v(1))&"[Z]"&ap_slvf2string(v(2));
-		return tmp;
-	end function;
+		write(l,string'("<< "));
+		for i in 02 downto 0 loop
+			write(l,string'(integer'image(i)));
+			write(l,string'(" "));
+			ap_slvf2string(l,v(i));
+		end loop;  
+		write(l,string'(" >>"));
 
-	function ap_iCtrlState2string(i:iCtrlState) return string is
-	
+	end procedure;
+
+	procedure ap_iCtrlState2string(l:inout line;i:in iCtrlState) is
 		variable tmp:string (1 to 9);
-	
 	begin
-	
+		
+		write(l,string'("<< "));
 		case i is 
 			when WAITING_FOR_AN_EVENT =>
 				tmp:="WAIT_EVNT";
@@ -487,54 +545,27 @@ package body arithpack is
 			when others => 
 				tmp:="ILGL__VAL";
 		end case;
-		
-		return tmp;
-		
-	end function;
+		write(l,string'(tmp));
+		write(l,string'(" >>"));
 	
-	function ap_vnadd022string(va2:vectorblockadd02) return string is
-		variable tmp:string (1 to 1024);
+	end procedure;
+	
+	procedure ap_vnadd022string(l:inout line;va2:in vectorblockadd02) is 
 	begin
-		tmp:="[01]"&ap_slv2hex(va2(1))&" [00]"&ap_slv2hex(va2(0));
-		return tmp;
-	end function;
+
+		write(l,string'("<<[1] "));
+		ap_slv2hex(l,va2(1));
+		write(l,string'(" [0] "));
+		ap_slv2hex(l,va2(0));
+		write(l,string'(" >>"));
+
+	end procedure;
 	
-	function ap_vblk122string(v12:vectorblock12) return string is
-		variable tmp:string (1 to 1024);
-	begin
-	
-		tmp:="["&integer'image(11)&"]";
-		for i in 11 downto 0 loop
-			tmp:=tmp&ap_slvf2string(v12(i));
-			if i>0 then
-				tmp:=tmp&"["&integer'image(i)&"]";
-			end if;
-		end loop;
-		return tmp;
-			
-	
-	end function;
-	
-	function ap_vblk082string(v8:vectorblock08) return string is
-		variable tmp:string (1 to 1024);
-	begin
-	
-		tmp:="["&integer'image(7)&"]";
-		for i in 7 downto 0 loop
-			tmp:=tmp&ap_slvf2string(v8(i));
-			if i>0 then
-				tmp:=tmp&"["&integer'image(i)&"]";
-			end if;
-		end loop;
-		return tmp;
-			
-	
-	end function;
-	
-	
-	function ap_macState2string(s:macState) return string is
+	procedure ap_macState2string(l:inout line;s:in macState) is
 		variable tmp:string (1 to 6);
 	begin
+		
+		write(l,string'("<< "));
 		case s is
 			when LOAD_INSTRUCTION => 
 				tmp:="LD_INS";
@@ -545,21 +576,40 @@ package body arithpack is
 			when others => 
 				tmp:="HEL_ON";
 		end case;
-		return tmp;
-	end function;
+		write(l,string'(tmp));
+		write(l,string'(" >>"));
+		
+	end procedure;
 	
 	constant hexchars : string (1 to 16) := "0123456789ABCDEF";
-	function ap_slv2hex (s:std_logic_vector) return string is 
-		variable x64 : std_logic_vector(63 downto 0):=x"0000000000000000";
-		variable str : string (1 to 16);
-	begin
-		x64(s'high downto s'low):=s;
-		for i in 15 downto 0 loop
-			str(i+1):=hexchars(1+ieee.std_logic_unsigned.conv_integer(x64(i*4+3 downto i*4)));
+	procedure ap_slv2hex (l:inout line;h:in std_logic_vector) is 
+		variable index_high,index_low,highone,nc : integer;
+	begin 
+		highone := h'high-h'low;
+		nc:=0;
+		for i in h'high downto h'low loop
+			if h(i)/='0' and h(i)/='1' then
+				nc:=1;
+			end if;
 		end loop;
-		return str;	
-	end function;
-
+		
+		if nc=1 then
+			for i in h'high downto h'low loop
+				ap_sl2string(l,h(i));
+			end loop;
+		else
+			for i in (highone)/4 downto 0 loop
+				index_low:=i*4;
+				if (index_low+3)>highone then
+					index_high := highone;
+				else
+					index_high := i*4+3;
+				end if;
+				write(l,hexchars(1+ieee.std_logic_unsigned.conv_integer(h(index_high+h'low downto index_low+h'low))));
+			end loop;
+		end if; 
+	end procedure;
+	
 	function ap_slv2int (sl:std_logic_vector) return integer is
 		alias s : std_logic_vector (sl'high downto sl'low) is sl;
 		variable i : integer; 
@@ -582,33 +632,35 @@ package body arithpack is
 		--! Signo
 		if (f<0.0) then
 			sef(31) := '1';
+			faux:=f*(-1.0);
 		else
 			sef(31) := '0';
+			faux:=f;
 		end if;
 		
 		--! Exponente
-		sef(30 downto 23) := conv_std_logic_vector(integer(floor(log(f,2.0))),8);
+		sef(30 downto 23) := conv_std_logic_vector(127+integer(floor(log(faux,2.0))),8);
 		
 		--! Fraction
-		faux :=f/floor(log(f,2.0));
+		faux :=faux/(2.0**real(floor(log(faux,2.0))));
 		faux := faux - 1.0;
 		
-		sef(22 downto 0)  := conv_std_logic_vector(integer(faux),23);
+		sef(22 downto 0)  := conv_std_logic_vector(integer(faux*(2.0**23.0)),23);
 		
 		return sef;				
 		 
 	end function;
 
 	function ap_slv2fp(sl:std_logic_vector) return real is
-		variable expo,frc:integer;
+		variable frc:integer;
 		alias s: std_logic_vector(31 downto 0) is sl;
-		variable f: real;
+		variable f,expo: real;
 		
 	begin
 		
 		
-		expo:=ap_slv2int(s(30 downto 23)) - 127;
-		expo:=2**expo;
+		expo:=real(ap_slv2int(s(30 downto 23)) - 127);
+		expo:=(2.0)**(expo);
 		frc:=ap_slv2int('1'&s(22 downto 0));
 		f:=real(frc)*(2.0**(-23.0));
 		f:=f*real(expo);
@@ -617,7 +669,9 @@ package body arithpack is
 			return -f;
 		else
 			return f;
-		end if; 
+		end if;
+		
+		 
 		
 		
 	end function;
@@ -632,29 +686,36 @@ package body arithpack is
 		dx := cam.width/real(cam.resx);
 		dy := cam.height/real(cam.resy);
 		
-		--! Eje X: Tomando el dedo &iacute;ndice de la mano derecha, este eje queda apuntando en la direcci&on en la que mira la c&aacute;mara u observador siempre.
+		--! Eje Z: Tomando el dedo &iacute;ndice de la mano derecha, este eje queda apuntando en la direcci&on en la que mira la c&aacute;mara u observador siempre.
 		v(0):=ap_fp2slv(cam.dist);
 		
-		--! Eje Y: Tomando el dedo coraz&oacute;n de la mano derecha, este eje queda apuntando a la izquierda del observador, desde el observador.
-		v(1):=ap_fp2slv(dx*real(cam.resx)*0.5-dx*0.5);
+		--! Eje X: Tomando el dedo coraz&oacute;n de la mano derecha, este eje queda apuntando a la izquierda del observador, desde el observador.
+		v(2):=ap_fp2slv(dx*real(cam.resx)*0.5-real(x)*dx-dx*0.5);
 		
-		--! Eje Z: Tomando el dedo pulgar de la mano derecha, este eje queda apuntando hacia arriba del observador, desde el observador.
-		v(2):=ap_fp2slv(dy*real(cam.resy)*0.5-dy*0.5);
+		--! Eje Y: Tomando el dedo pulgar de la mano derecha, este eje queda apuntando hacia arriba del observador, desde el observador.
+		v(1):=ap_fp2slv(dy*real(cam.resy)*0.5-real(y)*dy-dy*0.5);
 		
 		return v;
 	
 	end function;
 	
-	function ap_slvf2string(sl:std_logic_vector) return string is 
+	procedure ap_slvf2string(l:inout line;sl:std_logic_vector) is 
 		alias f: std_logic_vector(31 downto 0) is sl;
 		variable r: real;
 		
 	begin 
 		
 		r:=ap_slv2fp(f);
-		return real'image(r);
+		write(l,string'(real'image(r)));
+		write(l,string'(" [ s:"));
+		ap_slv2hex(l,f(31 downto 31));
+		write(l,string'(" f: "));
+		ap_slv2hex(l,f(30 downto 23));
+		write(l,string'(" m: "));
+		ap_slv2hex(l,f(22 downto 00));
+		write(l,string'(" ]"));
 		
-	end function;   
+	end procedure;   
 	
 	
 	

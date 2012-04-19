@@ -82,8 +82,11 @@ architecture dpc_arch of dpc is
 	signal snormfifo_q,snormfifo_d		: vectorblock03;
 	signal sdpfifo_q					: vectorblock02;
 	signal ssqr32blk,sinv32blk			: std_logic_vector(floatwidth-1 downto 0);
+	
+	--!TBXSTART:SYNC_CHAIN
 	signal ssync_chain					: std_logic_vector(28 downto 0);
 	signal ssync_chain_d				: std_logic;
+	--!TBXEND
 	signal sres567w,sres123w,sres2w		: std_logic;
 	signal sres0w,sres4w				: std_logic;
 	signal sres567f,sres123f			: std_logic; --! Entradas de la se&ntilde;al de full de las colas de resultados. 

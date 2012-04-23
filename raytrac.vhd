@@ -67,9 +67,15 @@ architecture raytrac_arch of raytrac is
 	signal s_sync_chain_0	: std_logic;
 	signal s_dpc_uca		: std_logic_vector(2 downto 0);
 	signal s_eoi			: std_logic;
+	--!TBXEND
 	--! Se&ntilde;ales de State Machine -> Testbench
 	signal s_smState		: macState;
-	--!TBXEND
+	
+	
+	
+	
+	
+	
 	--!TBXSTART:MBLK
 	--! Se&ntilde;ales de Memblock -> State Machine
 	signal s_iq_empty		: std_logic; 

@@ -374,7 +374,7 @@ package arithpack is
 	procedure ap_v3f2string(l:inout line;v:in v3f);
 	
 	--! Funci&oacute;n que formatea una instrucci&oacute;n
-	function ap_format_instruction(i:string;ac_o,bd_o,ac_f,bd_f:std_logic_vector;comb:std_logic) return std_logic_vector;
+	function ap_format_instruction(i:string;ac_o,ac_f,bd_o,bd_f:std_logic_vector;comb:std_logic) return std_logic_vector;
 	
 	--! Funci&oacute;n que devuelve una cadena de caracteres de un solo caracter con el valor de un bit std_logic
 	procedure ap_sl2string(l:inout line;s:std_logic);
@@ -471,7 +471,7 @@ package body arithpack is
 		
 	end procedure;
 
-	function ap_format_instruction(i:string;ac_o,bd_o,ac_f,bd_f:std_logic_vector;comb:std_logic) return std_logic_vector is
+	function ap_format_instruction(i:string;ac_o,ac_f,bd_o,bd_f:std_logic_vector;comb:std_logic) return std_logic_vector is
 		
 		alias aco : std_logic_vector (4 downto 0) is ac_o;
 		alias acf : std_logic_vector (4 downto 0) is ac_f;

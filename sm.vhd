@@ -65,18 +65,23 @@ architecture sm_arch of sm is
 	--! EXECUTE_INSTRUCTION: Estado en el que se ejecuta la instrucci&oacute;n de la cola de instrucciones.
 	--! FLUSH_ARITH_PIPELINE: Estado en el que se espera un n&uacute;mero espec&iacute;fico de ciclos de reloj, para que se desocupe el pipeline aritm&eacute;tico.
 	
+	--!TBXSTART:STATE
 	signal s_state : macState;
+	--!TBXEND
 	
 	
+	--!TBXSTART:INS_BLKS	 
+	signal s_dpc_uca		: 	std_logic_vector(2 downto 0);
+	signal s_instr_uca		: 	std_logic_vector(2 downto 0);
+	signal s_block_start_a	:	std_logic_vector(4 downto 0);
+	signal s_block_start_b	: 	std_logic_vector(4 downto 0); 
+	signal s_block_end_a	:	std_logic_vector(4 downto 0); 
+	signal s_block_end_b	:	std_logic_vector(4 downto 0);
+	signal s_combinatory	: 	std_logic;
+	signal s_delay_field	:	std_logic_vector(7 downto 0);
+	--!TBXEND
 	
-	signal s_instr_uca: 	std_logic_vector(2 downto 0);
-	signal s_dpc_uca: 		std_logic_vector(2 downto 0);	 
-	signal s_block_start_a: std_logic_vector(4 downto 0);
-	signal s_block_start_b: std_logic_vector(4 downto 0); 
-	signal s_block_end_a:	std_logic_vector(4 downto 0); 
-	signal s_block_end_b:	std_logic_vector(4 downto 0); 
-	signal s_combinatory: 	std_logic;
-	signal s_delay_field:	std_logic_vector(7 downto 0);
+	--!TBXEND:CNT_SIGNLS
 	signal s_set_b:			std_logic;						--! Se&ntilde;al para colocar un valor arbitrario en el contador B.
 	signal s_set_a:			std_logic;	
 	signal s_set_dly:		std_logic;
@@ -86,7 +91,7 @@ architecture sm_arch of sm is
 	signal s_zeroFlag_delay:std_logic;						--! Bandera de cero del contador delay.	
 	signal s_eq_b,s_eq_a: 	std_logic; 	--! Indica cuando se est&aacute; leyendo el &uacute;ltimo bloque de memoria con operandos de entrada de a y de b respectivamente. 
 	signal s_eb_b,s_eb_a:	std_logic; 	--! Indica que se est&aacute; leyendo en memoria el &uacute;ltimo operando del bloque actual, b o a, respectivamente.
-		 	
+	--!TBXEND	 	
 begin
 	
 	state <= s_state;
@@ -95,7 +100,7 @@ begin
 	dpc_uca <= s_dpc_uca;
 
 
-	--! Bloques asignados en la instrucci´øn
+	--! Bloques asignados en la instrucci&oacute;n
 	s_block_start_a <= instrQq(floatwidth-4 downto floatwidth-8);
 	s_block_end_a <= instrQq(floatwidth-9 downto floatwidth-13);
 	

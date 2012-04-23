@@ -62,7 +62,7 @@ architecture memblock_arch of memblock is
 	
 	
 	
-	--!TBXSTART:MEMBLOCK_EXTERNAL_WRITE
+	--!TXBXSTART:MEMBLOCK_EXTERNAL_WRITE
 	signal s0ext_wr_add_one_hot : std_logic_vector(12-1+1 downto 0); --! La se&ntilde;al extra es para la escritura de la cola de instrucciones.
 	signal s0ext_wr_add			: std_logic_vector(4+widthadmemblock-1 downto 0);
 	signal s0ext_wr				: std_logic;
@@ -82,7 +82,6 @@ architecture memblock_arch of memblock is
 	
 	
 	--!TBXSTART:MEMBLOCK_INTERNAL_READ
-	signal s0int_rd_add			: std_logic_vector(widthadmemblock-1 downto 0);
 	signal sint_rd_add			: vectorblockadd02;
 	signal s1int_q				: vectorblock12;
 	--!TBXEND

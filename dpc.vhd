@@ -74,9 +74,12 @@ architecture dpc_arch of dpc is
 	
 	
 	
-	
-	signal sparaminput,sfactor			: vectorblock12;
-	signal ssumando,sresult 			: vectorblock08;
+	signal sparaminput					: vectorblock12;
+	--!TBXSTART:FACTORS_N_ADDENDS
+	signal sfactor						: vectorblock12;
+	signal ssumando						: vectorblock08;
+	--!TBXEND
+	signal sresult 						: vectorblock08;
 	signal sprd32blk					: vectorblock06;
 	signal sadd32blk					: vectorblock04;
 	signal snormfifo_q,snormfifo_d		: vectorblock03;

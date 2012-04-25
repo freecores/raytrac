@@ -41,24 +41,59 @@ end entity;
 architecture fadd32_arch of fadd32 is
 	
 	
-	
-	signal s1zero,s7sign											: std_logic;
-	--!TXBXSTART:STAGE5
-	signal s5token																		: std_logic_vector(2 downto 0);
-	signal s5tokena,s5tokenb,s5tokenc													: std_logic;
+	--!TBXSTART:STAGE0
+	signal s0delta	: std_logic_vector(7 downto 0);
+	signal s0a,s0b	: std_logic_vector(31 downto 0); -- Float 32 bit 
+
 	--!TBXEND
-	signal s1delta																		: std_logic_vector(5 downto 0);
-	signal s0delta,s1exp,s2exp,s3exp,s4exp,s5exp,s6exp,s5factor,s6factor,s7exp,s7factor	: std_logic_vector(7 downto 0);
-	signal s1shifter,s5factorhot9,s6factorhot9,s1datab_8x,s6datab_4x					: std_logic_vector(8 downto 0);
-	signal s1pl,s6pl,s1datab,s6datab													: std_logic_vector(17 downto 0);
-	signal s6postshift,s7postshift														: std_logic_vector(22 downto 0);
-	signal s1umantshift,s1umantfixed,s1postshift,s1xorslab,s2xorslab					: std_logic_vector(23 downto 0);
-	signal s5factorhot24																: std_logic_vector(23 downto 0);
-	signal s2umantshift,s2mantfixed,s3mantfixed,s3mantshift,s4xorslab					: std_logic_vector(24 downto 0);
-	signal s4sresult,s5result,s6result													: std_logic_vector(25 downto 0); -- Signed mantissa result
-	signal s1ph,s6ph																	: std_logic_vector(26 downto 0);
-	signal s0a,s0b																		: std_logic_vector(31 downto 0); -- Float 32 bit 
-	signal sxprop : std_logic_vector(7 downto 0);
+	--!TBXSTART:STAGE1
+	signal s1zero											: std_logic;
+	signal s1delta											: std_logic_vector(5 downto 0);
+	signal s1exp											: std_logic_vector(7 downto 0);
+	signal s1shifter,s1datab_8x								: std_logic_vector(8 downto 0);
+	signal s1pl,s1datab										: std_logic_vector(17 downto 0);
+	signal s1umantshift,s1umantfixed,s1postshift,s1xorslab	: std_logic_vector(23 downto 0);
+	signal s1ph												: std_logic_vector(26 downto 0); 
+	--!TBXEND
+	--!TBXSTART:STAGE2
+	signal s2exp 						: std_logic_vector(7 downto 0);
+	signal s2xorslab 					: std_logic_vector(23 downto 0);
+	signal s2umantshift, s2mantfixed	: std_logic_vector(24 downto 0);
+	--!TBXEND
+	--!TBXSTART:STAGE3
+	signal s3exp 					: std_logic_vector(7 downto 0);
+	signal s3mantfixed,s3mantshift	: std_logic_vector (24 downto 0);
+	--!TBXEND
+	--!TBXSTART:STAGE4
+	signal s4exp 		: std_logic_vector (7 downto 0);
+	signal s4xorslab	: std_logic_vector (24 downto 0);
+	signal s4sresult		: std_logic_vector (25 downto 0);
+	--!TBXEND
+	--!TBXSTART:STAGE5
+	signal s5tokena,s5tokenb,s5tokenc	: std_logic;
+	signal s5token						: std_logic_vector (2 downto 0);
+	signal s5exp,s5factor 				: std_logic_vector (7 downto 0);
+	signal s5factorhot9	 				: std_logic_vector (8 downto 0);
+	signal s5factorhot24 				: std_logic_vector (23 downto 0);
+	signal s5result 					: std_logic_vector (25 downto 0);
+	--!TBXEND
+	--!TBXSTART:STAGE6
+	signal s6exp,s6factor			: std_logic_vector(7 downto 0);
+	signal s6factorhot9,s6datab_4x	: std_logic_vector(8 downto 0);
+	signal s6pl,s6datab				: std_logic_vector(17 downto 0);
+	signal s6postshift				: std_logic_vector(22 downto 0);
+	signal s6result					: std_logic_vector(25 downto 0); -- Signed mantissa result
+	signal s6ph						: std_logic_vector(26 downto 0);
+	--!TBXEND
+	--!TBXSTART:STAGE7
+	signal s7sign					: std_logic;
+	signal s7exp,s7factor			: std_logic_vector(7 downto 0);
+	signal s7postshift				: std_logic_vector(22 downto 0);
+	--!TBXEND
+	
+	
+	
+	
 	
 begin
 	
@@ -78,7 +113,7 @@ begin
 			else
 				s1zero <= '1';
 			end if;
-			s1delta <= s0delta(7) & (s0delta(7) xor s0delta(4))&(s0delta(7) xor s0delta(3)) & s0delta(2 downto 0);			
+			s1delta <= not(s0delta(7)) & (s0delta(7) xor s0delta(4))&(s0delta(7) xor s0delta(3)) & s0delta(2 downto 0);			
 			case s0delta(7) is
 				when '1'  => 
 					s1exp <= s0b(30 downto 23);

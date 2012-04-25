@@ -67,6 +67,7 @@ architecture raytrac_arch of raytrac is
 	signal s_sync_chain_0	: std_logic;
 	signal s_dpc_uca		: std_logic_vector(2 downto 0);
 	signal s_eoi			: std_logic;
+	signal s_sign			: std_logic;
 	--!TBXEND
 	--! Se&ntilde;ales de State Machine -> Testbench
 	signal s_smState		: macState;
@@ -130,8 +131,8 @@ begin
 	
 	
 	
-
-
+	--! Signo de los bloques de suma
+	s_sign <= not(s_dpc_uca(2)) and s_dpc_uca(1);
 	--! Instanciar el bloque de memorias MEMBLOCK
 	s_resultfifo_wr <= s_resultsfifo_w(4)&s_resultsfifo_w(4)&s_resultsfifo_w(4)&s_resultsfifo_w(3)&s_resultsfifo_w(2)&s_resultsfifo_w(1)&s_resultsfifo_w(2)&s_resultsfifo_w(0);
 	s_int_rd_add  <= s_addb&s_adda;
@@ -234,7 +235,7 @@ begin
 	port map (
 		clk => clk,
 		rst => rst,
-		dpc => s_dpc_uca(1),
+		dpc => s_sign,
 		f	=> s_f,
 		a	=> s_a,
 		s	=> s_s,

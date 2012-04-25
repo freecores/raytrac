@@ -486,7 +486,7 @@ package body arithpack is
 				ins(31 downto 29) := "100";
 				ins(04 downto 00) := '1'&x"8";
 			when "nrm" => 
-				ins(31 downto 29) := "101";
+				ins(31 downto 29) := "110";
 				ins(04 downto 00) := '1'&x"d";
 			when "add" => 
 				ins(31 downto 29) := "001";

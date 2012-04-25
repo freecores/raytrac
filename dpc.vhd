@@ -79,20 +79,26 @@ architecture dpc_arch of dpc is
 	signal sfactor						: vectorblock12;
 	signal ssumando						: vectorblock08;
 	--!TBXEND
+	
+	
+	--!TBXSTART:ARITHMETIC_RESULTS
 	signal sresult 						: vectorblock08;
 	signal sprd32blk					: vectorblock06;
 	signal sadd32blk					: vectorblock04;
+	signal ssqr32blk,sinv32blk			: xfloat32;
+	--!TBXEND
+	
 	signal snormfifo_q,snormfifo_d		: vectorblock03;
 	signal sdpfifo_q					: vectorblock02;
-	signal ssqr32blk,sinv32blk			: std_logic_vector(floatwidth-1 downto 0);
 	
 	--!TBXSTART:SYNC_CHAIN
-	signal ssync_chain					: std_logic_vector(28 downto 0);
-	signal ssync_chain_d				: std_logic;
+	signal ssync_chain					: std_logic_vector(28 downto 1);
 	--!TBXEND
 	signal sres567w,sres123w,sres2w		: std_logic;
 	signal sres0w,sres4w				: std_logic;
-	signal sres567f,sres123f			: std_logic; --! Entradas de la se&ntilde;al de full de las colas de resultados. 
+	
+	--! Entradas de la se&ntilde;al de full de las colas de resultados. 
+	signal sres567f,sres123f			: std_logic; 
 	signal sres24f,sres0f				: std_logic;
 	
 	
@@ -101,16 +107,16 @@ architecture dpc_arch of dpc is
 begin
 	
 	--! Cadena de sincronizaci&oacute;n: 29 posiciones.
-	ssync_chain(0) <= sync_chain_0;
 	sync_chain_proc:
-	process(clk,rst)
+	process(clk,rst,sync_chain_0)
 	begin
 		if rst=rstMasterValue then
 			ssync_chain(28 downto 1) <= (others => '0');
 		elsif clk'event and clk='1' then 
-			for i in 28 downto 1 loop
+			for i in 28 downto 2 loop
 				ssync_chain(i) <= ssync_chain(i-1);
 			end loop;
+			ssync_chain(1) <= sync_chain_0;
 		end if;
 	end process sync_chain_proc;
 	
@@ -118,29 +124,47 @@ begin
 	fifo32x09_w <= ssync_chain(5);
 	fifo32x23_w <= ssync_chain(1);
 	fifo32x09_r <= ssync_chain(13);
-	fifo32x23_r <= ssync_chain(24);	
-	sres0w	<= ssync_chain(23);
-	sres4w 	<= ssync_chain(22);
+	fifo32x23_r <= ssync_chain(24);
+		
+	
 	resw	<= sres567w&sres4w&sres123w&sres2w&sres0w;
 	sync_chain_comb:
 	process (ssync_chain,addsub,crossprod,unary)
 	begin
 		if unary='1' then
-			sres567w <= ssync_chain(28);
-		else
-			sres567w <= ssync_chain(4);
-		end if;
-	
-		if addsub='1' then 
+		
+			--!Desconectar los canales de Suma, Resta, Producto Punto y Producto Cruz
+			sres123w <= '0';
+			sres2w <= '0';
+			sres4w <= '0';
+		
+			--! Producto Escalar, Normalizaci&oacute;n o Magnitusd 
+			sres567w <= ssync_chain(4) and crossprod and addsub;
+			sres0w <= ssync_chain(23) and not(addsub) and not(crossprod);
+			
+		elsif addsub='1' then
+			
+			--! Desconectar los canales de Normalizaci&oacute;n, Producto Escalar, Producto Punto C.D y Magnitud	
+			sres567w <= '0';
+		 	sres0w <= '0';
+		 	sres4w <= '0';
+		 	
+		 	
+			--! Suma o Resta.
 			sres123w <= ssync_chain(9);
 		 	sres2w <= ssync_chain(9);
+		
 		else
-			sres123w <= ssync_chain(13);
-			if crossprod='1' then
-				sres2w <= ssync_chain(13);
-			else
-				sres2w <= ssync_chain(22);
-			end if;
+		
+			--! Desconectar la escritura en los canales de Normalizaci&oacute;n, Producto Escalar, Suma, Resta y Magnitud.
+			sres567w <= '0';
+			sres0w <= '0';
+			
+			--! Producto Punto o Cruz.
+			sres2w <= (ssync_chain(22) and not(crossprod)) or (ssync_chain(13) and crossprod);
+			sres4w <= ssync_chain(22) and not(crossprod);
+			sres123w <= ssync_chain(13) and crossprod;
+
 		end if;
 	end process sync_chain_comb;
 	
@@ -216,7 +240,7 @@ begin
 	
 	--! La entrada al inversor SIEMPRE viene con la salida de la raiz cuadrada
 	inv32blki <= sqr32blko;
-	--! La entrada de la ra�z cuadrada SIEMPRE viene con la salida del sumador 1.
+	--! La entrada de la ra&iacute;z cuadrada SIEMPRE viene con la salida del sumador 1.
 	sqr32blki <= sadd32blk(a1);
 	
 	
@@ -234,18 +258,31 @@ begin
 	begin 
 		if unary='0' then
 			if crossprod='1' or addsub='1' then
+				--! Suma, Resta o Producto Cruz
 				eoi_demuxed_int <= "00"&eoi_int&'0'; 
 				resf_event <= sres123f;
 			else
+				--! Producto Punto
 				eoi_demuxed_int <= '0'&eoi_int&"00";
 				resf_event <= sres24f;
 			end if;
-		elsif crossprod='1' or addsub='1' then
+		elsif crossprod='1' then
+			
+			--! Normalizaci&oacute;n o Producto Escalar
 			eoi_demuxed_int <= eoi_int&"000";
 			resf_event <= sres567f;
-		else
+			
+		elsif addsub='0' then
+		
+			 --! Magnitud
 			eoi_demuxed_int <= "000"&eoi_int;
 			resf_event <= sres0f;
+			
+		else 
+			--! Se deber&iacute;a generar una excepci&oacute;n de se&ntilde;al invalida.
+			eoi_demuxed_int <= x"F";
+			resf_event <= '0';
+			
 		end if;
 	end process;
 			
@@ -262,6 +299,8 @@ begin
 			sfactor(f3) <= sparaminput(ay);
 			
 			sfactor(f5) <= sparaminput(az);
+			
+			--!Multiplicaci&oacute;n escalar.
 			if crossprod='1' and addsub='1' then
 				sfactor(f6) <= sparaminput(cx);
 				sfactor(f7) <= sparaminput(dx);
@@ -303,6 +342,7 @@ begin
 				sfactor(f2) <= 	sparaminput(ay) ;	
 				sfactor(f3) <= 	sparaminput(by) ;
 				sfactor(f5) <= 	sparaminput(bz) ;
+				
 				sfactor(f6) <= 	sparaminput(cx) ;
 				sfactor(f7) <= 	sparaminput(dx) ;
 				sfactor(f8) <= 	sparaminput(cy) ;

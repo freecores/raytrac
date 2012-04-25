@@ -81,16 +81,16 @@ architecture sm_arch of sm is
 	signal s_delay_field	:	std_logic_vector(7 downto 0);
 	--!TBXEND
 	
-	--!TBXEND:CNT_SIGNLS
-	signal s_set_b:			std_logic;						--! Se&ntilde;al para colocar un valor arbitrario en el contador B.
-	signal s_set_a:			std_logic;	
-	signal s_set_dly:		std_logic;
-	signal s_go_b:			std_logic;						--! Salida para controlar la pausa(0) o marcha(1) del contador de direcciones del operando B/D.
-	signal s_go_a:			std_logic;						--! Salida para controlar la pausa(0) o marcha(1) del contador de direcciones del operando A/C.	
-	signal s_go_delay:		std_logic;						--! Salida para controlar la pausa(0) o marcha(1) del contador de delay, para el flush del pipeline aritm&eacute;tico.
-	signal s_zeroFlag_delay:std_logic;						--! Bandera de cero del contador delay.	
-	signal s_eq_b,s_eq_a: 	std_logic; 	--! Indica cuando se est&aacute; leyendo el &uacute;ltimo bloque de memoria con operandos de entrada de a y de b respectivamente. 
-	signal s_eb_b,s_eb_a:	std_logic; 	--! Indica que se est&aacute; leyendo en memoria el &uacute;ltimo operando del bloque actual, b o a, respectivamente.
+	--!TBXSTART:CNT_SIGNLS
+	signal s_set_b			:	std_logic;						--! Se&ntilde;al para colocar un valor arbitrario en el contador B.
+	signal s_set_a			:	std_logic;	
+	signal s_set_dly		:	std_logic;
+	signal s_go_b			:	std_logic;						--! Salida para controlar la pausa(0) o marcha(1) del contador de direcciones del operando B/D.
+	signal s_go_a			:	std_logic;						--! Salida para controlar la pausa(0) o marcha(1) del contador de direcciones del operando A/C.	
+	signal s_go_delay		:	std_logic;						--! Salida para controlar la pausa(0) o marcha(1) del contador de delay, para el flush del pipeline aritm&eacute;tico.
+	signal s_zeroFlag_delay	:	std_logic;						--! Bandera de cero del contador delay.	
+	signal s_eq_b,s_eq_a	: 	std_logic; 	--! Indica cuando se est&aacute; leyendo el &uacute;ltimo bloque de memoria con operandos de entrada de a y de b respectivamente. 
+	signal s_eb_b,s_eb_a	:	std_logic; 	--! Indica que se est&aacute; leyendo en memoria el &uacute;ltimo operando del bloque actual, b o a, respectivamente.
 	--!TBXEND	 	
 begin
 	

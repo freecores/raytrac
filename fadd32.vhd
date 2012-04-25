@@ -113,7 +113,7 @@ begin
 			else
 				s1zero <= '1';
 			end if;
-			s1delta <= not(s0delta(7)) & (s0delta(7) xor s0delta(4))&(s0delta(7) xor s0delta(3)) & s0delta(2 downto 0);			
+			s1delta <= s0delta(7) & (s0delta(7) xor s0delta(4))&(s0delta(7) xor s0delta(3)) & s0delta(2 downto 0);			
 			case s0delta(7) is
 				when '1'  => 
 					s1exp <= s0b(30 downto 23);
@@ -125,14 +125,15 @@ begin
 					s1umantfixed <= s0a(31)&s0a(22 downto 0);
 			end case;
 			
-			--! Etapa 1: Denormalizaci&oacute;n de la mantissas.  
+			--! Etapa 1: Denormalizaci&oacute;n de la mantissas.
 			case s1delta(4 downto 3) is
 				when "00" =>	s2umantshift <= s1umantshift(23)&s1postshift(23 downto 0);
 				when "01" =>	s2umantshift <= s1umantshift(23)&x"00"&s1postshift(23 downto 8);
 				when "10" =>	s2umantshift <= s1umantshift(23)&x"0000"&s1postshift(23 downto 16);
 				when others => 	s2umantshift <= (others => '0');		
 			end case;
-			s2mantfixed <= s1umantfixed(23) &         ( ( ('1'&s1umantfixed(22 downto 0)) xor s1xorslab)   + ( x"00000"&"000"&s1umantfixed(23)  )   ); 
+			
+			s2mantfixed <= s1umantfixed(23) & ( ( ('1'&s1umantfixed(22 downto 0)) xor s1xorslab) + ( x"00000"&"000"&s1umantfixed(23)  )   ); 
 			s2exp  <= s1exp;
 			
 			--! Etapa2: Signar la mantissa denormalizada.

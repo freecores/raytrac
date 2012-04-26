@@ -270,9 +270,9 @@ begin
 		end loop;
 		s5token <=s5tokena&s5tokenb&s5tokenc; 
 		case (s5token) is
-			when "100"  => s5factor(4 downto 3) <= "10";
+			when "100"  => s5factor(4 downto 3) <= "00";
 			when "110"  => s5factor(4 downto 3) <= "01";
-			when "111"	=> s5factor(4 downto 3) <= "00";
+			when "111"	=> s5factor(4 downto 3) <= "10";
 			when others => s5factor(4 downto 3) <= (others => s5result(24));
 		end case;
 		s5factorhot9 <= (s5factorhot24(7 downto 0)or s5factorhot24(15 downto 8)or s5factorhot24(23 downto 16)) & s5result(24);

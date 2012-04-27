@@ -42,12 +42,9 @@ package arithpack is
 	type	vectorblock02 is array (01 downto 0) of std_logic_vector(floatwidth-1 downto 0);
 	type	vectorblockadd02 is array (01 downto 0) of std_logic_vector(widthadmemblock-1 downto 0);
 	
-	
-	
-	
-	
 	--! Constante de reseteo
 	constant rstMasterValue : std_logic :='0';
+
 	--! Constantes periodicas.
 	constant tclk 	: time := 20 ns;
 	constant tclk_2 : time := tclk/2;
@@ -379,63 +376,66 @@ package arithpack is
 	--! Funci&oacute;n que devuelve una cadena de caracteres de un solo caracter con el valor de un bit std_logic
 	procedure ap_sl2string(l:inout line;s:std_logic);
 	
-	--! Procedure
+	--! Procedimiento para mostrar vectores en forma de arreglos de flotantes
 	procedure ap_xfp122string(l:inout line;vb12:in vectorblock12);
 	procedure ap_xfp082string(l:inout line;vb08:in vectorblock08);
 	procedure ap_xfp062string(l:inout line;vb06:in vectorblock06);
 	procedure ap_xfp042string(l:inout line;vb04:in vectorblock04);
+	procedure ap_xfp022string(l:inout line;vb02:in vectorblock02);
+	
 	 
 end package;
 
 
 package body arithpack is
 	
+	procedure ap_xfp022string(l:inout line; vb02:in vectorblock02) is
+	begin
+		for i in 01 downto 0 loop
+			write(l,string'(" ["&integer'image(i)&"]"));
+			write(l,string'(" "));
+			ap_slvf2string(l,vb02(i));
+		end loop;  
+	
+	end procedure;
 	procedure ap_xfp122string(l:inout line; vb12:in vectorblock12) is
 
 	begin
-		write(l,string'("<< "));
 		for i in 11 downto 0 loop
-			write(l,string'(integer'image(i)));
+			write(l,string'(" ["&integer'image(i)&"]"));
 			write(l,string'(" "));
 			ap_slvf2string(l,vb12(i));
 		end loop;  
-		write(l,string'(" >>"));
 	end procedure;
 	
 	procedure ap_xfp082string(l:inout line; vb08:in vectorblock08) is
 
 	begin
-		write(l,string'("<< "));
 		for i in 07 downto 0 loop
 			write(l,string'(" ["&integer'image(i)&"]"));
 			write(l,string'(" "));
 			ap_slvf2string(l,vb08(i));
 		end loop;  
-		write(l,string'(" >>"));
 	end procedure;
 	
 	procedure ap_xfp062string(l:inout line; vb06:in vectorblock06) is
 
 	begin
-		write(l,string'("<< "));
 		for i in 05 downto 0 loop
-			write(l,string'(integer'image(i)));
+			write(l,string'(" ["&integer'image(i)&"]"));
 			write(l,string'(" "));
 			ap_slvf2string(l,vb06(i));
 		end loop;  
-		write(l,string'(" >>"));
 	end procedure;
 	
 	procedure ap_xfp042string(l:inout line; vb04:in vectorblock04) is
 
 	begin
-		write(l,string'("<< "));
 		for i in 03 downto 0 loop
-			write(l,string'(integer'image(i)));
+			write(l,string'(" ["&integer'image(i)&"]"));
 			write(l,string'(" "));
 			ap_slvf2string(l,vb04(i));
 		end loop;  
-		write(l,string'(" >>"));
 	end procedure;
 	
 	
@@ -463,9 +463,9 @@ package body arithpack is
 			when others => 
 				tmp:="-"; -- Don't care
 		end case;
-		write(l,string'("<< "));
+		write(l,string'(" "));
 		write(l,string'(tmp));
-		write(l,string'(" >>"));
+		write(l,string'(" "));
 		
 		
 		
@@ -518,16 +518,16 @@ package body arithpack is
 	
 
 	procedure ap_v3f2string(l:inout line;v:in v3f) is
-		
 	begin
-		write(l,string'("<< "));
-		for i in 02 downto 0 loop
-			write(l,string'(integer'image(i)));
-			write(l,string'(" "));
-			ap_slvf2string(l,v(i));
-		end loop;  
-		write(l,string'(" >>"));
-
+		write(l,string'("[X]"));
+		write(l,string'(" "));
+		ap_slvf2string(l,v(2));
+		write(l,string'("[Y]"));
+		write(l,string'(" "));
+		ap_slvf2string(l,v(1));
+		write(l,string'("[Z]"));
+		write(l,string'(" "));
+		ap_slvf2string(l,v(0));
 	end procedure;
 
 	procedure ap_iCtrlState2string(l:inout line;i:in iCtrlState) is

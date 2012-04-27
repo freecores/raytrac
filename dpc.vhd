@@ -78,6 +78,7 @@ architecture dpc_arch of dpc is
 	--!TBXSTART:FACTORS_N_ADDENDS
 	signal sfactor						: vectorblock12;
 	signal ssumando						: vectorblock08;
+	signal sdpfifo_q					: vectorblock02;
 	--!TBXEND
 	
 	
@@ -89,7 +90,6 @@ architecture dpc_arch of dpc is
 	--!TBXEND
 	
 	signal snormfifo_q,snormfifo_d		: vectorblock03;
-	signal sdpfifo_q					: vectorblock02;
 	
 	--!TBXSTART:SYNC_CHAIN
 	signal ssync_chain					: std_logic_vector(28 downto 1);
@@ -123,8 +123,8 @@ begin
 	--! Escritura en las colas de resultados y escritura/lectura en las colas intermedias mediante cadena de resultados.
 	fifo32x09_w <= ssync_chain(5);
 	fifo32x23_w <= ssync_chain(1);
-	fifo32x09_r <= ssync_chain(13);
-	fifo32x23_r <= ssync_chain(24);
+	fifo32x09_r <= ssync_chain(14);
+	fifo32x23_r <= ssync_chain(25);
 		
 	
 	resw	<= sres567w&sres4w&sres123w&sres2w&sres0w;

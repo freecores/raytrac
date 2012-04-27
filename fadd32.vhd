@@ -159,7 +159,7 @@ begin
 			--! Etapa 6: Ejecutar el corrimiento de la mantissa.
 			s7sign 			<= s6result(25);
 			s7exp			<= s6exp;
-			s7factor		<= s6factor;
+			s7factor		<= not(s6factor)+1;
 			s7postshift		<= s6postshift;
 			
 			

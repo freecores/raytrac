@@ -256,14 +256,18 @@ begin
 	fullQ:process(sres0f,sres123f,sres24f,sres567f,unary,crossprod,addsub,eoi_int)
 	begin 
 		if unary='0' then
-			if crossprod='1' or addsub='1' then
-				--! Suma, Resta o Producto Cruz
+			if addsub='1' then
+				--! Suma o Resta 
 				eoi_demuxed_int <= "00"&eoi_int&'0'; 
 				resf_event <= sres123f;
-			else
+			elsif crossprod='0' then 
 				--! Producto Punto
 				eoi_demuxed_int <= '0'&eoi_int&"00";
 				resf_event <= sres24f;
+			else
+				--! Producto Cruz
+				eoi_demuxed_int <= "00"&eoi_int&'0';
+				resf_event <= sres123f;
 			end if;
 		elsif crossprod='1' then
 			

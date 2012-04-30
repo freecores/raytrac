@@ -106,7 +106,6 @@ architecture raytrac_arch of raytrac is
 	--! Se&ntilde;ales de DPC  a invr32.
 	--! Se&ntilde que va desde DPC -> Memblock
 	signal s_resultfifo_wr	: std_logic_vector (7 downto 0);
-	signal s_resultsfifo_w	: std_logic_vector (4 downto 0);
 	signal s_dpfifo_w		: std_logic;
 	signal s_dpfifo_r		: std_logic;
 	signal s_dpfifo_d		: std_logic_vector (2*32-1 downto 0);
@@ -123,6 +122,8 @@ architecture raytrac_arch of raytrac is
 	signal s_s				: vectorblock04; 
 	signal s_p				: vectorblock06;
 	--!TBXEND
+	signal s_resultsfifo_w	: std_logic_vector (4 downto 0);
+	
 	--!TBXSTART:IM
 	--! Se&ntilde;ales de Interruption Machine al testbench
 	signal s_iCtrlState		: iCtrlState;

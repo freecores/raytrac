@@ -369,6 +369,7 @@ package arithpack is
 	
 	--! Funci&oacute;n que devuelve una cadena con los componentes de un vector R3 en punto flotante IEEE754	
 	procedure ap_v3f2string(l:inout line;v:in v3f);
+	procedure ap_xfp032string(l:inout line;vb03:in vectorblock03);
 	
 	--! Funci&oacute;n que formatea una instrucci&oacute;n
 	function ap_format_instruction(i:string;ac_o,ac_f,bd_o,bd_f:std_logic_vector;comb:std_logic) return std_logic_vector;
@@ -528,6 +529,18 @@ package body arithpack is
 		write(l,string'("[Z]"));
 		write(l,string'(" "));
 		ap_slvf2string(l,v(0));
+	end procedure;
+	procedure ap_xfp032string(l:inout line;vb03:in vectorblock03) is
+	begin
+		write(l,string'("[X]"));
+		write(l,string'(" "));
+		ap_slvf2string(l,vb03(2));
+		write(l,string'("[Y]"));
+		write(l,string'(" "));
+		ap_slvf2string(l,vb03(1));
+		write(l,string'("[Z]"));
+		write(l,string'(" "));
+		ap_slvf2string(l,vb03(0));
 	end procedure;
 
 	procedure ap_iCtrlState2string(l:inout line;i:in iCtrlState) is

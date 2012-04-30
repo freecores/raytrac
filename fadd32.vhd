@@ -67,29 +67,13 @@ architecture fadd32_arch of fadd32 is
 	--!TBXSTART:STAGE4
 	signal s4exp 		: std_logic_vector (7 downto 0);
 	signal s4xorslab	: std_logic_vector (24 downto 0);
-	signal s4sresult		: std_logic_vector (25 downto 0);
+	signal s4sresult	: std_logic_vector (25 downto 0);
 	--!TBXEND
 	--!TBXSTART:STAGE5
-	signal s5tokena,s5tokenb,s5tokenc	: std_logic;
-	signal s5token						: std_logic_vector (2 downto 0);
-	signal s5exp,s5factor 				: std_logic_vector (7 downto 0);
-	signal s5factorhot9	 				: std_logic_vector (8 downto 0);
-	signal s5factorhot24 				: std_logic_vector (23 downto 0);
-	signal s5result 					: std_logic_vector (25 downto 0);
+	signal s5exp		: std_logic_vector (7 downto 0);				
+	signal s5result 	: std_logic_vector (25 downto 0);
 	--!TBXEND
-	--!TBXSTART:STAGE6
-	signal s6exp,s6factor			: std_logic_vector(7 downto 0);
-	signal s6factorhot9,s6datab_4x	: std_logic_vector(8 downto 0);
-	signal s6pl,s6datab				: std_logic_vector(17 downto 0);
-	signal s6postshift				: std_logic_vector(22 downto 0);
-	signal s6result					: std_logic_vector(25 downto 0); -- Signed mantissa result
-	signal s6ph						: std_logic_vector(26 downto 0);
-	--!TBXEND
-	--!TBXSTART:STAGE7
-	signal s7sign					: std_logic;
-	signal s7exp,s7factor			: std_logic_vector(7 downto 0);
-	signal s7postshift				: std_logic_vector(22 downto 0);
-	--!TBXEND
+	
 	
 	
 	
@@ -150,33 +134,27 @@ begin
 			s5exp		<= s4exp; 
 			
 			
-			--! Etapa 5: Codificar el corrimiento para la normalizacion de la mantissa resultante.
-			s6result		<= s5result;
-			s6exp		 	<= s5exp; 
-			s6factor		<= s5factor;
-			s6factorhot9	<= s5factorhot9;
 			
-			--! Etapa 6: Ejecutar el corrimiento de la mantissa.
-			s7sign 			<= s6result(25);
-			s7exp			<= s6exp;
-			s7factor		<= not(s6factor)+1;
-			s7postshift		<= s6postshift;
+			
 			
 			
 		end if;
 	end process;
-
-	--! Etapa 7: Entregar el resultado.
-	c32(31)	<= s7sign;
-	process(s7exp,s7postshift,s7factor)
-	begin
-		c32(30 downto 23)	<= s7exp+s7factor;
-		case s7factor(4 downto 3) is 
-			when "01" 	=> c32(22 downto 0) <= s7postshift(14 downto 00)&x"00";
-			when "10" 	=> c32(22 downto 0) <= s7postshift(06 downto 00)&x"0000";
-			when others => c32(22 downto 0)	<= s7postshift;
-		end case; 
+	--! Etapa 5: Codificar el corrimiento para la normalizacion de la mantissa resultante y entregar el resultado.
+	c32(31) <= s5result(25);
+	process (s5result(24 downto 0))
+	begin 
+		case s5result(24) is
+			when '1' => 
+				c32 (22 downto 00) <= s5result(23 downto 1);
+				c32 (30 downto 23) <= s5exp+1;
+			when others => 
+				c32 (22 downto 00) <= s5result(22 downto 0);
+				c32 (30 downto 23) <= s5exp;
+		end case;
 	end process;
+	
+
 	--! Combinatorial gremlin, Etapa 0 el corrimiento de la mantissa con menor exponente y reorganiza los operandos,\n
 	--! si el mayor es b, intercambia las posici&oacute;n si el mayor es a las posiciones la mantiene. 
 	s0delta <=  s0a(30 downto 23)-s0b(30 downto 23);
@@ -238,94 +216,7 @@ begin
 	--! Combinatorial Gremlin, Etapa 4: Quitar el signo de la mantissa resultante.
 	s4xorslab <= (others => s4sresult(25));
 	
-	--! Combinatorial Gremlin, Etapa 5: Codificar el factor de normalizacion de la mantissa resultante.
-	normalizerdecodeshift:
-	process (s5result,s5factorhot24,s5token,s5tokena,s5tokenb,s5tokenc,s5factorhot9)
-	begin
-		s5tokena <= not(s5result(24));
-		s5tokenb <= not(s5result(24));
-		s5tokenc <= not(s5result(24));
-		s5factor(7 downto 5) <= (others => s5result(24));
-		s5factorhot24 <= x"000000";
-		for i in 23 downto 16 loop
-			if s5result(i)='1' then
-				s5factorhot24(23-i) <= s5tokena;
-				s5tokenb <= '0';
-				s5tokenc <= '0';
-				exit;
-			end if;
-		end loop;
-		for i in 15 downto 8 loop
-			if s5result(i)='1' then
-				s5factorhot24(23-i) <= s5tokenb;
-				s5tokenc <= '0';
-				exit;
-			end if;
-		end loop;
-		for i in 7 downto 0 loop
-			if s5result(i)='1' then
-				s5factorhot24(23-i) <= s5tokenc;
-				exit;
-			end if;
-		end loop;
-		s5token <=s5tokena&s5tokenb&s5tokenc; 
-		case (s5token) is
-			when "100"  => s5factor(4 downto 3) <= "00";
-			when "110"  => s5factor(4 downto 3) <= "01";
-			when "111"	=> s5factor(4 downto 3) <= "10";
-			when others => s5factor(4 downto 3) <= (others => s5result(24));
-		end case;
-		s5factorhot9 <= (s5factorhot24(7 downto 0)or s5factorhot24(15 downto 8)or s5factorhot24(23 downto 16)) & s5result(24);
-		case s5factorhot9 is
-			when "100000000" => s5factor(2 downto 0) <= "111";
-			when "010000000" => s5factor(2 downto 0) <= "110";
-			when "001000000" => s5factor(2 downto 0) <= "101";
-			when "000100000" => s5factor(2 downto 0) <= "100";
-			when "000010000" => s5factor(2 downto 0) <= "011";
-			when "000001000" => s5factor(2 downto 0) <= "010";
-			when "000000100" => s5factor(2 downto 0) <= "001";
-			when "000000010" => s5factor(2 downto 0) <= "000";
-			when others => s5factor (2 downto 0) <= (others => s5result(24));
-		end case;
-		
-	end process;	
 	
-	--! Etapa 6: Ejecutar el corrimiento para normalizar la mantissa.
-	s6datab <= s6result(24 downto 7);
-	normhighshiftermult:lpm_mult
-	generic map (
-		lpm_hint => "DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9",
-		lpm_pipeline => 0,
-		lpm_representation => "UNSIGNED",
-		lpm_type => "LPM_MULT",
-		lpm_widtha => 9,
-		lpm_widthb => 18,
-		lpm_widthp => 27
-	)
-	port map (
-		dataa => s6factorhot9,
-		datab => s6datab,
-		result => s6ph
-	);
-	s6datab_4x <= s6result(06 downto 0)&"00";
-	normlowshiftermult:lpm_mult
-	generic map (
-		lpm_hint => "DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9",
-		lpm_pipeline => 0,
-		lpm_representation => "UNSIGNED",
-		lpm_type => "LPM_MULT",
-		lpm_widtha => 9,
-		lpm_widthb => 9,
-		lpm_widthp => 18
-	)
-	port map (
-		dataa => s6factorhot9,
-		datab => s6datab_4x,
-		result => s6pl
-	);
-	s6postshift(22 downto 15) <= s6ph(16 downto 09);
-	s6postshift(14 downto 06) <= s6ph(08 downto 00) + s6pl(17 downto 09);
-	s6postshift(05 downto 00) <= s6pl(08 downto 03); 
 	
 	
 	

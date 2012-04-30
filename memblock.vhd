@@ -93,7 +93,7 @@ architecture memblock_arch of memblock is
 
 begin 
 
-	--! Cola interna de producto cccccpunto, ubicada entre el pipe line aritm&eacute;co. 
+	--! Colas internas de producto punto, ubicada en el pipe line aritm&eacute;co. Paralelo a los sumadores a0 y a2.  
 	q0q1 : scfifo --! Debe ir registrada la salida.
 	generic map (
 		add_ram_output_register	=> "OFF",

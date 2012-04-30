@@ -87,15 +87,15 @@ architecture dpc_arch of dpc is
 	signal sprd32blk					: vectorblock06;
 	signal sadd32blk					: vectorblock04;
 	signal ssqr32blk,sinv32blk			: xfloat32;
+	signal snormfifo_q,snormfifo_d		: vectorblock03;
 	--!TBXEND
 	
-	signal snormfifo_q,snormfifo_d		: vectorblock03;
 	
 	--!TBXSTART:SYNC_CHAIN
-	signal ssync_chain					: std_logic_vector(28 downto 1);
-	--!TBXEND
+	signal ssync_chain					: std_logic_vector(25 downto 1);
 	signal sres567w,sres123w,sres2w		: std_logic;
 	signal sres0w,sres4w				: std_logic;
+	--!TBXEND
 	
 	--! Entradas de la se&ntilde;al de full de las colas de resultados. 
 	signal sres567f,sres123f			: std_logic; 
@@ -111,9 +111,9 @@ begin
 	process(clk,rst,sync_chain_0)
 	begin
 		if rst=rstMasterValue then
-			ssync_chain(28 downto 1) <= (others => '0');
+			ssync_chain(25 downto 1) <= (others => '0');
 		elsif clk'event and clk='1' then 
-			for i in 28 downto 2 loop
+			for i in 25 downto 2 loop
 				ssync_chain(i) <= ssync_chain(i-1);
 			end loop;
 			ssync_chain(1) <= sync_chain_0;
@@ -123,8 +123,8 @@ begin
 	--! Escritura en las colas de resultados y escritura/lectura en las colas intermedias mediante cadena de resultados.
 	fifo32x09_w <= ssync_chain(5);
 	fifo32x23_w <= ssync_chain(1);
-	fifo32x09_r <= ssync_chain(14);
-	fifo32x23_r <= ssync_chain(25);
+	fifo32x09_r <= ssync_chain(12);
+	fifo32x23_r <= ssync_chain(21);
 		
 	
 	resw	<= sres567w&sres4w&sres123w&sres2w&sres0w;
@@ -138,9 +138,9 @@ begin
 			sres2w <= '0';
 			sres4w <= '0';
 		
-			--! Producto Escalar, Normalizaci&oacute;n o Magnitusd 
+			--! Producto Escalar, Normalizaci&oacute;n o Magnitud 
 			sres567w <= ssync_chain(4) and crossprod and addsub;
-			sres0w <= ssync_chain(23) and not(addsub) and not(crossprod);
+			sres0w <= ssync_chain(19) and not(addsub) and not(crossprod);
 			
 		elsif addsub='1' then
 			
@@ -151,8 +151,8 @@ begin
 		 	
 		 	
 			--! Suma o Resta.
-			sres123w <= ssync_chain(9);
-		 	sres2w <= ssync_chain(9);
+			sres123w <= ssync_chain(7);
+		 	sres2w <= ssync_chain(7);
 		
 		else
 		
@@ -161,9 +161,9 @@ begin
 			sres0w <= '0';
 			
 			--! Producto Punto o Cruz.
-			sres2w <= (ssync_chain(22) and not(crossprod)) or (ssync_chain(13) and crossprod);
-			sres4w <= ssync_chain(22) and not(crossprod);
-			sres123w <= ssync_chain(13) and crossprod;
+			sres2w <= (ssync_chain(18) and not(crossprod)) or (ssync_chain(11) and crossprod);
+			sres4w <= ssync_chain(17) and not(crossprod);
+			sres123w <= ssync_chain(11) and crossprod;
 
 		end if;
 	end process sync_chain_comb;
@@ -177,7 +177,7 @@ begin
 	
 	
 	stuff04: 
-	for i in 02 downto 1 generate
+	for i in aa downto a1 generate
 		sadd32blk(i)  <= add32blko(i);
 	end generate stuff04;
 	
@@ -203,14 +203,13 @@ begin
 	end process;
 	--! Los productos del multiplicador 2 y 3, ya registrados dentro de dpc van a la cola intermedia del producto punto (fifo32x09_d)
 	--! Los unicos resultados de sumandos que de nuevo entran al DataPathControl (observar la pesta&ntilde;a del documento de excel) 
-	
 	fifo32x09_d <= sprd32blk(p3)&sprd32blk(p2);
+	
 	register_adder0_and_inversor_output:
 	process (clk)
 	begin
 		if clk'event and clk='1' then
 			sadd32blk(a0) <= add32blko(a0);
-			sadd32blk(aa) <= add32blko(aa); 
 			sinv32blk <= inv32blko;
 		end if;
 	end process;
@@ -223,13 +222,13 @@ begin
 	
 	--! Colas de salida de los distintos resultados;
 	sresult(0) <= ssqr32blk;
-	sresult(1) <= sadd32blk(a0);
+	sresult(1) <= add32blko(a0);
 	sresult(2) <= sadd32blk(a1);
 	sresult(3) <= sadd32blk(a2);
 	sresult(4) <= sadd32blk(aa);
-	sresult(5) <= sprd32blk(p3);
-	sresult(6) <= sprd32blk(p4);
-	sresult(7) <= sprd32blk(p5);
+	sresult(5) <= prd32blko(p3);
+	sresult(6) <= prd32blko(p4);
+	sresult(7) <= prd32blko(p5);
 	
 	--! Cola de normalizacion
 	snormfifo_d(qx) <= sparaminput(ax);
@@ -239,7 +238,7 @@ begin
 	
 	
 	--! La entrada al inversor SIEMPRE viene con la salida de la raiz cuadrada
-	inv32blki <= sqr32blko;
+	inv32blki <= ssqr32blk;
 	--! La entrada de la ra&iacute;z cuadrada SIEMPRE viene con la salida del sumador 1.
 	sqr32blki <= sadd32blk(a1);
 	
@@ -379,9 +378,13 @@ begin
 			if crossprod='0' then
 				ssumando(s2) <= sadd32blk(a0);
 				ssumando(s3) <= sdpfifo_q(dpfifoab);
-			else
+			elsif unary='0' then
 				ssumando(s2) <= sprd32blk(p2);
 				ssumando(s3) <= sprd32blk(p3);
+			else 
+				ssumando(s2) <= sadd32blk(a0); 
+				ssumando(s3) <= sdpfifo_q(dpfifoab);
+			
 			end if;				
 			ssumando(s4) <= sprd32blk(p4);
 			ssumando(s5) <= sprd32blk(p5);

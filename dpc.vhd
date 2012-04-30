@@ -139,7 +139,7 @@ begin
 			sres4w <= '0';
 		
 			--! Producto Escalar, Normalizaci&oacute;n o Magnitud 
-			sres567w <= ssync_chain(4) and crossprod and addsub;
+			sres567w <= crossprod and ((ssync_chain(4) and addsub) or (ssync_chain(24) and not(addsub)));
 			sres0w <= ssync_chain(19) and not(addsub) and not(crossprod);
 			
 		elsif addsub='1' then

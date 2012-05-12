@@ -45,7 +45,7 @@ entity raytrac is
 		d	: in std_logic_vector (31 downto 0);
 		
 		--! Interrupciones
-		int	: out std_logic_vector (7 downto 0);
+		int07,int06,int05,int04,int03,int02,int01,int00	: out std_logic;
 		
 		--! Salidas
 		q : out std_logic_vector (31 downto 0)
@@ -127,10 +127,19 @@ architecture raytrac_arch of raytrac is
 	--!TBXSTART:IM
 	--! Se&ntilde;ales de Interruption Machine al testbench
 	signal s_iCtrlState		: iCtrlState;
+	signal s_int			: std_logic_vector (7 downto 0);
 	--!TBXEND 	
 begin
-	
-	
+
+	--! Sacar las interrupciones
+	int07 <= s_int(7);
+	int06 <= s_int(6);
+	int05 <= s_int(5);
+	int04 <= s_int(4);
+	int03 <= s_int(3);
+	int02 <= s_int(2);
+	int01 <= s_int(1);
+	int00 <= s_int(0);	
 	
 	--! Signo de los bloques de suma
 	s_sign <= not(s_dpc_uca(2)) and s_dpc_uca(1);
@@ -256,8 +265,8 @@ begin
 		rst				=> rst,
 		rfull_events	=> s_rfull_events,
 		eoi_events		=> s_eoi_events,
-		eoi_int 		=> int(3 downto 0),
-		rfull_int		=> int(7 downto 4),
+		eoi_int 		=> s_int(3 downto 0),
+		rfull_int		=> s_int(7 downto 4),
 		state			=> s_iCtrlState
 		
 	);

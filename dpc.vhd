@@ -249,6 +249,7 @@ begin
 	ssumando(s7) <= sdpfifo_q(dpfifocd);
 	
 	--!El siguiente proceso conecta la se&ntilde;al de cola "casi llena", de la cola que corresponde al resultado de la operaci&oacute;n indicada por los bit UCA (Unary, Crossprod, Addsub).
+	--!Adicionalmente codifca en formato one HOT la cola de la instruccion en la que se escriben los resultados de la ultima instrucci&oacute;n que haya finalizado.
 	sres0f 		<= resf_vector(0);
 	sres123f	<= resf_vector(1);
 	sres24f		<= resf_vector(2);
@@ -256,18 +257,15 @@ begin
 	fullQ:process(sres0f,sres123f,sres24f,sres567f,unary,crossprod,addsub,eoi_int)
 	begin 
 		if unary='0' then
-			if addsub='1' then
-				--! Suma o Resta 
+
+			if addsub='1' or crossprod='1' then
+				--! Suma o Resta o producto cruz, comparten la misma cola de resultados. 
 				eoi_demuxed_int <= "00"&eoi_int&'0'; 
 				resf_event <= sres123f;
-			elsif crossprod='0' then 
-				--! Producto Punto
+			else  
+				--! Producto Punto utiliza como salida las colas 2 y 4
 				eoi_demuxed_int <= '0'&eoi_int&"00";
 				resf_event <= sres24f;
-			else
-				--! Producto Cruz
-				eoi_demuxed_int <= "00"&eoi_int&'0';
-				resf_event <= sres123f;
 			end if;
 		elsif crossprod='1' then
 			

@@ -40,12 +40,13 @@ entity memblock is
 		instrfifo_empty: out std_logic; 
 		ext_rd,ext_wr: in std_logic;
 		ext_wr_add : in std_logic_vector(4+widthadmemblock-1 downto 0);		
-		ext_rd_add : in std_logic_vector(2 downto 0);
+		ext_rd_add : in std_logic_vector(3 downto 0);
 		ext_d: in std_logic_vector(floatwidth-1 downto 0);
 		resultfifo_full  : out std_logic_vector(3 downto 0);
 		int_d : in vectorblock08;
 		
-		--!Python
+		status_register : in std_logic_vector(3 downto 0);
+				
 		ext_q,instrfifo_q : out std_logic_vector(floatwidth-1 downto 0);
 		int_q : out vectorblock12; 
 		int_rd_add : in std_logic_vector(2*widthadmemblock-1 downto 0);
@@ -60,7 +61,7 @@ architecture memblock_arch of memblock is
 
 	
 	
-	
+
 	
 	--!TXBXSTART:MEMBLOCK_EXTERNAL_WRITE
 	signal s0ext_wr_add_one_hot : std_logic_vector(12-1+1 downto 0); --! La se&ntilde;al extra es para la escritura de la cola de instrucciones.
@@ -72,13 +73,12 @@ architecture memblock_arch of memblock is
 	signal s0ext_wr_add_choice	: std_logic_vector(3 downto 0);
 	
 	--!TXBXSTART:MEMBLOCK_EXTERNAL_READ
-	signal s0ext_rd_add			: std_logic_vector(2 downto 0);
+	signal s0status_register	: std_logic_vector(7 downto 0);
+	signal s0ext_rd_add			: std_logic_vector(3 downto 0);
 	signal s0ext_rd				: std_logic;
 	signal s0ext_rd_ack			: std_logic_vector(8-1 downto 0);
 	signal s0ext_q				: vectorblock08;
 	--!TBXEND
-	--! Se&ntilde;al de soporte
-	signal s0ext_rd_add_choice	: std_logic_vector(3 downto 0);
 	
 	
 	--!TBXSTART:MEMBLOCK_INTERNAL_READ
@@ -92,6 +92,10 @@ architecture memblock_arch of memblock is
 	--!TBXEND
 
 begin 
+	
+	
+	
+
 
 	--! Colas internas de producto punto, ubicada en el pipe line aritm&eacute;co. Paralelo a los sumadores a0 y a2.  
 	q0q1 : scfifo --! Debe ir registrada la salida.
@@ -312,7 +316,7 @@ begin
 	end process;
 	
 	--! Decodificaci&oacute;n para seleccionar que cola de resultados se conectar&acute; a la salida del RayTrac. 
-	s0ext_rd_add_choice <= '0'&s0ext_rd_add;
+	
 	results_block_proc: process(clk,rst)
 	begin
 		if rst=rstMasterValue then
@@ -323,7 +327,7 @@ begin
 			s0ext_rd_add	<= ext_rd_add;
 			s0ext_rd		<= ext_rd;	
 			--!Etapa 0: Decodificar la cola que se va a mover (rdack! fifo showahead mode) y por ende leer ese dato.
-			case s0ext_rd_add_choice is
+			case s0ext_rd_add is
 				when x"0" => ext_q <= s0ext_q(0); 
 				when x"1" => ext_q <= s0ext_q(1);
 				when x"2" => ext_q <= s0ext_q(2);
@@ -331,15 +335,16 @@ begin
 				when x"4" => ext_q <= s0ext_q(4);
 				when x"5" => ext_q <= s0ext_q(5);
 				when x"6" => ext_q <= s0ext_q(6);
-				when others => ext_q <= s0ext_q(7);
+				when x"7" => ext_q <= s0ext_q(7);
+				when others => ext_q <= x"000000"&s0status_register;
 			end case;			
 		end if;
 	end process;
 	
 	--! rdack decoder para las colas de resultados de salida.
-	results_block_proc_combinatorial_stage: process(s0ext_rd,s0ext_rd_add_choice)
+	results_block_proc_combinatorial_stage: process(s0ext_rd,s0ext_rd_add)
 	begin
-		case s0ext_rd_add_choice is 
+		case s0ext_rd_add(3 downto 0) is 
 			when x"0" => s0ext_rd_ack <= x"0"&"000"&s0ext_rd;
 			when x"1" => s0ext_rd_ack <= x"0"&"00"&s0ext_rd&'0';
 			when x"2" => s0ext_rd_ack <= x"0"&"0"&s0ext_rd&"00";
@@ -347,8 +352,44 @@ begin
 			when x"4" => s0ext_rd_ack <= "000"&s0ext_rd&x"0";
 			when x"5" => s0ext_rd_ack <= "00"&s0ext_rd&'0'&x"0";
 			when x"6" => s0ext_rd_ack <= "0"&s0ext_rd&"00"&x"0";
-			when others => s0ext_rd_ack <= s0ext_rd&"000"&x"0";
+			when x"7" => s0ext_rd_ack <= s0ext_rd&"000"&x"0";
+			when others => s0ext_rd_ack <= (others => '0');
 		end case;	
 	end process;
+	
+	--!Proceso para escribir el status register.
+	
+	--!Independiente del valor rfull(i) o si se lee o no, los bits correspondientes a los eventos de cola de resultados llena, se escriben reloj a reloj.
+	--!Final de Instrucci&oacute;n: Si ocurre un evento de final de instrucci&oacute;n se escribe el bit de registro correspondiente. 
+	--!Si no hay un evento de final de instrucci&oacute;n entonces se verifica si hay un evento de lectura del status register, si es asi todos los bits correspondientes dentro del registro al evento de fin de instrucci&oacute;n se borran y quedan en cero.
+	--!Si no hay un evento de final de instrucci&oacite;n y tampoco de lectura del status register entonces se deja el mismo valor del estatus register.
+	sreg_proc: process (clk,rst,s0ext_rd_add,status_register(3 downto 0))
+	begin
+		if rst=rstMasterValue then
+			s0status_register(7 downto 0) <= (others => '0');
+		elsif clk'event and clk='1' then 
+
+			--!Sin importar el valor de las se&ntilde;ales de cola de resultados llena, escribir el registro.
+			s0status_register(7) <= sresultfifo_full(7) or sresultfifo_full(6) or sresultfifo_full(5);
+			s0status_register(6) <= sresultfifo_full(4) or sresultfifo_full(2);
+			s0status_register(5) <= sresultfifo_full(3) or sresultfifo_full(2) or sresultfifo_full(1);
+			s0status_register(4) <= sresultfifo_full(0);  
+			
+			for i in 3 downto 0 loop
+				--! Si hay evento de fin de instrucci&oacute;n entonces escribir en el bit correspondiente un uno.
+				if status_register(i)='1' then
+					s0status_register(i) <= '1';
+				--! Como no hubo final de instrucci&oacute;n revisar si hay lectura de Status Register y borrarlo.
+				elsif s0ext_rd_add(3)='1' then 
+					s0status_register(i) <= '0';
+				--! No ocurrio nada de lo anterior, dejar entonces en el mismo valor el Status Register.
+				else
+					s0status_register(i) <= s0status_register(i);
+				end if;
+			end loop;
+		end if;
+	end process;
+	
+	
 end architecture;
 

@@ -33,10 +33,9 @@ entity im is
 	);
 	port (
 		clk,rst:		in std_logic;
-		rfull_events:	in std_logic_vector(num_events-1 downto 0);	--! full results queue events
-		eoi_events:		in std_logic_vector(num_events-1 downto 0);	--! end of instruction related events
-		eoi_int:		out std_logic_vector(num_events-1 downto 0);--! end of instruction related interruptions
-		rfull_int:		out std_logic_vector(num_events-1downto 0);	--! full results queue related interruptions
+		rfull_event:	in std_logic;
+		eoi_event:		in std_logic;	--! end of instruction related events
+		int:			out std_logic;	--! interruption
 		state:			out iCtrlState
 		
 	);
@@ -47,55 +46,37 @@ architecture im_arch of im is
 	
 	signal s_state : iCtrlState;
 	
-	signal s_event_polling_chain : std_logic_vector(num_events-1 downto 0);
-	signal s_eoi_events : std_logic_vector(num_events-1 downto 0);
 	 
 begin
 	state <= s_state;
 	
+	--! Existen 2 estados para disparar la se&ntilde;al de interrupci&oacute;n : WAITING_FOR_A_RFULL_EVENT y INHIBIT_RFULL_INT. Siempre que haya el final de una instrucci&oacute;n en cualquiera de los dos estados se notificar&aacute; el evento sin importar el estado en que se encuentre la m&aacute;quina.
+	--! Si cualquiera de las se&ntilde;ales de cola llena se encuentra activa, el evento ser&aacute; notificado en el estado WAITING_FOR_A_RFULL_EVENT, inmediatamente se cambia al estado INHIBIT_RFULL_INT, donde durante un n&uacte;mero de ciclos (parametrizado) se ignora la se&ntilde;al de full de las colas de resultados.
+	--! Despues que han transcurrido los ciclos mencionados, se vuelve al estado WAITING_FOR_A_RFULL_EVENT.
 	sm_proc:
-	process (clk,rst,s_event_polling_chain,rfull_events,eoi_events)
+	process (clk,rst)
 		variable tempo : integer range 0 to cycles_to_wait:=cycles_to_wait;
 	begin
 		if rst=rstMasterValue then
 			tempo := cycles_to_wait;
-			s_state  <= WAITING_FOR_AN_EVENT;
-			s_event_polling_chain <= (others => '0');
-			s_eoi_events <= (others => '0');
-			rfull_int <= (others => '0');
-			eoi_int <= (others => '0');
+			int <= '0';
 		elsif clk'event and clk='1' then
-			
-			for i in num_events-1 downto 0 loop
-				if s_eoi_events(i)='0' then --! Hooking events
-					s_eoi_events(i) <= eoi_events(i);
-				else						--! Event Hooked
-					s_eoi_events(i) <= not(s_event_polling_chain(i));
-				end if;	
-				rfull_int(i) <= s_event_polling_chain(i) and rfull_events(i);
-				eoi_int(i) <= s_event_polling_chain(i) and s_eoi_events(i);
-				
-			end loop;
+						
 			case s_state is
-				when WAITING_FOR_AN_EVENT => 
-					for i in num_events-1 downto 0 loop
-						if rfull_events(i)='1' then 
-							s_state <= FIRING_INTERRUPTIONS;
-							s_event_polling_chain(0) <= '1';
-						end if;
-					end loop;
-				when FIRING_INTERRUPTIONS =>
-					if s_event_polling_chain(num_events-1)='1' then
-						s_state <= SUSPEND;
-						tempo := cycles_to_wait;
+				when WAITING_FOR_A_RFULL_EVENT =>
+				
+					int <= rfull_event or eoi_event;
+					if rfull_event='1' then
+						s_state <= INHIBIT_RFULL_INT;
+						
 					end if;
-					for i in num_events-1 downto 1 loop
-						s_event_polling_chain(i) <= s_event_polling_chain(i-1);						
-					end loop;
-					s_event_polling_chain(0) <= '0';
-				when SUSPEND => 
+				
+				when INHIBIT_RFULL_INT =>
+					
+					int <= eoi_event;
 					if tempo=0 then
-						s_state <= WAITING_FOR_AN_EVENT;
+						s_state <= WAITING_FOR_A_RFULL_EVENT;
+						tempo := cycles_to_wait;
 					else
 						tempo:=tempo-1;
 					end if;

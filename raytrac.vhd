@@ -45,7 +45,7 @@ entity raytrac is
 		d	: in std_logic_vector (31 downto 0);
 		
 		--! Interrupciones
-		int07,int06,int05,int04,int03,int02,int01,int00	: out std_logic;
+		int : out std_logic;
 		
 		--! Salidas
 		q : out std_logic_vector (31 downto 0)
@@ -127,19 +127,12 @@ architecture raytrac_arch of raytrac is
 	--!TBXSTART:IM
 	--! Se&ntilde;ales de Interruption Machine al testbench
 	signal s_iCtrlState		: iCtrlState;
-	signal s_int			: std_logic_vector (7 downto 0);
+	signal s_int			: std_logic;
 	--!TBXEND 	
 begin
 
 	--! Sacar las interrupciones
-	int07 <= s_int(7);
-	int06 <= s_int(6);
-	int05 <= s_int(5);
-	int04 <= s_int(4);
-	int03 <= s_int(3);
-	int02 <= s_int(2);
-	int01 <= s_int(1);
-	int00 <= s_int(0);	
+	int <= s_int;
 	
 	--! Signo de los bloques de suma
 	s_sign <= not(s_dpc_uca(2)) and s_dpc_uca(1);
@@ -148,11 +141,6 @@ begin
 	s_int_rd_add  <= s_addb&s_adda;
 	--!TBXINSTANCESTART
 	MemoryBlock : memblock
-	generic map (
-		blocksize 					=> 512,
-		external_readable_widthad	=> 3,				
-		external_writeable_widthad	=> 4			
-	)
 	port map (
 		clk					=> clk,
 		rst					=> rst,
@@ -166,10 +154,11 @@ begin
 		ext_rd				=> rd,
 		ext_wr				=> wr,
 		ext_wr_add			=> add,
-		ext_rd_add			=> add(12 downto 10),
+		ext_rd_add			=> add(12 downto 9),
 		ext_d				=> d,
 		resultfifo_full		=> s_rfull_events,
 		int_d				=> s_results_d,
+		status_register		=> s_eoi_events,
 		ext_q				=> q,
 		instrfifo_q			=> s_iq,
 		int_q				=> s_q,
@@ -263,10 +252,9 @@ begin
 	port map (
 		clk				=> clk,
 		rst				=> rst,
-		rfull_events	=> s_rfull_events,
-		eoi_events		=> s_eoi_events,
-		eoi_int 		=> s_int(3 downto 0),
-		rfull_int		=> s_int(7 downto 4),
+		rfull_event		=> s_full_r,
+		eoi_event		=> s_eoi,
+		int				=> s_int,
 		state			=> s_iCtrlState
 		
 	);

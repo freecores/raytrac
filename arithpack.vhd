@@ -20,7 +20,7 @@ package arithpack is
 	--! Estados para la maquina de estados.
 	type macState is (LOAD_INSTRUCTION,FLUSH_ARITH_PIPELINE,EXECUTE_INSTRUCTION);
 	--! Estados para el controlador de interrupciones.
-	type iCtrlState is (WAITING_FOR_AN_EVENT,FIRING_INTERRUPTIONS,SUSPEND);
+	type iCtrlState is (WAITING_FOR_A_RFULL_EVENT,INHIBIT_RFULL_INT);
 	
 	--! Float data blocks
 	constant floatwidth : integer := 32;
@@ -70,7 +70,7 @@ package arithpack is
 		d	: in std_logic_vector (31 downto 0);
 		
 		--! Interrupciones
-		int	: out std_logic_vector (7 downto 0);
+		int	: out std_logic;
 		
 		--! Salidas
 		q : out std_logic_vector (31 downto 0)
@@ -235,20 +235,14 @@ package arithpack is
 	);
 	port (
 		clk,rst:		in std_logic;
-		rfull_events:	in std_logic_vector(num_events-1 downto 0);	--! full results queue events
-		eoi_events:		in std_logic_vector(num_events-1 downto 0);	--! end of instruction related events
-		eoi_int:		out std_logic_vector(num_events-1 downto 0);--! end of instruction related interruptions
-		rfull_int:		out std_logic_vector(num_events-1downto 0);	--! full results queue related interruptions
+		rfull_event:	in std_logic;	--! full results queue events
+		eoi_event:		in std_logic;	--! end of instruction related events
+		int:			out std_logic;
 		state:			out iCtrlState
 	);
 	end component;
 	--! Bloque de memorias
 	component memblock
-	generic ( 
-		blocksize					: integer;
-		external_readable_widthad	: integer;				
-		external_writeable_widthad	: integer
-	);
 	port (
 		
 		
@@ -256,10 +250,13 @@ package arithpack is
 		instrfifo_rd : in std_logic;
 		resultfifo_wr: in std_logic_vector(8-1 downto 0);
 		instrfifo_empty: out std_logic; ext_rd,ext_wr: in std_logic;
-		ext_wr_add : in std_logic_vector(external_writeable_widthad+widthadmemblock-1 downto 0);		
-		ext_rd_add : in std_logic_vector(external_readable_widthad-1 downto 0);
+		ext_wr_add : in std_logic_vector(4+widthadmemblock-1 downto 0);		
+		ext_rd_add : in std_logic_vector(3 downto 0);
 		ext_d: in std_logic_vector(floatwidth-1 downto 0);
 		int_d : in vectorblock08;
+		
+		status_register : in std_logic_vector(3 downto 0);
+		
 		resultfifo_full  : out std_logic_vector(3 downto 0);
 		ext_q,instrfifo_q : out std_logic_vector(floatwidth-1 downto 0);
 		int_q : out vectorblock12;
@@ -549,12 +546,10 @@ package body arithpack is
 		
 		write(l,string'("<< "));
 		case i is 
-			when WAITING_FOR_AN_EVENT =>
-				tmp:="WAIT_EVNT";
-			when FIRING_INTERRUPTIONS => 
-				tmp:="FIRE_INTx";
-			when SUSPEND => 
-				tmp:="SUSPENDED";
+			when WAITING_FOR_A_RFULL_EVENT =>
+				tmp:="WAIT_RF_EVNT";
+			when INHIBIT_RFULL_INT => 
+				tmp:="INHB_RF_INT";
 			when others => 
 				tmp:="ILGL__VAL";
 		end case;

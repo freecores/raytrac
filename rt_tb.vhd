@@ -21,7 +21,7 @@ architecture rt_tb_arch of rt_tb is
 	signal	sd,sq				: xfloat32;
 	--!TBXEND
 	--!TXBXSTART:INT_BUS
-	signal	sint				: std_logic_vector(7 downto 0);
+	signal	sint				: std_logic;
 	--!TBXEND
 	
 begin

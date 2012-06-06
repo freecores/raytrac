@@ -45,7 +45,7 @@ entity raytrac is
 		d	: in std_logic_vector (31 downto 0);
 		
 		--! Interrupciones
-		int : out std_logic;
+		irq : out std_logic;
 		
 		--! Salidas
 		q : out std_logic_vector (31 downto 0)
@@ -132,7 +132,7 @@ architecture raytrac_arch of raytrac is
 begin
 
 	--! Sacar las interrupciones
-	int <= s_int;
+	irq <= s_int;
 	
 	--! Signo de los bloques de suma
 	s_sign <= not(s_dpc_uca(2)) and s_dpc_uca(1);

@@ -133,7 +133,7 @@ begin
 		lpm_hint                => "RAM_BLOCK_TYPE=M9K",
 		almost_full_value		=> 32,
 		lpm_numwords			=> 32,
-		lpm_showahead			=> "ON",
+		lpm_showahead			=> "OFF",
 		lpm_type				=> "SCFIFO",
 		lpm_width				=> 96,
 		lpm_widthu				=> 5,
@@ -182,8 +182,8 @@ begin
 	);
 	
 	--! Conectar los registros de lectura interna del bloque de operandos a los arreglos > abstracci&oacute:n de c&oacute;digo, no influye en la sintesis del circuito.
-	sint_rd_add (0)<= int_rd_add(widthadmemblock-1 downto 0);
-	sint_rd_add (1)<= int_rd_add(2*widthadmemblock-1 downto widthadmemblock);
+	sint_rd_add (0)<= int_rd_add(widthadmemblock-1-memoryreduction downto 0);
+	sint_rd_add (1)<= int_rd_add(2*widthadmemblock-1-memoryreduction downto widthadmemblock);
 	
 	--! Instanciaci&oacute;n de la cola de resultados de salida.
 	int_q <= s1int_q;
@@ -199,8 +199,8 @@ begin
 			clock_enable_output_b				=> "BYPASS",
 			intended_device_family				=> "Cyclone III",
 			lpm_type							=> "altsyncram",
-			numwords_a							=> 2**widthadmemblock,
-			numwords_b							=> 2**widthadmemblock,
+			numwords_a							=> 2**(widthadmemblock-memoryreduction),
+			numwords_b							=> 2**(widthadmemblock-memoryreduction),
 			operation_mode						=> "DUAL_PORT",
 			outdata_aclr_b						=> "NONE",
 			outdata_reg_b						=> "CLOCK0",
@@ -208,8 +208,8 @@ begin
 			ram_block_type						=> "M9K",
 			rdcontrol_reg_b						=> "CLOCK0",
 			read_during_write_mode_mixed_ports	=> "OLD_DATA",
-			widthad_a							=> widthadmemblock,
-			widthad_b							=> widthadmemblock,
+			widthad_a							=> widthadmemblock-memoryreduction,
+			widthad_b							=> widthadmemblock-memoryreduction,
 			width_a								=> floatwidth,
 			width_b								=> floatwidth,
 			width_byteena_a						=> 1
@@ -217,7 +217,7 @@ begin
 		port map (
 			wren_a		=> s0ext_wr_add_one_hot(i),
 			clock0		=> clk,
-			address_a	=> s0ext_wr_add(widthadmemblock-1 downto 0),
+			address_a	=> s0ext_wr_add(widthadmemblock-1-memoryreduction downto 0),
 			address_b	=> sint_rd_add((i/3) mod 2),
 			rden_b		=> '1',
 			q_b			=> s1int_q(i),
@@ -236,15 +236,15 @@ begin
 		resultsfifo : scfifo
 		generic map	(
 			add_ram_output_register => "OFF",
-			almost_full_value 		=> 480,
+			almost_full_value 		=> 224,
 			allow_rwcycle_when_full => "OFF",
 			intended_device_family	=> "Cyclone III",
 			lpm_hint				=> "RAM_BLOCK_TYPE=M9K",
-			lpm_numwords			=> 512,
+			lpm_numwords			=> 256,
 			lpm_showahead			=> "ON",
 			lpm_type				=> "SCIFIFO",
 			lpm_width				=> 32,
-			lpm_widthu				=> 9,
+			lpm_widthu				=> 8,
 			overflow_checking		=> "ON",
 			underflow_checking		=> "ON",
 			use_eab					=> "ON"

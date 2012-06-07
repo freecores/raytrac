@@ -24,8 +24,12 @@ package arithpack is
 	
 	--! Float data blocks
 	constant floatwidth : integer := 32;
+	
+	--! Control de tama&ntilde;os de memoria.
 	constant widthadmemblock : integer := 9;
 	
+	--! Reducci&oacute de memoria por mitades
+	constant memoryreduction : integer := 1;
 	
 	subtype	xfloat32 is std_logic_vector(31 downto 0);
 	type	v3f	is array(02 downto 0) of xfloat32;
@@ -40,7 +44,7 @@ package arithpack is
 	type	vectorblock04 is array (03 downto 0) of std_logic_vector(floatwidth-1 downto 0);
 	type	vectorblock03 is array (02 downto 0) of std_logic_vector(floatwidth-1 downto 0);
 	type	vectorblock02 is array (01 downto 0) of std_logic_vector(floatwidth-1 downto 0);
-	type	vectorblockadd02 is array (01 downto 0) of std_logic_vector(widthadmemblock-1 downto 0);
+	type	vectorblockadd02 is array (01 downto 0) of std_logic_vector(widthadmemblock-1-memoryreduction downto 0);
 	
 	--! Constante de reseteo
 	constant rstMasterValue : std_logic :='0';
@@ -196,8 +200,8 @@ package arithpack is
 	port (
 		wren_a		: in std_logic;
 		clock0		: in std_logic;
-		address_a 	: in std_logic_vector(8 downto 0);
-		address_b 	: in std_logic_vector(8 downto 0);
+		address_a 	: in std_logic_vector(widthadmemblock-1-memoryreduction downto 0);
+		address_b 	: in std_logic_vector(widthadmemblock-1-memoryreduction downto 0);
 		rden_b		: in std_logic;
 		q_b			: out std_logic_vector(31 downto 0);
 		data_a		: in std_logic_vector(31 downto 0)

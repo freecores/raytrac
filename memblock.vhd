@@ -103,7 +103,7 @@ begin
 		add_ram_output_register	=> "OFF",
 		allow_rwcycle_when_full => "OFF",
 		intended_device_family	=> "CycloneIII",
-		lpm_hint				=> "RAM_BLOCK_TYPE=M9K",
+		lpm_hint				=> "MAXIMUM_DEPTH=8",
 		almost_full_value		=> 8,
 		lpm_numwords			=> 8,
 		lpm_showahead			=> "ON",
@@ -112,7 +112,7 @@ begin
 		lpm_widthu				=> 3,
 		overflow_checking		=> "ON",
 		underflow_checking		=> "ON",
-		use_eab					=> "ON"
+		use_eab					=> "OFF"
 	)
 	port	map (
 		rdreq		=> dpfifo_rd,

@@ -160,15 +160,15 @@ begin
 		allow_rwcycle_when_full => "OFF",
 		intended_device_family	=> "Cyclone III",
 		lpm_hint				=> "RAM_BLOCK_TYPE=M9K",
-		almost_full_value		=> 32,
-		lpm_numwords			=> 32,
+		almost_full_value		=> 16,
+		lpm_numwords			=> 16,
 		lpm_showahead			=> "ON",
 		lpm_type				=> "SCIFIFO",
 		lpm_width				=> 32,
-		lpm_widthu				=> 5,
+		lpm_widthu				=> 4,
 		overflow_checking		=> "ON",
 		underflow_checking		=> "ON",
-		use_eab					=> "ON"
+		use_eab					=> "OFF"
 	)
 	port 	map (
 		rdreq		=> instrfifo_rd,

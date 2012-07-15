@@ -170,62 +170,38 @@ begin
 	--! Decodificaci&oacute;n del Datapath.
 	datapathproc:process(s,d,c,sparaminput,sinv32blk,sprd32blk,sadd32blk,sdpfifo_q,q1xyz_32x19_q,ssync_chain,sqr32blko)
 	begin
-		
+		sfactor(f4) <= sparaminput(az);
 		if d='1' then
 			--P0 P1 y P2
 			sfactor(f0) <= sparaminput(ax);
 			sfactor(f2) <= sparaminput(ay);
-			sfactor(f4) <= sparaminput(az);
-			
-			if c='0' then
-				sfactor(f1) <= sparaminput(bx) ;
-				sfactor(f3) <= sparaminput(by) ;
-				sfactor(f5) <= sparaminput(bz) ;
-		
-			else
-				sfactor(f1) <= sparaminput(ax);
-				sfactor(f3) <= sparaminput(ay);
-				sfactor(f5) <= sparaminput(az);
-							
-			end if;
-					
+			sfactor(f1) <= sparaminput(bx) ;
+			sfactor(f3) <= sparaminput(by) ;
+			sfactor(f5) <= sparaminput(bz) ;
 			--P3 P4 y P5
 			if s='0' then
 				sfactor(f6) <= sinv32blk;
 				sfactor(f7) <= q1xyz_32x19_q(ax);
-			
 				sfactor(f8) <= sinv32blk;
 				sfactor(f9) <= q1xyz_32x19_q(ay);
-
 				sfactor(f10) <= sinv32blk;			
 				sfactor(f11) <= q1xyz_32x19_q(az);
-			
 			else
-				sfactor(f6) <= sparaminput(ax);
+				sfactor(f6) <= sparaminput(az);
 				sfactor(f7) <= sparaminput(bx);
-			
-				sfactor(f8) <= sparaminput(ay);
+				sfactor(f8) <= sparaminput(az);
 				sfactor(f9) <= sparaminput(bx);
-
 				sfactor(f10) <= sparaminput(az);			
 				sfactor(f11) <= sparaminput(bx);
-			
 			end if;
 			-- S0
 			ssumando(s0) <= sprd32blk(p0);
 			ssumando(s1) <= sprd32blk(p1);
-			
 			--S1
 			ssumando(s2) <= sadd32blk(a0);
 			ssumando(s3) <= sdpfifo_q;
-			
 			--RES0,1,2
-			if c='0' then 
-				sresult(0) <= sadd32blk(a1);
-			else
-				sresult(0) <= sprd32blk(p3);
-			
-			end if;
+			sresult(0) <= sprd32blk(p3);
 			sresult(1) <= sprd32blk(p4);
 			sresult(2) <= sprd32blk(p5);
 			
@@ -234,11 +210,8 @@ begin
 			elsif c='1' then
 				sres(2 downto 0) <= ssync_chain(25)&ssync_chain(25)&ssync_chain(25);
 			else
-				sres(2 downto 0) <= ssync_chain(19)&ssync_chain(19)&ssync_chain(19);
+				sres(2 downto 0) <= (others => '0');
 			end if;			
-					 
-			
-			
 			
 		else  
 
@@ -249,7 +222,6 @@ begin
 			sfactor(f2) <= sparaminput(az);
 			sfactor(f3) <= sparaminput(by);
 			
-			sfactor(f4) <= sparaminput(az);
 			sfactor(f5) <= sparaminput(bx);
 
 			--P3 P4 y P5
@@ -285,10 +257,13 @@ begin
 			sresult(1) <= sadd32blk(a1);
 			sresult(2) <= sadd32blk(a2);
 
-			if c='1' then
+
+			if c='1' and s='1' then
 				sres(2 downto 0) <= ssync_chain(12)&ssync_chain(12)&ssync_chain(12);
-			else
+			elsif c='0' then 
 				sres(2 downto 0) <= ssync_chain(8)&ssync_chain(8)&ssync_chain(8);
+			else
+				sres(2 downto 0) <= (others => '0');
 			end if;			
 		
 		end if;
@@ -303,9 +278,15 @@ begin
 		end if;		
 		
 		--RES3
-		sresult(3) <= sqr32blko;
+		if c='1' then
+			sresult(3) <= sqr32blko;
+			sres(3) <= ssync_chain(20) and d and not(s);
+		else
+			sresult(3) <= sadd32blk(a1);
+			sres(3) <= ssync_chain(19) and d and not(s);
+		end if;
 		
-		sres(3) <= ssync_chain(19);
+		
 		
 	end process;
 	

@@ -17,34 +17,39 @@ use lpm.all;
 
 
 package arithpack is
-	--! Estados para la maquina de estados.
-	type macState is (LOAD_INSTRUCTION,FLUSH_ARITH_PIPELINE,EXECUTE_INSTRUCTION);
-	--! Estados para el controlador de interrupciones.
-	type iCtrlState is (WAITING_FOR_A_RFULL_EVENT,INHIBIT_RFULL_INT);
 	
-	--! Float data blocks
-	constant floatwidth : integer := 32;
+	--!Constantes usadas por los RTLs
+	constant qz : integer := 00;constant qy : integer := 01;constant qx : integer := 02;
+	constant az : integer := 00;constant ay : integer := 01;constant ax : integer := 02;constant bz : integer := 03;constant by : integer := 04;constant bx : integer := 05;
+	constant f0	: integer := 00;constant f1 : integer := 01;constant f2 : integer := 02;constant f3 : integer := 03;constant f4 : integer := 04;constant f5 : integer := 05;
+	constant f6	: integer := 06;constant f7 : integer := 07;constant f8 : integer := 08;constant f9 : integer := 09;constant f10: integer := 10;constant f11: integer := 11;
+	constant s0	: integer := 00;constant s1 : integer := 01;constant s2 : integer := 02;constant s3 : integer := 03;constant s4 : integer := 04;constant s5 : integer := 05;
+	constant a0	: integer := 00;constant a1 : integer := 01;constant a2 : integer := 02; 
+	constant p0	: integer := 00;constant p1 : integer := 01;constant p2 : integer := 02;constant p3 : integer := 03;constant p4 : integer := 04;constant p5 : integer := 05;
+	
+	constant index_control_register : integer := 00;
+	constant index_start_address_r	: integer := 01;
+	constant index_end_address_r	: integer := 02;
+	constant index_start_address_w	: integer := 03;
+	constant index_end_address_w	: integer := 04;
+	constant index_scratch_register	: integer := 05;
+	
+	--! M&aacute;quina de estados.
+	
 	
 	--! Control de tama&ntilde;os de memoria.
 	constant widthadmemblock : integer := 9;
 	
-	--! Reducci&oacute de memoria por mitades
-	constant memoryreduction : integer := 1;
-	
 	subtype	xfloat32 is std_logic_vector(31 downto 0);
 	type	v3f	is array(02 downto 0) of xfloat32;
 	
-	--! Constantes para definir 
-	
-	--!type	vectorblock12 is array (11 downto 0) of std_logic_vector(floatwidth-1 downto 0);
+	--! Constantes para definir bloques de valores de 32 bits single float
 	type	vectorblock12 is array (11 downto 0) of xfloat32;
-	
 	type	vectorblock08 is array (07 downto 0) of xfloat32;
-	type	vectorblock06 is array (05 downto 0) of std_logic_vector(floatwidth-1 downto 0);
-	type	vectorblock04 is array (03 downto 0) of std_logic_vector(floatwidth-1 downto 0);
-	type	vectorblock03 is array (02 downto 0) of std_logic_vector(floatwidth-1 downto 0);
-	type	vectorblock02 is array (01 downto 0) of std_logic_vector(floatwidth-1 downto 0);
-	type	vectorblockadd02 is array (01 downto 0) of std_logic_vector(widthadmemblock-1-memoryreduction downto 0);
+	type	vectorblock06 is array (05 downto 0) of xfl	oat32;
+	type	vectorblock04 is array (03 downto 0) of xfloat32;
+	type	vectorblock03 is array (02 downto 0) of xfloat32;
+	type	vectorblock02 is array (01 downto 0) of xfloat32;
 	
 	--! Constante de reseteo
 	constant rstMasterValue : std_logic :='0';
@@ -60,32 +65,165 @@ package arithpack is
 		
 		clk : in std_logic;
 		rst : in std_logic;
-		
-		--! Se&ntilde;al de lectura de alguna de las colas de resultados.
-		rd	: in std_logic;
-		
-		--! Se&ntilde;al de escritura en alguno de los bloques de memoria de operandos o en la cola de instrucciones.
-		wr	: in std_logic;
-		
-		--! Direccion de escritura o lectura
-		add : in std_logic_vector (12 downto 0);
-		
-		--! datos de entrada
-		d	: in std_logic_vector (31 downto 0);
-		
-		--! Interrupciones
-		int	: out std_logic;
-		
-		--! Salidas
-		q : out std_logic_vector (31 downto 0)
-		
-		
-				
+		--! Interface Avalon Master
+		address_master	: out	std_logic_vector(31 downto 0);
+		begintransfer	: out	std_logic;
+		read_master		: out	std_logic;
+		readdata_master	: in	std_logic_vector (31 downto 0);
+		write_master	: out	std_logic;
+		writedata_master: out	std_logic_vector (31 downto 0);
+		waitrequest		: in	std_logic_vector;
+		readdatavalid_m	: in	std_logic_vector;
+		--! Interface Avalon Slave
+		address_slave	: in	std_logic_vector(3 downto 0);
+		read_slave		: in	std_logic;
+		readdata_slave	: in	std_logic_vector(31 downto 0);
+		write_slave		: in	std_logic;
+		writedata_slave	: in	std_logic_vector(31 downto 0);
+		readdatavalid_s	: out	std_logic;
+		--! Interface Interrupt Sender
+		irq	: out std_logic
 	);
 	end component;
 	
-	--! Componentes Aritm&eacute;ticos
+	component raytrac_control
+	port (
+		
+		--! Se&ntilde;ales normales de secuencia.
+		clk:			in std_logic;
+		rst:			in std_logic;
+		
+		--! Interface Avalon Master
+		begintransfer	: out	std_logic;
+		address_master	: out	std_logic_vector(31 downto 0);
+		read_master		: out	std_logic;
+		write_master	: out	std_logic;
+		waitrequest		: in	std_logic;
+		readdatavalid_m	: in	std_logic;
+				
+		--! Interface Avalon Slave
+		address_slave	: in	std_logic_vector(3 downto 0);
+		read_slave		: in	std_logic;
+		readdata_slave	: out	std_logic_vector(31 downto 0);
+		write_slave		: in	std_logic;
+		writedata_slave	: in	std_logic_vector(31 downto 0);
+		readdatavalid_s	: out	std_logic;
+
+		--! Interface Interrupt Sender
+		irq	: out std_logic;
+		
+		--! Se&ntilde;ales de Control (Memblock)
+		go			: out std_logic;
+		comb		: out std_logic;
+		load		: out std_logic;
+		load_chain	: out std_logic_vector(1 downto 0);
+		qparams_e	: in std_logic;
+		qresult_e	: in std_logic_vector(3 downto 0);
+		
+		--! Se&ntilde;les de Control de Datapath (DPC)
+		qparams_q	: in  xfloat32;
+		d			: out std_logic;
+		c			: out std_logic;
+		s			: out std_logic;
+		qresult_sel	: out std_logic_vector(1 downto 0)
+	);
+	end component;
 	
+	--! Bloque de memorias
+	component memblock
+	port (
+		
+		--!Entradas de Control
+		clk 		: in std_logic;
+		rst 		: in std_logic;
+		go			: in std_logic;
+		comb		: in std_logic;
+		load		: in std_logic;
+		load_chain	: in std_logic_vector(1 downto 0);
+		 
+		
+		--! Cola de par&aacute;metros 
+		readdatavalid	: in std_logic;
+		readdata_master	: in xfloat32;
+		qparams_r		: in std_logic;
+		qparams_e		: out std_logic;
+		
+		--! Cola de resultados		
+		qresult_d	: in vectorblock04;
+		qresult_q	: out vectorblock04;
+				
+		--! Registro de par&aacute;metros
+		paraminput	: out vectorblock06;
+		
+		--! Cadena de sincronización
+		sync_chain_0	: out std_logic;
+		
+		--! se&ntilde;ales de colas vacias
+		qresult_e	: out std_logic_vector(3 downto 0);
+		
+	
+		
+		--! Colas de resultados
+		qresult_w		: in std_logic_vector(3 downto 0);
+		qresult_rdec	: in std_logic_vector(3 downto 0)			
+		
+	);	
+	end component;
+	--! Bloque decodificacion DataPath Control.
+	component dpc
+	port (
+		clk						: in	std_logic;
+		rst						: in	std_logic;
+		
+		paraminput				: in	vectorblock06;	--! Vectores A,B
+		
+		prd32blko			 	: in	vectorblock06;	--! Salidas de los 6 multiplicadores.
+		add32blko 				: in	vectorblock03;	--! Salidas de los 3 sumadores.
+		inv32blko				: in	xfloat32;		--! Salidas de la raiz cuadradas y el inversor.
+		sqr32blko				: in	xfloat32;		--! Salidas de la raiz cuadradas y el inversor.
+		
+		
+		d,c,s					: in	std_logic;		--! Bit con el identificador del bloque AB vs CD e identificador del sub bloque (A/B) o (C/D). 
+		
+		sync_chain_0			: in	std_logic;		--! Se&ntilde;al de dato valido que se va por toda la cadena de sincronizacion.
+		
+		qresult_q				: in	vectorblock04;	--! Salida de las colas de resultados
+		qresult_sel				: in 	std_logic_vector (1 downto 0); --! Direccion con el resultado de la
+		qresult_rdec			: out	std_logic_vector (3 downto 0); --!Se&ntilde;ales de escritura decodificadas
+		qresult_w				: out	std_logic_vector (3 downto 0);				--! Salidas de escritura y lectura en las colas de resultados.
+		qresult_d				: out	vectorblock04; --! 4 salidas de resultados, pues lo m&aacute;ximo que podr&aacute; calcularse por cada clock son 2 vectores. 
+		
+		dataread				: in	std_logic;
+
+		
+		prd32blki				: out	vectorblock12;	--! Entrada de los 12 factores en el bloque de multiplicaci&oacute;n respectivamente.
+		add32blki				: out	vectorblock06;	--! Entrada de los 6 sumandos del bloque de 3 sumadores.  
+		
+		dataout					: out 	xfloat32
+	
+	);
+	end component;
+	--! Bloque Aritmetico de Sumadores y Multiplicadores (madd)
+	component arithblock
+	port (
+		
+		clk	: in std_logic;
+		rst : in std_logic;
+	
+		sign 		: in std_logic;
+	
+		prd32blki	: in vectorblock12;
+		add32blki	: in vectorblock06;
+		
+		add32blko	: out vectorblock03;
+		prd32blko	: out vectorblock06;
+		
+		sq32o		: out xfloat32;
+		inv32o		: out xfloat32
+			
+	);
+	end component;
+	--! Componentes Aritm&eacute;ticos
 	component fadd32
 	port (
 		clk : in std_logic;
@@ -103,25 +241,36 @@ package arithpack is
 		p32 : out xfloat32
 	);
 	end component;
-	
-	
+	--! Bloque de Raiz Cuadrada
+	component sqrt32
+	port (
+		
+		clk	: in std_logic;
+		rd32: in xfloat32;		
+		sq32: out xfloat32
+	);
+	end component;
+	--! Bloque de Inversores.
+	component invr32
+	port (
+		
+		clk		: in std_logic;
+		dvd32	: in xfloat32;		
+		qout32	: out xfloat32
+	);
+	end component;
 	--! Contadores para la m&aacute;quina de estados.
 	
 	component customCounter
-	generic (		
-		EOBFLAG		: string ;
-		ZEROFLAG	: string ;
-		BACKWARDS	: string ;
-		EQUALFLAG	: string ;	
-		subwidth	: integer;	
-		width 		: integer
-		
-	);
 	port (
-		clk,rst,go,set	: in std_logic;
-		setValue,cmpBlockValue		: in std_Logic_vector(width-1 downto subwidth);
-		zero_flag,eob_flag,eq_flag	: out std_logic;
-		count			: out std_logic_vector(width-1 downto 0)
+		clk				: in std_logic;
+		rst				: in std_logic;
+		stateTrans			: in std_logic;
+		waitrequest_n	: in std_logic;
+		endaddress		: in std_logic_vector (31 downto 2); --! Los 5 bits de arriba.
+		startaddress	: in std_logic_vector(31 downto 0);
+		endaddressfetch	: out std_logic;
+		address_master 	: out std_logic_vector (31 downto 0)	
 	);
 	end component;
 	
@@ -146,7 +295,6 @@ package arithpack is
 	component scfifo
 	generic (
 		add_ram_output_register	:string;
-		almost_full_value		:natural;
 		allow_rwcycle_when_full	:string;
 		intended_device_family	:string;
 		lpm_hint				:string;
@@ -154,7 +302,6 @@ package arithpack is
 		lpm_showahead			:string;
 		lpm_type				:string;
 		lpm_width				:natural;
-		lpm_widthu				:natural;
 		overflow_checking		:string;
 		underflow_checking		:string;
 		use_eab					:string	
@@ -173,165 +320,9 @@ package arithpack is
 	end component;
 	
 	
-	component altsyncram
-	generic (
-		address_aclr_b			: string;
-		address_reg_b 			: string;
-		clock_enable_input_a 	: string;
-		clock_enable_input_b 	: string;
-		clock_enable_output_b	: string;
-		intended_device_family	: string;
-		lpm_type				: string;
-		numwords_a				: natural;
-		numwords_b				: natural;
-		operation_mode			: string;
-		outdata_aclr_b			: string;
-		outdata_reg_b			: string;
-		power_up_uninitialized	: string;
-		ram_block_type			: string;
-		rdcontrol_reg_b			: string;
-		read_during_write_mode_mixed_ports	: string;
-		widthad_a				: natural;
-		widthad_b				: natural;
-		width_a					: natural;
-		width_b					: natural;
-		width_byteena_a			: natural
-	);
-	port (
-		wren_a		: in std_logic;
-		clock0		: in std_logic;
-		address_a 	: in std_logic_vector(widthadmemblock-1-memoryreduction downto 0);
-		address_b 	: in std_logic_vector(widthadmemblock-1-memoryreduction downto 0);
-		rden_b		: in std_logic;
-		q_b			: out std_logic_vector(31 downto 0);
-		data_a		: in std_logic_vector(31 downto 0)
-		
-	);
-	end component;
 	
-	--! Maquina de Estados.
-	component sm
 	
-	port (
-		
-		--! Se&ntilde;ales normales de secuencia.
-		clk,rst:			in std_logic;
-		--! Vector con las instrucci&oacute;n codficada
-		instrQq:in std_logic_vector(31 downto 0);
-		--! Se&ntilde;al de cola vacia.
-		instrQ_empty:in std_logic;
-		adda,addb:out std_logic_vector (8 downto 0);
-		sync_chain_0,instrRdAckd:out std_logic;
-		full_r: 	in std_logic;	--! Indica que la cola de resultados no puede aceptar mas de 32 elementos.
-		--! End Of Instruction Event
-		eoi	: out std_logic;
-		
-		--! DataPath Control uca code.
-		dpc_uca : out std_logic_vector (2 downto 0);
-		state	: out macState
-	);
-	end component;
-	--! Maquina de Interrupciones
-	component im 
-	generic (
-		num_events : integer ;
-		cycles_to_wait : integer 
-	);
-	port (
-		clk,rst:		in std_logic;
-		rfull_event:	in std_logic;	--! full results queue events
-		eoi_event:		in std_logic;	--! end of instruction related events
-		int:			out std_logic;
-		state:			out iCtrlState
-	);
-	end component;
-	--! Bloque de memorias
-	component memblock
-	port (
-		
-		
-		clk,rst,dpfifo_rd,normfifo_rd,dpfifo_wr,normfifo_wr : in std_logic;
-		instrfifo_rd : in std_logic;
-		resultfifo_wr: in std_logic_vector(8-1 downto 0);
-		instrfifo_empty: out std_logic; ext_rd,ext_wr: in std_logic;
-		ext_wr_add : in std_logic_vector(4+widthadmemblock-1 downto 0);		
-		ext_rd_add : in std_logic_vector(3 downto 0);
-		ext_d: in std_logic_vector(floatwidth-1 downto 0);
-		int_d : in vectorblock08;
-		
-		status_register : in std_logic_vector(3 downto 0);
-		
-		resultfifo_full  : out std_logic_vector(3 downto 0);
-		ext_q,instrfifo_q : out std_logic_vector(floatwidth-1 downto 0);
-		int_q : out vectorblock12;
-		int_rd_add : in std_logic_vector(2*widthadmemblock-1 downto 0);
-		dpfifo_d : in std_logic_vector(floatwidth*2-1 downto 0);
-		normfifo_d : in std_logic_vector(floatwidth*3-1 downto 0);
-		dpfifo_q : out std_logic_vector(floatwidth*2-1 downto 0);
-		normfifo_q : out std_logic_vector(floatwidth*3-1 downto 0)
-	);	
-	end component;
-	--! Bloque decodificacion DataPath Control.
-	component dpc
-	port (
-		clk,rst					: in	std_logic;
-		paraminput				: in	vectorblock06;	--! Vectores A,B
-		prd32blko			 	: in	vectorblock06;	--! Salidas de los 6 multiplicadores.
-		add32blko 				: in	vectorblock03;	--! Salidas de los 4 sumadores.
-		sqr32blko,inv32blko		: in	std_logic_vector (floatwidth-1 downto 0);	--! Salidas de la raiz cuadradas y el inversor.
-		fifo32x19_q				: in	std_logic_vector (03*floatwidth-1 downto 0);--! Salida de la cola intermedia.
-		fifo32x09_q				: in	std_logic_vector (floatwidth-1 downto 0);--! Salida de las colas de producto punto. 
-		d,c,s					: in	std_logic;		--! Bit con el identificador del bloque AB vs CD e identificador del sub bloque (A/B) o (C/D). 
-		sync_chain_0			: in	std_logic;		--! Se&ntilde;al de dato valido que se va por toda la cadena de sincronizacion.
-		sqr32blki,inv32blki		: out	std_logic_vector (floatwidth-1 downto 0);		--! Salidas de las 2 raices cuadradas y los 2 inversores.
-		fifo32x19_d				: out	std_logic_vector (03*floatwidth-1 downto 0);		--! Entrada a la cola intermedia para la normalizaci&oacute;n.
-		q0_32x03_d				: out	std_logic_vector (floatwidth-1 downto 0);		--! Entrada a las colas intermedias del producto punto.  	
-		prd32blki				: out	vectorblock12;	--! Entrada de los 12 factores en el bloque de multiplicaci&oacute;n respectivamente.
-		add32blki				: out	vectorblock06;	--! Entrada de los 6 sumandos del bloque de 3 sumadores.  
-		resw					: out	std_logic_vector (3 downto 0);				--! Salidas de escritura y lectura en las colas de resultados.
-		q0_32x03_w				: out	std_logic;
-		q1xyz_32x20_w			: out	std_logic;
-		q0_32x03_r				: out	std_logic;
-		q1xyz_32x20_r			: out	std_logic;
-		resf_vector				: in 	std_logic_vector (3 downto 0);				--! Entradas de la se&ntilde;al de full de las colas de resultados. 
-		resultoutput			: out	vectorblock04 --! 4 salidas de resultados, pues lo m&aacute;ximo que podr&aacute; calcularse por cada clock son 2 vectores.
-	);
-	end component;
-	--! Bloque Aritmetico de Sumadores y Multiplicadores (madd)
-	component arithblock
-	port (
-		
-		clk	: in std_logic;
-		rst : in std_logic;
 	
-		dpc : in std_logic;
-	
-		f	: in vectorblock12;
-		a	: in vectorblock08;
-		
-		s	: out vectorblock04;
-		p	: out vectorblock06
-			
-	);
-	end component;
-	--! Bloque de Raiz Cuadrada
-	component sqrt32
-	port (
-		
-		clk	: in std_logic;
-		rd32: in xfloat32;		
-		sq32: out xfloat32
-	);
-	end component;
-	--! Bloque de Inversores.
-	component invr32
-	port (
-		
-		clk		: in std_logic;
-		dvd32	: in xfloat32;		
-		qout32	: out xfloat32
-	);
-	end component;
 	
 	
 	
@@ -357,14 +348,8 @@ package arithpack is
 	--! Funci&oacute;n que devuelve una cadena con el n&uacute;mero flotante IEEE 754 &oacute; a una cadena de cifras hexadecimales.
 	procedure ap_slvf2string(l:inout line;sl:std_logic_vector);
 	procedure ap_slv2hex (l:inout line;h:in std_logic_vector) ;
-	--! Funci&oacute;n que devuelve una cadena con el estado de macState.
-	procedure ap_macState2string(l:inout line;s:in macState);
 	
-	--! Funci&oacute;n que convierte un array de 2 std_logic_vectors que contienen un par de direcciones en string
-	procedure ap_vnadd022string(l:inout line; va2:in vectorblockadd02);
 	
-	--! Funci&oacute;n que devuelve una cadena de caracteres con el estado de la maquina de estados que controla las interrupciones
-	procedure ap_iCtrlState2string(l:inout line;i:in iCtrlState) ;	
 	
 	--! Funci&oacute;n que devuelve una cadena con los componentes de un vector R3 en punto flotante IEEE754	
 	procedure ap_v3f2string(l:inout line;v:in v3f);
@@ -540,55 +525,6 @@ package body arithpack is
 		write(l,string'("[Z]"));
 		write(l,string'(" "));
 		ap_slvf2string(l,vb03(0));
-	end procedure;
-
-	procedure ap_iCtrlState2string(l:inout line;i:in iCtrlState) is
-		variable tmp:string (1 to 9);
-	begin
-		
-		write(l,string'("<< "));
-		case i is 
-			when WAITING_FOR_A_RFULL_EVENT =>
-				tmp:="WAIT_RF_EVNT";
-			when INHIBIT_RFULL_INT => 
-				tmp:="INHB_RF_INT";
-			when others => 
-				tmp:="ILGL__VAL";
-		end case;
-		write(l,string'(tmp));
-		write(l,string'(" >>"));
-	
-	end procedure;
-	
-	procedure ap_vnadd022string(l:inout line;va2:in vectorblockadd02) is 
-	begin
-
-		write(l,string'("<<[1] "));
-		ap_slv2hex(l,va2(1));
-		write(l,string'(" [0] "));
-		ap_slv2hex(l,va2(0));
-		write(l,string'(" >>"));
-
-	end procedure;
-	
-	procedure ap_macState2string(l:inout line;s:in macState) is
-		variable tmp:string (1 to 6);
-	begin
-		
-		write(l,string'("<< "));
-		case s is
-			when LOAD_INSTRUCTION => 
-				tmp:="LD_INS";
-			when FLUSH_ARITH_PIPELINE => 
-				tmp:="FL_ARP";
-			when EXECUTE_INSTRUCTION => 
-				tmp:="EX_INS";
-			when others => 
-				tmp:="HEL_ON";
-		end case;
-		write(l,string'(tmp));
-		write(l,string'(" >>"));
-		
 	end procedure;
 	
 	constant hexchars : string (1 to 16) := "0123456789ABCDEF";

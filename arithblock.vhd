@@ -14,7 +14,7 @@
 -- 
 --     raytrac is distributed in the hope that it will be useful,
 --     but WITHOUT ANY WARRANTY; without even the implied warranty of
---     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+--     MERCHANTABILITY or FITNESS FOR a PARTICULAR PURPOSE.  See the
 --     GNU General Public License for more details.
 -- 
 --     You should have received a copy of the GNU General Public License
@@ -31,130 +31,125 @@ entity arithblock is
 		clk	: in std_logic;
 		rst : in std_logic;
 	
-		dpc : in std_logic;
+		sign : in std_logic;
 	
-		f	: in vectorblock12;
-		a	: in vectorblock08;
+		prd32blki	: in vectorblock12;
+		add32blki	: in vectorblock06;
 		
-		s	: out vectorblock04;
-		p	: out vectorblock06
+		add32blko	: out vectorblock03;
+		prd32blko	: out vectorblock06;
+		
+		sq32o		: xfloat32;
+		inv32o		: xfloat32
+		
+		
 			
 	);
 end entity;
 
 architecture arithblock_arch of arithblock is
 
-	
+	signal sadd32blko_01 : xfloat32;
+	signal ssq32o : xfloat32;
+		
 
 
 begin 
-	--! 4 sumadores.	
---	arithblock:
---	for i in 3 downto 0 generate
---		adder_i : fadd32 
---		port map (
---			clk => clk,
---			dpc => dpc,
---			a32 => a( ((i*2)+1)*32-1	downto (i*2)*32),
---			b32 => a( ((i*2)+2)*32-1	downto ((i*2)+1)*32),
---			c32 => s( (i+1)*32-1		downto 32*i)
---		);
---	end generate arithblock;
-	--! 6 multiplicadores.
---	mulblock:
---	for i in 5 downto 0 generate
---		mul_i	: fmul32
---		port map (
---			clk => clk,
---			a32 => f( ((i*2)+1)*32-1	downto (i*2)*32),
---			b32 => f( ((i*2)+2)*32-1	downto ((i*2)+1)*32),
---			p32 => p( (i+1)*32-1		downto 32*i)
---		);
---	end generate mulblock;
+
+	sq32o <= ssq32o;
+	sadd32blko_01 <= add32blko(1);
+
 	--!TBXINSTANCESTART
 	adder_i_0 : fadd32 
 	port map (
 		clk => clk,
-		dpc => dpc,
-		a32 => a(0),
-		b32 => a(1),
-		c32 => s(0)
+		dpc => sign,
+		a32 => add32blki(0),
+		b32 => add32blki(1),
+		c32 => add32blko(0)
 	);
 	--!TBXINSTANCESTART
 	adder_i_1 : fadd32 
 	port map (
 		clk => clk,
-		dpc => dpc,
-		a32 => a(2),
-		b32 => a(3),
-		c32 => s(1)
+		dpc => sign,
+		a32 => add32blki(2),
+		b32 => add32blki(3),
+		c32 => add32blko(1)
 	);
 	--!TBXINSTANCESTART
 	adder_i_2 : fadd32 
 	port map (
 		clk => clk,
-		dpc => dpc,
-		a32 => a(4),
-		b32 => a(5),
-		c32 => s(2)
-	);
-	--!TBXINSTANCESTART
-	adder_i_3 : fadd32 
-	port map (
-		clk => clk,
-		dpc => dpc,
-		a32 => a(6),
-		b32 => a(7),
-		c32 => s(3)
+		dpc => sign,
+		a32 => add32blki(4),
+		b32 => add32blki(5),
+		c32 => add32blko(2)
 	);
 	--!TBXINSTANCESTART
 	mul_i_0 : fmul32 
 	port map (
 		clk => clk,
-		a32 => f(0),
-		b32 => f(1),
-		p32 => p(0)
+		a32 => prd32blki(0),
+		b32 => prd32blki(1),
+		p32 => prd32blko(0)
 	);
 	--!TBXINSTANCESTART
 	mul_i_1 : fmul32 
 	port map (
 		clk => clk,
-		a32 => f(2),
-		b32 => f(3),
-		p32 => p(1)
+		a32 => prd32blki(2),
+		b32 => prd32blki(3),
+		p32 => prd32blko(1)
 	);
 	--!TBXINSTANCESTART
 	mul_i_2 : fmul32 
 	port map (
 		clk => clk,
-		a32 => f(4),
-		b32 => f(5),
-		p32 => p(2)
+		a32 => prd32blki(4),
+		b32 => prd32blki(5),
+		p32 => prd32blko(2)
 	);
 	--!TBXINSTANCESTART
 	mul_i_3 : fmul32 
 	port map (
 		clk => clk,
-		a32 => f(6),
-		b32 => f(7),
-		p32 => p(3)
+		a32 => prd32blki(6),
+		b32 => prd32blki(7),
+		p32 => prd32blko(3)
 	);
 	--!TBXINSTANCESTART
 	mul_i_4 : fmul32 
 	port map (
 		clk => clk,
-		a32 => f(8),
-		b32 => f(9),
-		p32 => p(4)
+		a32 => prd32blki(8),
+		b32 => prd32blki(9),
+		p32 => prd32blko(4)
 	);
 	--!TBXINSTANCESTART
 	mul_i_5 : fmul32 
 	port map (
 		clk => clk,
-		a32 => f(10),
-		b32 => f(11),
-		p32 => p(5)
+		a32 => prd32blki(10),
+		b32 => prd32blki(11),
+		p32 => prd32blko(5)
 	);
+	--!TBXINSTANCESTART
+	square_root : sqrt32
+	port map (
+		clk 	=> clk,
+		rd32	=> sadd32blko_01,
+		sq32	=> ssq32o 
+	);
+	--!TBXINSTANCESTART
+	inversion_block : invr32
+	port map (
+		clk		=> clk,
+		dvd32	=> ssq32o,
+		qout32	=> inv32o
+	);
+	
+	
 	
 	
 	

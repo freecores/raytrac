@@ -27,144 +27,71 @@ use ieee.std_logic_unsigned.all;
 use work.arithpack.all;
 
 entity customCounter is
-	generic (
-		EOBFLAG		: string := "NO";
-		ZEROFLAG	: string := "YES";
-		BACKWARDS	: string := "YES";
-		EQUALFLAG	: string := "NO";	
-		width 		: integer := 5;
-		subwidth	: integer := 0	
-	);
 	port (
-		clk,rst,go,set : in std_logic;
-		setValue, cmpBlockValue : in std_logic_vector (width-1 downto subwidth); --! Los 5 bits de arriba.
-		zero_flag,eob_flag, eq_flag : out std_logic;
-		count : out std_logic_vector (width - 1 downto 0)
+		clk				: in std_logic;
+		rst				: in std_logic;
+		stateTrans			: in std_logic;
+		waitrequest_n	: in std_logic;
+		endaddress		: in std_logic_vector (31 downto 2); --! Los 5 bits de arriba.
+		startaddress	: in std_logic_vector(31 downto 0);
+		endaddressfetch	: out std_logic;
+		address_master 	: out std_logic_vector (31 downto 0)
 	);
 end entity;
 
-
-
 architecture customCounter_arch of customCounter is 
-
 	--!TBXSTART:COUNTING_REGISTERS
-	signal scount_d, scount_q, sgo : std_logic_vector(width-1 downto 0);
+	signal saddress_master_d	: std_logic_vector(31 downto 2);
+	signal sgo					: std_logic_vector(31 downto 2);
+	signal saddress_master_q	: std_logic_vector(31 downto 2);
+	signal sendaddress			: std_logic_vector(31 downto 2);
+	signal sendaddressfetch		: std_logic;
 	--!TBXEND
-	--!TBXSTART:END_OF_BLOCK_FLAG
-	signal seob_flag : std_logic;
-	--!TBXEND
-	
-
 begin
-
 	--!Compara los bits superiores solamente, si subwidth es 4 y width es 9 comparara los 9-4=5 bits superiores.
-	steadyEqualFlag:
-	if EQUALFLAG/="YES" generate
-		eq_flag <= '0';
-	end generate steadyEqualFlag;
+	
+	--! Evento de finalizaci&oacute;n de fetching de parametros
+	--! Si la direcci&oacute;n en el address_master es igual a la ultima direcci&oacute;n y el slave hace fetch de dicha direcci&oacute;n (waitrequest_n=1) entonces se marca el evento de que la &uacute;ltima direcci&oacute;n ha sido leida por el slave.
+	endaddressfetch <= sendaddressfetch and waitrequest_n; 
 	equalFlagsProcess:
-	if EQUALFLAG="YES" generate
-		process (scount_d(width-1 downto subwidth),cmpBlockValue,clk,rst)
-		begin
-			if rst=rstMasterValue then
-				eq_flag <= '0';
-			elsif clk'event and clk='1' then
-				if scount_d(width-1 downto subwidth)=cmpBlockValue then
-					eq_flag <= '1';
-				else
-					eq_flag <= '0';
-				end if;
+	process (saddress_master_d(31 downto 2),sendaddress,clk,rst)
+	begin
+		if rst=rstMasterValue then
+			sendaddressfetch <= '0';
+		elsif clk'event and clk='1' then
+			if saddress_master_d(31 downto 2)=sendaddress then
+				sendaddressfetch <= '1';
+			else
+				sendaddressfetch <= '0';
 			end if;
-		end process;
-	end generate equalFlagsProcess;
+		end if;
+	end process;
 
 	--Backwards or Forwards.
-	forwardGenerator:
-	if BACKWARDS="NO" generate
-		sgo(width-1 downto 1) <= (others => '0');
-		sgo(0) <= go;
-	end generate forwardGenerator;
-
-	backwardGenerator:
-	if BACKWARDS="YES" generate
-		sgo(width-1 downto 0) <= (others => go);		
-	end generate backwardGenerator;  
-		 
-
-	--! Si en los par&aacute;metros no se encuentra especificado que detecte el zero entonces la salida zero_flag estar&aacute; en cero siempre.
-	steadyZeroFlag:
-	if ZEROFLAG/="YES" generate
-		zero_flag <= '0';
-	end generate steadyZeroFlag;
+	sgo(31 downto 3)	<= (others => '0');
+	sgo(2) 				<= waitrequest_n;
 	
-	--! Si el par&aacute;metro para la bandera de cero se especifica, entonces se instancia un proceso que depende del valor del conteo.	
-	zeroFlagProcess:
-	if ZEROFLAG="YES" generate
-		--! Proceso para calcular la bandera de cero, en el conteo.
-		process (scount_d,clk,rst)
-		begin
-			if rst=rstMasterValue then
-				zero_flag <= '0';
-			elsif clk'event and clk='1' then
-				zero_flag <= '1';				
-				for i in width-1 downto 0 loop
-					if scount_d(i) = '1' then
-						zero_flag <= '0';
-						exit;--the loop;
-					end if;
-				end loop;
-			end if;
-		end process;	
-	end generate zeroFlagProcess;
-	
-	
-	--! Proceso para controlar la salida de la bandera de fin de bloque. Se colocar&aacute; en uno l&oacute;gico cuando el conteo vaya en multiplo de 32 menos 1.
-	steadyEobFlag:
-	if EOBFLAG/="YES" generate
-		eob_flag <= '0';
-	end generate steadyEobFlag;
-	eobFlagProcess:
-	if EOBFLAG="YES" generate
-		process (scount_d(subwidth-1 downto 0),clk,rst)
-		begin
-			if rst=rstMasterValue then
-				eob_flag <= '0';
-			elsif clk'event and clk='1' then
-				eob_flag <= '1';
-				for i in subwidth-1 downto 0 loop 
-					if scount_d(i) /= '1' then 
-						eob_flag <= '0';
-						exit;--the loop
-					end if;
-				end loop;
-			end if;
-		end process;
-	end generate eobFlagProcess;
 		
 	--! Salida combinatoria del contador.
-	count <= scount_d;
+	address_master <= saddress_master_q(31 downto 2) & startaddress(1 downto 0);
 	
 	--! Proceso de control del conteo.
-	add_proc:
-	process (scount_q,sgo,set,setValue)
-	begin
-		case set is
-			--! Si subwidth es cero, p.ej. cuando se quiere hacer un contador simple y no detectar el final de bloques de 4 bits de ancho, el compilador ignora el statement con la expresi&oacute;n por fuera del rango. 
-			when '1'  => 
-				scount_d(subwidth-1 downto 0) <= (others => '0');
-				scount_d(width-1 downto subwidth) <= setValue;
-			when others => 
-				scount_d <= scount_q+sgo;
-		end case;
-	end process;
+	saddress_master_d <= saddress_master_q+sgo;
+	
 	
 	count_proc:
 	process (clk,rst)
 	begin
 		if rst=rstMasterValue then 
-			scount_q <= (others => '0');
+			saddress_master_q <= (others => '0');
+			sendaddress <= (others => '0');
+			saddress_master_q <= (others => '0');
 		elsif clk='1' and clk'event then 
-			scount_q <= scount_d;
+			saddress_master_q <= saddress_master_d;
+			if stateTrans='1' then
+				sendaddress 		<= endaddress;
+				saddress_master_q 	<= startaddress(31 downto 2);
+			end if;
 		end if;
 	end process;
 end architecture;

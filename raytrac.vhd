@@ -9,7 +9,7 @@ library lpm;
 use lpm.lpm_components.all;
 
 
-entity slave_template is 
+entity raytrac is 
 	generic (
 		wd	:	integer := 32;
 		sl	:	integer := 5;	--! Arith Sync Chain Long 2**sl
@@ -52,11 +52,11 @@ entity slave_template is
 end entity;
 
 
-architecture slave_template_arch of slave_template is
+architecture raytrac_arch of raytrac is
 
 	--! Altera Compiler Directive, to avoid m9k autoinferring thanks to the guys at http://www.alteraforum.com/forum/archive/index.php/t-30784.html .... 
 	attribute altera_attribute : string; 
-	attribute altera_attribute of slave_template_arch : architecture is "-name AUTO_SHIFT_REGISTER_RECOGNITION OFF";
+	attribute altera_attribute of raytrac_arch : architecture is "-name AUTO_SHIFT_REGISTER_RECOGNITION OFF";
 	
 
 	subtype	xfloat32		is std_logic_vector(wd-1 downto 0);
@@ -92,7 +92,7 @@ architecture slave_template_arch of slave_template is
 	
 	constant reg_ctrl_sc			:	integer:=04;	--! SC bit of the VTSC field.
 	constant reg_ctrl_vt			:	integer:=05;	--! VT bit of the VTSC field.
-	constant reg_ctrl_flags_ae		:	integer:=06;	--! Almost Empty Flag.
+	constant reg_ctrl_dma			:	integer:=06;	--! DMA bit.
 	constant reg_ctrl_flags_fc		:	integer:=07;	--! Flood Condition Flag.
 	
 	constant reg_ctrl_flags_dc		:	integer:=08;	--! Drain Condition Flag.	
@@ -117,10 +117,10 @@ architecture slave_template_arch of slave_template is
 	signal	sslave_writedata	:	xfloat32;
 	signal	sslave_address		:	std_logic_vector	(nr-1 downto 0);
 	signal	sslave_waitrequest	:	std_logic;
+	
 	--! Avalon MM Master
 	signal	smaster_write		:	std_logic;
 	signal	smaster_read		:	std_logic;
-	
 	
 	--! State Machine and event signaling
 	signal sm					:	transferState;
@@ -142,6 +142,7 @@ architecture slave_template_arch of slave_template is
 	signal soutb_ae				:	std_logic;
 	signal soutb_af				:	std_logic;
 	
+	
 	signal soutb_usedw			:	std_logic_vector(fd-1 downto 0);
 
 	signal ssync_chain_1		:	std_logic;
@@ -155,7 +156,7 @@ architecture slave_template_arch of slave_template is
 	
 	
 	--!Unload Control
-	type upload_chain is (VX,VY,VZ,SC);
+	type upload_chain is (VX,VY,VZ,SC,DMA);
 	signal supload_chain	: upload_chain;
 	signal supload_start	: upload_chain;
 		
@@ -208,6 +209,9 @@ begin
 		irq <= sreg_block(reg_ctrl)(reg_ctrl_irq);				
 		master_read <= smaster_read;
 		master_write <= smaster_write;
+		
+		--! Direct Memory Access Selector.
+		
 		
 		
 		--! ZERO_TRANSIT: Cuando todos los elementos de sincronizaci&oacute;n est&aacute;n en cero menos la cola de sincronizaci&oacute;n de carga de parametros.
@@ -276,12 +280,14 @@ begin
 		--! Restart param load chain
 		srestart_chain <= sreg_block(reg_ctrl)(reg_ctrl_irq) and sreg_block(reg_ctrl)(reg_ctrl_rlsc);
 		
-		--! Data dumpster: Dump data once the interconeection has loaded the data to write.
+		--! Data dumpster: Descaratar dato de upload una vez la interconexi&oacute;n haya enganchado el dato.
 		if sm=SINK and master_waitrequest='0' and smaster_write='1' then 
 			soutb_ack <= '1';
 		else
 			soutb_ack <= '0';
 		end if;
+		
+		
 		
 		--! Flow Control State Machine.
 		if rst=rstMasterValue then
@@ -375,7 +381,7 @@ begin
 								sm <= IDLE;
 								sreg_block(reg_ctrl)(reg_ctrl_irq) <= '1';
 								sreg_block(reg_ctrl)(reg_ctrl_rom) <= '0';
-								sreg_block(reg_ctrl)(reg_ctrl_flags_dc downto reg_ctrl_flags_ae) <= sdrain_condition & sflood_condition & soutb_ae;
+								sreg_block(reg_ctrl)(reg_ctrl_flags_dc downto reg_ctrl_flags_fc) <= sdrain_condition & sflood_condition;
 								sreg_block(reg_ctrl)(reg_ctrl_flags_ap downto reg_ctrl_flags_wp) <= sload_add_pending & sfetch_data_pending & sparamload_pending & spipeline_pending & swrite_pending;
 					
 							else
@@ -407,7 +413,7 @@ begin
 									sm <= IDLE;
 									sreg_block(reg_ctrl)(reg_ctrl_irq) <= '1';
 									sreg_block(reg_ctrl)(reg_ctrl_rom) <= '0';
-									sreg_block(reg_ctrl)(reg_ctrl_flags_dc downto reg_ctrl_flags_ae) <= sdrain_condition & sflood_condition & soutb_ae;
+									sreg_block(reg_ctrl)(reg_ctrl_flags_dc downto reg_ctrl_flags_fc) <= sdrain_condition & sflood_condition;
 									sreg_block(reg_ctrl)(reg_ctrl_flags_ap downto reg_ctrl_flags_wp) <= sload_add_pending & sfetch_data_pending & sparamload_pending & spipeline_pending & swrite_pending;
 										
 								end if;	
@@ -467,14 +473,20 @@ begin
 --! ******************************************************************************************************************************************************						
 
 	FLOW_CONTROL_OUTPUT_STAGE:
-	process (clk,rst,sres_e,sreg_block(reg_ctrl)(reg_ctrl_vt downto reg_ctrl_sc),sm,supload_chain,zero,ssync_chain_pending,sres_q,supload_start)
+	process (clk,rst,master_readdata, master_readdatavalid,sres_e,sreg_block(reg_ctrl)(reg_ctrl_vt downto reg_ctrl_sc),sm,supload_chain,zero,ssync_chain_pending,sres_q,supload_start)
 	begin
 		
 
 		--! Compute initial State.
 
 		--! Escribir en el output buffer.
-		soutb_w <= not(sres_e);
+		if supload_chain=DMA then
+			--! Modo DMA escribir los datos de entrada directamente en el buffer.
+			soutb_w <= master_readdatavalid;
+		else
+			--!Modo Arithmetic Pipeline 
+			soutb_w <= not(sres_e);
+		end if;
 		
 		--! Control de lectura de la cola de resultados.
 		if sres_e='0' then
@@ -487,7 +499,9 @@ begin
 			sres_ack <= '0';
 		end if;
 			
+			
 		--! Decodificar que salida de la cola de resultados se conecta a la entrada del otput buffer
+		--! DMA Path Control: Si se encuentra habilitado el modo dma entonces conectar la entrada del buffer de salida a la interconexi&oacute;n
 		case supload_chain is
 			when VX => 
 				soutb_d <= sres_q ((wd*1)-1 downto wd*0);
@@ -497,6 +511,8 @@ begin
 				soutb_d <= sres_q ((wd*3)-1 downto wd*2);
 			when SC => 
 				soutb_d <= sres_q ((wd*4)-1 downto wd*3);
+			when DMA => 
+				soutb_d <= master_readdata;
 		end case;
 					
 	
@@ -511,7 +527,8 @@ begin
 		--! M&aacute;quina de estados para el width adaptation RES(128) -> OUTPUTBUFFER(32). 	
 		if rst=rstMasterValue then
 			supload_chain <= VX;
-		elsif clk'event and clk='1' then
+		elsif clk'event and clk='1' and sreg_block(reg_ctrl)(reg_ctrl_dma)='0' then
+			--! Modo de operaci&oacute;n normal.
 			case supload_chain is
 				when VX => 
 					if sres_e='1' then 
@@ -527,9 +544,14 @@ begin
 					else
 						supload_chain <= SC;
 					end if;
-				when SC => 
+				when SC|DMA => 
 					supload_chain <= supload_start;
+				
 			end case;
+		
+		elsif clk'event and clk='1' then
+			--! Modo DMA
+			supload_chain <= DMA;
 		end if;									
 											
 				
@@ -538,7 +560,7 @@ begin
 --! PROCESO DE CONTROL DE FLUJO ENTRE LA ENTRADA DESDE LA INTERCONEXI&OACUTE;N Y LOS PARAMETROS DE ENTRADA EN EL PIPELINE ARITMETICO
 --! ******************************************************************************************************************************************************						
 	FLOW_CONTROL_INPUT_STAGE:
-	process(clk,rst,master_readdatavalid,master_readdata,sreg_block(reg_ctrl)(reg_ctrl_d downto reg_ctrl_s),sslave_write,sslave_address)
+	process(clk,rst,master_readdatavalid,master_readdata,sreg_block(reg_ctrl)(reg_ctrl_dma downto reg_ctrl_s),sslave_write,sslave_address,supload_chain)
 	begin
 		--! Est&aacute; ocurriendo un evento de transici&oacute;n del estado TX al estado FETCH: Programar el enganche de par&aacute;metros que vienen de la interconexi&oacute;n.
 		--! Mirar como es la carga inicial. Si es Normalizacion o Magnitud (dcs=110) entonces cargar AXBX de lo contrario solo AX.
@@ -554,7 +576,7 @@ begin
 			end loop;
 		elsif clk'event and clk='1' then
 			ssync_chain_1	<= '0';
-			if master_readdatavalid='1' then 
+			if master_readdatavalid='1' and sreg_block(reg_ctrl)(reg_ctrl_dma)='0' then 
 				--! El dato en la interconexi&oacute;n es valido, se debe enganchar. 
 				case sdownload_chain is 
 					when AX | AXBX  =>
@@ -664,21 +686,13 @@ begin
 --! *************************************************************************************************************************************************************************************************************************************************************
 --! AVALON MEMORY MAPPED SLAVE FINISHED
 --! *************************************************************************************************************************************************************************************************************************************************************
-	
-	
-	
-	
-	
-
-	
-end architecture;
-
 	--!---------|-----------|-------------------------------------------------------------------------------------------------------------------
-	--! Control Register (cr)	BASE_ADDRESS + 0x0																								|
+	--! Control Register (reg_ctrl)	BASE_ADDRESS + 0x0																								|
 	--!---------|-----------|-------------------------------------------------------------------------------------------------------------------
 	--! Bit No.	| Nombre	| Descripci&oacute;n																								|
 	--!---------|-----------|-------------------------------------------------------------------------------------------------------------------
-	--! 0		| cmb (rw)	| 1:	La operaci&oacute;n es combinatoria, por lo tanto solo se cargan vectores en el operando B.					|
+	--! 0		| cmb (rw)	| 1:	La operaci&oacute;n es combinatoria, por lo tanto cargan los primeros 3 valores en el Operando A y el		|
+	--!			|			|		de vectores en el operando B.																				|
 	--!			|			| 0:	La operaci&oacute;n no es combinatoria, se cargan vectores en los operandos A y B.							|
 	--!---------|-----------|-------------------------------------------------------------------------------------------------------------------|
 	--!			|			|		Configuraci&oacute;n del Datapath, Interconexi&oacute;n del Pipeline Aritm&eacute;tico y Cadena de Carga	|
@@ -691,20 +705,73 @@ end architecture;
 	--!			|			| 100:	Producto Punto																								|
 	--!			|			| 111:	Producto Simple																								|
 	--!---------|-----------|-------------------------------------------------------------------------------------------------------------------|
-	--!			|			| En el caso de que dcs sea 110 (Normalizaci&oacute;n y Magnitud Vectorial) este par de bits indica que resultados	|
-	--!			|			| escribir. Si dcs tiene un valor diferente a 110 se ignora este campo.												|
-	--!			|			|																													|
 	--! [5:4]	| vtsc (rw)	| 00:	Solo leer los resultados vectoriales.																		|
 	--!			|			| 01:	Solo leer los resultados escalares.																			|
 	--!			|			| 10:	Solo leer los resultados vectoriales.																		|
 	--!			|			| 11:	Leer los resultados escalares y vectoriales.																|
 	--!---------|-----------|-------------------------------------------------------------------------------------------------------------------|
+	--! 6		| dma (rw)	|  1:	Modo DMA: Los datos que ingresan se leen desde la direcci&oacute;n FETCHSTART (BASE+0x08) y se escriben en  |
+	--!			|			|		la direcci&oacute;n SINKSTART (BASE+0x09).																	|
+	--!			|			|  0:	Modo Arithmetic Pipeline: Los datos ingresan en grupos de a 6 valores para 2 vectores de 3 valores cada uno,|
+	--!			|			|		cuando se usa en modo uno a uno (cmb=1), &oacute; en grupos de 3 valores para 1 vector de 3 valores, 		|
+	--!			|			|		pero con el operando A fijado con el valor de la primera carga de valores en modo combinatorio (cmb=1).		|
+	--!			|			|		De la misma manera que en modo DMA se cargan los operandos en la direcci&oacute;n FETCHSTART y se escriben	|
+	--!			|			|		los resultados en la direcci&oacute;n SINKSTART.															|
+	--!---------|-----------|-------------------------------------------------------------------------------------------------------------------|
+	--! 7		| flag_fc(r)|  1:	Al momento de generar una interrupci&oacute;n este bit se coloca en 1 si se cumplen las condiciones de  	|
+	--!			|			|		descarga de datos de la memoria (revisar el net signal sflood_condition). Si se encuentra en uno se			|
+	--!			|			|		tratar&iacute;a de una inconsistencia puesto que la interrupci&oacute;n se dispara una vez se ha terminado	|
+	--! 		|			|		de ejecutar una instrucci&oacute;n y el que la bandera este en uno significa que hay transacciones de 		|	
+	--!			|			|		descarga de datos desde la memoria pendientes.																|
+	--!			|			|																													|
+	--!			|			|		En general que cualquiera de estas banderas se coloque en uno es una se&ntilde;alizacion de error, puesto	|
+	--!			|			|		que una vez se ha terminado de ejecutar una instrucci&oacute;n no deben haber transacciones pendientes.		|
+	--!			|			|		La raz&oacute;n de ser de estas banderas es hacer depuraci&oacute;n del hardware mas que del software.		|
+	--!			|			|																													|
+	--!			|			|  0:	Flood Condition off. 																						|
+	--!---------|-----------|-------------------------------------------------------------------------------------------------------------------|
+	--! 8		| flag_dc(r)|  1:	Error, la instrucci&oacute;n ya se ejecut&oacute; y hay datos transitando en el buffer de salida aun.		|
+	--!			|			|  0:	Drain Condition off.																						|
+	--!---------|-----------|-------------------------------------------------------------------------------------------------------------------|
+	--! 9		| wp(r)		|  1:	Error, la instrucci&oacute;n ya se ejecut&oacute; y hay datos transitando en el buffer de salida aun. 		|																							
+	--!			|			|  0:	Write on Memory not pending.																				|
+	--!---------|-----------|-------------------------------------------------------------------------------------------------------------------|
+	--! 10		| pp(r)		|  1:	Error, la instrucci&oacute;n ya se ejecut&oacute;n y hay datos transitando el pipeline aritm&eacute;tico.	|
+	--!			|			|  0:	Pipeline not pending.																						|
+	--!---------|-----------|-------------------------------------------------------------------------------------------------------------------|
+	--! 11		| pl(r)		|  1:	La carga de parametros no se complet&oacute;. Esto por lo general pasa cuando uno va a realizar una			|
+	--! 		|			|		operaci&acute;n combinatoria y solo cargo el primer operando, el A, esto puede ocurrir porque por ejemplo 	|
+	--!			|			|		se puede desear sumar un conjunto de vectores a un vector de referencia. Este vector de referencia puede	|
+	--!			|			|		estar en un area de memoria distinta, que el resto de los vectores. Por lo tanto el pseudo codigo para		|
+	--!			|			|		ejecutar una operaci&oacute;n de este tipo seria:															|
+	--!			|			|																													|	
+	--!			|			|		ld vect,add,cmb;	//Resultados solo vectoriales, ejecutar operaci&oacute;n suma en modo combinatorio		|
+	--!			|			|		ld &A;				//Cargar la direccion del Vector A.														|
+	--!			|			|		ld 3;				//Cargar 3 valores, o sea el Vector A.													| 
+	--!			|			|		wait int;			//Esperar a que se ejecute la interrupcion. Una vez se termine de ejecutar si la bandera|
+	--!			|			|							//pl est&aacute; en uno se vuelve a comenzar y se deshecha el dato que hay como 		|
+	--!			|			|							//par&aacute;metro.	Para este ejemplo se asume que est&aacute en uno					|
+	--!			|			|		ld &B;				//Cargar la direcci&oacute;n donde se encuentran los vectores B							|
+	--!			|			|		ld &C;				//Cargar la direcci&oacute;n donde se exribiran los resultados.							|
+	--!			|			|		ld 24;				//Cargar los siguientes 24 valores a partir de &B correspondiente a 8 vectores			|
+	--!			|			|							//ejecutando 8 sumas vectoriales que se escribir&iacute;n a apartir de &C				|
+	--!			|			|		wait int;			//Esperar a que termine la ejecuci&oacute;n de las sumas.								|
+	--!			|			|																													|
+	--!			|			|  0:	Los operandos se cargaron integros se cargo del todo y no hubo que desechar parametros. 					|
+	--!---------|-----------|-------------------------------------------------------------------------------------------------------------------|
+	--! 12		| dp (r)	|  1:	Error, la instrucci&oacute;n se termino y aun hay datos pendientes por ser descargados						|
+	--!			|			|  0:	No hay datos pendientes por ser descargados.																|
+	--!---------|-----------|-------------------------------------------------------------------------------------------------------------------|
+	--! 13		| ap (r)	|  1:	Carga de direcciones en la interconexi&oacute;n a&uacute;n est&aacute; pendiente y la instrucci&oacute; ya	|
+	--!			|			|		se ejecut&oacute;																							|
+	--!			|			|  0:	No hay direcciones pendientes por cargar.																	|
+	--!---------|-----------|-------------------------------------------------------------------------------------------------------------------|
 	--! 14		| rlsc (rw)	| 1:	El sistema est&aacute; configurado para resetear la recarga sincronizada de par&aacute;metros una vez 	 	|
 	--!			|			|		concluya la instrucci&oacute;n																				|
 	--!			|			| 																													|
-	--!			|			| 0:	El sistema est&aacute; configurado para no resetear la cadena de sincronizaci&oacute;n de carga.																									|
+	--!			|			| 0:	El sistema est&aacute; configurado para no resetear la cadena de sincronizaci&oacute;n de carga.			|
 	--!---------|-----------|-------------------------------------------------------------------------------------------------------------------|
-	--! 15		| rom (r)	| 1: Los registros solo se pueden leer no se pueden escribir.														|
+	--! 15		| rom (r)	| 1: Los registros solo se pueden leer no se pueden escribir. Etsado SINK y SOURCE									|
 	--!			|			| 0: Los registros se pueden leer y escribir.																		|
 	--!---------|-----------|-------------------------------------------------------------------------------------------------------------------|
 	--! [30:16]	| nfetch(rw)| Cantidad de direcciones a cargar en la interconex&oacute;n para realizar la posterior descarga de datos de la  	|
@@ -715,15 +782,41 @@ end architecture;
 	--!			|			| 																													|
 	--!			|			| 0:	El RayTrac se encuentra en operaci&oacute;n Normal.															|
 	--!---------|-----------|-------------------------------------------------------------------------------------------------------------------
-	--! Start Parameter Address (psadd)	BASE_ADDRESS + 0x4																						|
+	--! Result Vector Z component (reg_vz)	BASE_ADDRESS + 0x4																					|
 	--!---------|-----------|-------------------------------------------------------------------------------------------------------------------|
-	--! [31:0]	| sadd (rw) | Direcci&oacute;n de memoria donde se encuentra el primer par&aacute;metro de entrada.								|
+	--! Result Vector Y component (reg_vy) BASE_ADDRESS + 0x8																					|
 	--!---------|-----------|-------------------------------------------------------------------------------------------------------------------|
-	--! Start Result Address (rsadd) BASE_ADDRESS + 0x8																							|
+	--! Result Vector X component (reg_vx) BASE_ADDRESS + 0xC																					|
 	--!---------|-----------|-------------------------------------------------------------------------------------------------------------------|
-	--! [31:0]	| rsadd (rw)| Direcci&oacute;n de memoria donde se encuentra el primer par&aacute;metro de entrada.								|
+	--! Result Vector Scalar component (reg_scalar) BASE_ADDRESS + 0x10																			|
 	--!---------|-----------|-------------------------------------------------------------------------------------------------------------------|
-	--! Scratch Register (screg) BASE_ADDRESS + 0x1C																							|
+	--! Scratch Vector 00	(reg_scratch00) BASE_ADDRESS + 	0x14																				|
 	--!---------|-----------|-------------------------------------------------------------------------------------------------------------------|
-	--! [31:0]	| screg (rw)| Direcci&oacute;n de memoria donde se pueden escribir y leer valores de 32 bits.									|
+	--! output Data Counter (reg_outputcounter) BASE_ADDRESS + 0x18																				|
 	--!---------|-----------|-------------------------------------------------------------------------------------------------------------------|
+	--! Input Data Counter	(reg_inputcounter) BASE_ADDRESS + 0x1C																				|
+	--!---------|-----------|-------------------------------------------------------------------------------------------------------------------|
+	--! Data Fetch Start Address (reg_fetchstart) BASE_ADDRESS + 0x20																			|
+	--!---------|-----------|-------------------------------------------------------------------------------------------------------------------|
+	--! Data Write Start Address (reg_sinkstart) BASE_ADDRESS + 0x24																			|
+	--!---------|-----------|-------------------------------------------------------------------------------------------------------------------|
+	--! Parameter Ax component (reg_ax) BASE_ADDRESS + 0x28																						|
+	--!---------|-----------|-------------------------------------------------------------------------------------------------------------------|
+	--! Parameter Ay component (reg_ay) BASE_ADDRESS + 0x2C																						|
+	--!---------|-----------|-------------------------------------------------------------------------------------------------------------------|
+	--! Parameter Az component (reg_az) BASE_ADDRESS + 0x30																						|
+	--!---------|-----------|-------------------------------------------------------------------------------------------------------------------|
+	--! Parameter Bx component (reg_bx) BASE_ADDRESS + 0x34																						|
+	--!---------|-----------|-------------------------------------------------------------------------------------------------------------------|
+	--! Parameter By component (reg_by) BASE_ADDRESS + 0x38																						|
+	--!---------|-----------|-------------------------------------------------------------------------------------------------------------------|
+	--! Parameter Bz component (reg_bz) BASE_ADDRESS + 0x3C																						|
+	--!---------|-----------|-------------------------------------------------------------------------------------------------------------------|	
+	
+	
+	
+	
+
+	
+end architecture;
+

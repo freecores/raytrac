@@ -19,7 +19,7 @@ use lpm.all;
 package arithpack is
 	
 	--!Constantes usadas por los RTLs
-	constant qz : integer := 00;constant qy : integer := 01;constant qx : integer := 02;
+	constant qz : integer := 00;constant qy : integer := 01;constant qx : integer := 02;constant sc : integer := 03;
 	constant az : integer := 00;constant ay : integer := 01;constant ax : integer := 02;constant bz : integer := 03;constant by : integer := 04;constant bx : integer := 05;
 	constant f0	: integer := 00;constant f1 : integer := 01;constant f2 : integer := 02;constant f3 : integer := 03;constant f4 : integer := 04;constant f5 : integer := 05;
 	constant f6	: integer := 06;constant f7 : integer := 07;constant f8 : integer := 08;constant f9 : integer := 09;constant f10: integer := 10;constant f11: integer := 11;
@@ -46,7 +46,7 @@ package arithpack is
 	--! Constantes para definir bloques de valores de 32 bits single float
 	type	vectorblock12 is array (11 downto 0) of xfloat32;
 	type	vectorblock08 is array (07 downto 0) of xfloat32;
-	type	vectorblock06 is array (05 downto 0) of xfl	oat32;
+	type	vectorblock06 is array (05 downto 0) of xfloat32;
 	type	vectorblock04 is array (03 downto 0) of xfloat32;
 	type	vectorblock03 is array (02 downto 0) of xfloat32;
 	type	vectorblock02 is array (01 downto 0) of xfloat32;
@@ -292,32 +292,32 @@ package arithpack is
 	);
 	end component;	
 	--! LPM Memory Compiler.
-	component scfifo
-	generic (
-		add_ram_output_register	:string;
-		allow_rwcycle_when_full	:string;
-		intended_device_family	:string;
-		lpm_hint				:string;
-		lpm_numwords			:natural;
-		lpm_showahead			:string;
-		lpm_type				:string;
-		lpm_width				:natural;
-		overflow_checking		:string;
-		underflow_checking		:string;
-		use_eab					:string	
-	);
-	port(
-		rdreq		: in std_logic;
-		aclr		: in std_logic;
-		empty		: out std_logic;
-		clock		: in std_logic;
-		q			: out std_logic_vector(lpm_width-1 downto 0);
-		wrreq		: in std_logic;
-		data		: in std_logic_vector(lpm_width-1 downto 0);
-		almost_full : out std_logic;
-		full		: out std_logic
-	);
-	end component;
+--	component scfifo
+--	generic (
+--		add_ram_output_register	:string;
+--		allow_rwcycle_when_full	:string;
+--		intended_device_family	:string;
+--		lpm_hint				:string;
+--		lpm_numwords			:natural;
+--		lpm_showahead			:string;
+--		lpm_type				:string;
+--		lpm_width				:natural;
+--		overflow_checking		:string;
+--		underflow_checking		:string;
+--		use_eab					:string	
+--	);
+--	port(
+--		rdreq		: in std_logic;
+--		aclr		: in std_logic;
+--		empty		: out std_logic;
+--		clock		: in std_logic;
+--		q			: out std_logic_vector(lpm_width-1 downto 0);
+--		wrreq		: in std_logic;
+--		data		: in std_logic_vector(lpm_width-1 downto 0);
+--		almost_full : out std_logic;
+--		full		: out std_logic
+--	);
+--	end component;
 	
 	
 	

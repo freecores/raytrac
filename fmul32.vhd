@@ -57,6 +57,26 @@ architecture fmul32_arch of fmul32 is
 	signal s1ac,s1umu:std_logic_vector(35 downto 0);
 	signal s2umu:std_logic_vector(24 downto 0);
 	signal sxprop : std_logic_vector(2 downto 0);
+	
+	--! LPM_MULTIPLIER
+	component lpm_mult 
+	generic (
+		lpm_hint			: string;
+		lpm_pipeline		: natural;
+		lpm_representation	: string;
+		lpm_type			: string;
+		lpm_widtha			: natural;
+		lpm_widthb			: natural;
+		lpm_widthp			: natural
+	);
+	port (
+		dataa	: in std_logic_vector ( lpm_widtha-1 downto 0 );
+		datab	: in std_logic_vector ( lpm_widthb-1 downto 0 );
+		result	: out std_logic_vector( lpm_widthp-1 downto 0 )
+	);
+	end component;	
+	
+	
 begin
 	
 	

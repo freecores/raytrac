@@ -39,8 +39,8 @@ entity arithblock is
 		add32blko	: out vectorblock03;
 		prd32blko	: out vectorblock06;
 		
-		sq32o		: xfloat32;
-		inv32o		: xfloat32
+		sq32o		: out xfloat32;
+		inv32o		: out xfloat32
 		
 		
 			
@@ -52,12 +52,48 @@ architecture arithblock_arch of arithblock is
 	signal sadd32blko_01 : xfloat32;
 	signal ssq32o : xfloat32;
 		
+	--! Componentes Aritm&eacute;ticos
+	component fadd32
+	port (
+		clk : in std_logic;
+		dpc : in std_logic;
+		a32 : in xfloat32;
+		b32 : in xfloat32;
+		c32 : out xfloat32
+	);
+	end component;
+	component fmul32 
+	port (
+		clk : in std_logic;
+		a32 : in xfloat32;
+		b32 : in xfloat32;
+		p32 : out xfloat32
+	);
+	end component;
+	--! Bloque de Raiz Cuadrada
+	component sqrt32
+	port (
+		
+		clk	: in std_logic;
+		rd32: in xfloat32;		
+		sq32: out xfloat32
+	);
+	end component;
+	--! Bloque de Inversores.
+	component invr32
+	port (
+		
+		clk		: in std_logic;
+		dvd32	: in xfloat32;		
+		qout32	: out xfloat32
+	);
+	end component;
 
 
 begin 
 
 	sq32o <= ssq32o;
-	sadd32blko_01 <= add32blko(1);
+	add32blko(1) <= sadd32blko_01;
 
 	--!TBXINSTANCESTART
 	adder_i_0 : fadd32 
@@ -75,7 +111,7 @@ begin
 		dpc => sign,
 		a32 => add32blki(2),
 		b32 => add32blki(3),
-		c32 => add32blko(1)
+		c32 => sadd32blko_01
 	);
 	--!TBXINSTANCESTART
 	adder_i_2 : fadd32 

@@ -1,10 +1,10 @@
---! @file dpc.vhd
+--! @file ap_n_dpc.vhd
 --! @brief Decodificador de operaci&eacute;n. Sistema de decodificación de los \kdatapaths, cuyo objetivo es a partir del par&acute;ametro de entrada DCS.\nSon 4 las posibles configuraciones de \kdatapaths que existen. Los valores de los bits DC son los que determinan y decodifican la interconexi&oacute;n entre los componentes aritm&eacute;ticos. El componente S determina el signo de la operaci&oacute;n cuando es una suma la que operaci&oacute;n se es&eacutea; ejecutando en el momento.  
 --! @author Juli&aacute;n Andr&eacute;s Guar&iacute;n Reyes
 --------------------------------------------------------------
 -- RAYTRAC
 -- Author Julian Andres Guarin
--- dpc.vhd
+-- ap_n_dpc.vhd
 -- This file is part of raytrac.
 -- 
 --     raytrac is free software: you can redistribute it and/or modify
@@ -29,7 +29,7 @@ library altera_mf;
 use altera_mf.altera_mf_components.all;
 
 
-entity dpc is 
+entity ap_n_dpc is 
 	
 	port (
 		clk						: in	std_logic;
@@ -37,28 +37,20 @@ entity dpc is
 		
 		paraminput				: in	vectorblock06;	--! Vectores A,B
 		
-		prd32blko			 	: in	vectorblock06;	--! Salidas de los 6 multiplicadores.
-		add32blko 				: in	vectorblock03;	--! Salidas de los 3 sumadores.
-		inv32blko				: in	xfloat32;		--! Salidas de la raiz cuadradas y el inversor.
-		sqr32blko				: in	xfloat32;		--! Salidas de la raiz cuadradas y el inversor.
-		
-		
 		d,c,s					: in	std_logic;		--! Bit con el identificador del bloque AB vs CD e identificador del sub bloque (A/B) o (C/D). 
 		
 		sync_chain_1			: in	std_logic;		--! Se&ntilde;al de dato valido que se va por toda la cadena de sincronizacion.
-		sync_chain_pendant		: out	std_logic;		--! Se&ntilde;al para indicar si hay datos en el pipeline aritm&eacute;tico.	
+		sync_chain_pending		: out	std_logic;		--! Se&ntilde;al para indicar si hay datos en el pipeline aritm&eacute;tico.	
 		
-		qresult_w				: out	std_logic;	--! Salidas de escritura y lectura en las colas de resultados.
-		qresult_d				: out	vectorblock04; --! 4 salidas de resultados, pues lo m&aacute;ximo que podr&aacute; calcularse por cada clock son 2 vectores. 
+		qresult_w				: out	std_logic;		--! Salidas de escritura y lectura en las colas de resultados.
+		qresult_d				: out	vectorblock04 	--! 4 salidas de resultados, pues lo m&aacute;ximo que podr&aacute; calcularse por cada clock son 2 vectores. 
 
-		prd32blki				: out	vectorblock12;	--! Entrada de los 12 factores en el bloque de multiplicaci&oacute;n respectivamente.
-		add32blki				: out	vectorblock06	--! Entrada de los 6 sumandos del bloque de 3 sumadores.  
 
 
 	);
 end entity;
 
-architecture dpc_arch of dpc is 
+architecture ap_n_dpc_arch of ap_n_dpc is 
 	
 	--!TBXSTART:FACTORS_N_ADDENDS
 	signal sfactor		: vectorblock12;
@@ -88,13 +80,57 @@ architecture dpc_arch of dpc is
 	signal sq1_q		: std_logic_vector(31 downto 0);
 	signal sq1_w		: std_logic;
 	signal sq1_e		: std_logic;
+
+
+	signal sadd32blko 	: vectorblock03;	--! Salidas de los 3 sumadores.
+	signal sprd32blko	: vectorblock06;	--! Salidas de los 6 multiplicadores.
+
+	signal sinv32blko	: xfloat32;		--! Salidas de la raiz cuadradas y el inversor.
+	signal ssqr32blko	: xfloat32;		--! Salidas de la raiz cuadradas y el inversor.
+	
+	--! Bloque Aritmetico de Sumadores y Multiplicadores (madd)
+	component arithblock
+	port (
+		
+		clk	: in std_logic;
+		rst : in std_logic;
+	
+		sign 		: in std_logic;
+	
+		prd32blki	: in vectorblock12;
+		add32blki	: in vectorblock06;
+		
+		add32blko	: out vectorblock03;
+		prd32blko	: out vectorblock06;
+		
+		sq32o		: out xfloat32;
+		inv32o		: out xfloat32
+			
+	);
+	end component;
 	
 begin
 
+	--! Bloque Aritm&eacute;tico
+	ap : arithblock
+	port map (
+		clk 		=> clk,
+		rst	 		=> rst,
 		
+		sign 		=> s,
+		
+		prd32blki 	=> sfactor,
+		add32blki	=> ssumando,
+		
+		add32blko 	=> sadd32blko, 
+		prd32blko	=> sprd32blko,
+		
+		sq32o		=> ssqr32blko,
+		inv32o		=> sinv32blko
+	);	
 	
 	--! Cadena de sincronizaci&oacute;n: 29 posiciones.
-	sync_chain_pendant <= sync_chain_1 or sq1_e or sqxyz_e;
+	sync_chain_pending <= sync_chain_1 or not(sq1_e) or not(sqxyz_e);
 	sync_chain_proc:
 	process(clk,rst,sync_chain_1)
 	begin
@@ -118,8 +154,6 @@ begin
 		
 	
 	--! El siguiente c&oacute;digo sirve para conectar arreglos a se&ntilde;ales std_logic_1164, simplemente son abstracciones a nivel de c&oacute;digo y no representar&aacute; cambios en la s&iacute;ntesis.
-	prd32blki <= sfactor;
-	add32blki <= ssumando;
 	qresult_d <= sresult;
 	
 	
@@ -130,11 +164,11 @@ begin
 	process (clk)
 	begin
 		if clk'event and clk='1' then
-			sprd32blk  <= prd32blko;
-			sadd32blk <= add32blko;
-			sinv32blk <= inv32blko;
+			sprd32blk <= sprd32blko;
+			sadd32blk <= sadd32blko;
+			sinv32blk <= sinv32blko;
 			--! Raiz Cuadrada.
-			ssqr32blk <= sqr32blko;
+			ssqr32blk <= ssqr32blko;
 		end if;
 	end process;
 	
@@ -221,12 +255,12 @@ begin
 		end if;				
 		--res3
 		
-		sresult(sc) <= sq1_q;
-		if c='1' then
+		sresult(qsc) <= sq1_q;
+		if c='1'  then
 			sq1_d <= ssqr32blk;
-			sq1_w <= ssync_chain(20);
+			sq1_w <= ssync_chain(20) and d;
 		else
-			sq1_w <= ssync_chain(19);
+			sq1_w <= ssync_chain(19) and d;
 			sq1_d <= sadd32blk(a1);
 		end if;
 		
@@ -262,7 +296,6 @@ begin
 	port	map (
 		sclr		=> '0',
 		clock		=> clk,
-		empty		=> sq1_e,
 		rdreq		=> ssync_chain(12),
 		wrreq		=> ssync_chain(5),
 		data		=> sprd32blk(p2),
@@ -285,6 +318,7 @@ begin
 		rdreq		=> ssync_chain(25),
 		sclr		=> '0',
 		clock		=> clk,
+		empty		=> sq1_e,
 		q			=> sq1_q,
 		wrreq		=> sq1_w,
 		data		=> sq1_d

@@ -78,6 +78,23 @@ architecture fadd32_arch of fadd32 is
 	signal s5result 	: std_logic_vector (25 downto 0);
 	--!TBXEND
 	
+	--! LPM_MULTIPLIER
+	component lpm_mult 
+	generic (
+		lpm_hint			: string;
+		lpm_pipeline		: natural;
+		lpm_representation	: string;
+		lpm_type			: string;
+		lpm_widtha			: natural;
+		lpm_widthb			: natural;
+		lpm_widthp			: natural
+	);
+	port (
+		dataa	: in std_logic_vector ( lpm_widtha-1 downto 0 );
+		datab	: in std_logic_vector ( lpm_widthb-1 downto 0 );
+		result	: out std_logic_vector( lpm_widthp-1 downto 0 )
+	);
+	end component;	
 	
 	
 	
@@ -146,7 +163,7 @@ begin
 	end process;
 	--! Etapa 5: Codificar el corrimiento para la normalizacion de la mantissa resultante y entregar el resultado.
 	c32(31) <= s5result(25);
-	process (s5result(24 downto 0))
+	process (s5result(24 downto 0),s5exp)
 	begin 
 		case s5result(24) is
 			when '1' => 

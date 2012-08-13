@@ -1,6 +1,29 @@
+--! @file raytrac.vhd
+--! @brief Sistema de Procesamiento Vectorial. La interface es compatible con el bus Avalon de Altera.  
+--! @author Juli&aacute;n Andr&eacute;s Guar&iacute;n Reyes
+--------------------------------------------------------------
+-- RAYTRAC
+-- Author Julian Andres Guarin
+-- raytrac.vhd
+-- This file is part of raytrac.
+-- 
+--     raytrac is free software: you can redistribute it and/or modify
+--     it under the terms of the GNU General Public License as published by
+--     the Free Software Foundation, either version 3 of the License, or
+--     (at your option) any later version.
+-- 
+--     raytrac is distributed in the hope that it will be useful,
+--     but WITHOUT ANY WARRANTY; without even the implied warranty of
+--     MERCHANTABILITY or FITNESS FOR a PARTICULAR PURPOSE.  See the
+--     GNU General Public License for more details.
+-- 
+--     You should have received a copy of the GNU General Public License
+--     along with raytrac.  If not, see <http://www.gnu.org/licenses/>.
+
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
+use work.arithpack.all;
 
 library altera_mf;
 use altera_mf.altera_mf_components.all;
@@ -12,11 +35,8 @@ use lpm.lpm_components.all;
 entity raytrac is 
 	generic (
 		wd	:	integer := 32;
-		sl	:	integer := 5;	--! Arith Sync Chain Long 2**sl
-		ln	:	integer := 12;	--! Max Transfer Length = 2**ln = n_outputbuffers * 256
 		fd	:	integer := 8;	--! Result Fifo Depth = 2**fd =256
-		mb	:	integer := 4;	--! Max Burst Length = 2**mb		
-		nr	:	integer	:= 4	--! Number of Registers = 2**nr
+		mb	:	integer := 4	--! Max Burst Length = 2**mb		
 	);
 	port (
 		clk:	in std_logic;
@@ -59,12 +79,10 @@ architecture raytrac_arch of raytrac is
 	attribute altera_attribute of raytrac_arch : architecture is "-name AUTO_SHIFT_REGISTER_RECOGNITION OFF";
 	
 
-	subtype	xfloat32		is std_logic_vector(wd-1 downto 0);
-	type	registerblock	is array ((2**nr)-1 downto 0) of xfloat32;
+	type	registerblock	is array (15 downto 0) of xfloat32;
 	type	transferState	is (IDLE,SINK,SOURCE);
-	
-	constant rstMasterValue : std_logic :='0';
-	
+	type 	upload_chain 	is (UPVX,UPVY,UPVZ,SC,DMA);
+	type	download_chain  is (DWAX,DWAY,DWAZ,DWBX,DWBY,DWBZ,DWAXBX,DWAYBY,DWAZBZ);
 	
 	constant reg_ctrl 				:	integer:=00;
 	constant reg_vz					:	integer:=01;
@@ -114,8 +132,8 @@ architecture raytrac_arch of raytrac is
 	signal	sreg_block			:	registerblock;
 	signal	sslave_read			:	std_logic;
 	signal	sslave_write		:	std_logic;
-	signal	sslave_writedata	:	xfloat32;
-	signal	sslave_address		:	std_logic_vector	(nr-1 downto 0);
+	signal	sslave_writedata	:	std_logic_vector (wd-1 downto 0);
+	signal	sslave_address		:	std_logic_vector (3 downto 0);
 	signal	sslave_waitrequest	:	std_logic;
 	
 	--! Avalon MM Master
@@ -128,9 +146,9 @@ architecture raytrac_arch of raytrac is
 	signal sres_ack				:	std_logic;
 	signal soutb_ack			:	std_logic;
 	
-	signal sres_q				:	std_logic_vector(4*wd-1 downto 0);
+	signal sres_q				:	std_logic_vector (4*wd-1 downto 0);
 	
-	signal sres_d				:	std_logic_vector(4*wd-1 downto 0);
+	signal sres_d				:	vectorblock04;
 	signal soutb_d				:	std_logic_vector(wd-1 downto 0);
 	
 	
@@ -156,7 +174,6 @@ architecture raytrac_arch of raytrac is
 	
 	
 	--!Unload Control
-	type upload_chain is (VX,VY,VZ,SC,DMA);
 	signal supload_chain	: upload_chain;
 	signal supload_start	: upload_chain;
 		
@@ -164,7 +181,6 @@ architecture raytrac_arch of raytrac is
 	signal zero : std_logic_vector(31 downto 0);
 	
 	--!High Register Bank Control Signals or AKA Load Sync Chain Control
-	type download_chain is (AX,AY,AZ,BX,BY,BZ,AXBX,AYBY,AZBZ);
 	signal sdownload_chain	: download_chain;
 	signal sdownload_start	: download_chain; 
 	signal srestart_chain	: std_logic;
@@ -177,32 +193,66 @@ architecture raytrac_arch of raytrac is
 	signal sflood_condition 	: std_logic;
 	signal sflood_burstcount 	: std_logic_vector(mb downto 0);
 
+	--! Arithmetic Pipeline and Data Path Control
+	component ap_n_dpc
+	port (
+		clk						: in	std_logic;
+		rst						: in	std_logic;
+		
+		paraminput				: in	vectorblock06;	--! Vectores A,B
+		
+		d,c,s					: in	std_logic;		--! Bit con el identificador del bloque AB vs CD e identificador del sub bloque (A/B) o (C/D). 
+		
+		sync_chain_1			: in	std_logic;		--! Se&ntilde;al de dato valido que se va por toda la cadena de sincronizacion.
+		sync_chain_pending		: out	std_logic;
+		
+		qresult_w				: out	std_logic; --! Salidas de escritura y lectura en las colas de resultados.
+		qresult_d				: out	vectorblock04 --! 4 salidas de resultados, pues lo m&aacute;ximo que podr&aacute; calcularse por cada clock son 2 vectores. 
+	
+	);
+	end component;
+	
+	signal sparaminput			: vectorblock06;
 	
 begin
 
-	--! Unos y ceros
+	--!Zero agreggate
 	zero	<= (others => '0');
 	
-	--! Salidas no asignadas
-	
-	--! Mientras tanto
-	ssync_chain_pending <= ssync_chain_1;
-	sres_d ((wd*1)-1 downto wd*0)<= sreg_block(reg_bz) ;
-	sres_d ((wd*2)-1 downto wd*1)<= sreg_block(reg_by) ;
-	sres_d ((wd*3)-1 downto wd*2)<= sreg_block(reg_bx) ;
-	sres_d ((wd*4)-1 downto wd*3)<= sreg_block(reg_ax) ;
-	sres_w <= ssync_chain_1;  
-	
-	
+	sparaminput(ax) <= sreg_block(reg_ax);
+	sparaminput(ay) <= sreg_block(reg_ay);
+	sparaminput(az) <= sreg_block(reg_az);
+	sparaminput(bx) <= sreg_block(reg_bx);
+	sparaminput(by) <= sreg_block(reg_by);
+	sparaminput(bz) <= sreg_block(reg_bz);
 	
 --! *************************************************************************************************************************************************************************************************************************************************************
---! AVALON MEMORY MAPPED MASTER INTERFACE BEGIN  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  => 
+--! ARITHMETIC PIPELINE AND DATA PATH INSTANTIATION  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  => 
 --! *************************************************************************************************************************************************************************************************************************************************************
+	
+	--! Arithpipeline and Datapath Control Instance
+	arithmetic_pipeline_and_datapath_controller : ap_n_dpc
+	port map (
+		clk 				=> clk,
+		rst 				=> rst,
+		paraminput			=> sparaminput,
+		d					=> sreg_block(reg_ctrl)(reg_ctrl_d),
+		c					=> sreg_block(reg_ctrl)(reg_ctrl_c),
+		s					=> sreg_block(reg_ctrl)(reg_ctrl_s),
+		sync_chain_1		=> ssync_chain_1,
+		sync_chain_pending	=> ssync_chain_pending,
+		qresult_w			=> sres_w,
+		qresult_d			=> sres_d
+		
+		 
+	);
+	
+	
 --! ******************************************************************************************************************************************************						
 --! TRANSFER CONTROL RTL CODE
 --! ******************************************************************************************************************************************************						
 	TRANSFER_CONTROL:
-	process(clk,rst,master_waitrequest,soutb_ae,soutb_usedw,spipeline_pending,soutb_e,zero,soutb_af,sfetch_data_pending,sreg_block,sslave_write,sslave_address,sslave_writedata,ssync_chain_pending,sres_e,smaster_read,smaster_write,sdata_fetch_counter,sload_add_pending,swrite_pending,sdownload_chain)
+	process(clk,rst,master_waitrequest,sm,soutb_ae,soutb_usedw,spipeline_pending,soutb_e,zero,soutb_af,sfetch_data_pending,sreg_block,sslave_write,sslave_address,sslave_writedata,ssync_chain_pending,sres_e,smaster_read,smaster_write,sdata_fetch_counter,sload_add_pending,swrite_pending,sdownload_chain)
 	begin
 		
 		--! Conexi&oacuteln a se&ntilde;ales externas. 
@@ -242,7 +292,7 @@ begin
 		end if;		 	
 		
 		--! ELEMENTO DE SINCRONIZACION CARGA DE OPERANDOS: Se est&aacute;n cargando los operandos que ser&aacute;n operados en el pipeline aritm&eacute;tico.
-		if sdownload_chain /= AX and sdownload_chain /= AXBX then
+		if sdownload_chain /= DWAX and sdownload_chain /= DWAXBX then
 			sparamload_pending <= '1';
 		else 
 			sparamload_pending <= '0';
@@ -449,11 +499,12 @@ begin
 							--! Ir al estado Source.
 							sm <= SOURCE;
 							sreg_block(reg_ctrl)(reg_ctrl_rom) <= '1';
-
+						
+						else
+							sreg_block(reg_ctrl)(reg_ctrl_rom) <= '0';
+						
 						end if;
 					end if;
-				when others => 
-					null;					
 			end case;
 		end if; 
 	end process;
@@ -464,7 +515,7 @@ begin
 --! ******************************************************************************************************************************************************						
 	res:scfifo
 	generic map	(lpm_numwords => 2**fd, lpm_showahead => "ON", lpm_width => 128, lpm_widthu	=> fd, overflow_checking => "ON", underflow_checking => "ON", use_eab => "ON")
-	port map 	(rdreq => sres_ack, aclr => '0', empty => sres_e, clock => clk, q => sres_q,	wrreq => sres_w, data => sres_d);
+	port map 	(rdreq => sres_ack, aclr => '0', empty => sres_e, clock => clk, q => sres_q,	wrreq => sres_w, data => sres_d(qsc)&sres_d(qx)&sres_d(qy)&sres_d(qz));
 	output_buffer:scfifo
 	generic map (almost_empty_value => 2**mb,almost_full_value => (2**fd)-52, lpm_widthu => fd, lpm_numwords => 2**fd, lpm_showahead => "ON", lpm_width => 32, overflow_checking => "ON", underflow_checking => "ON", use_eab => "ON")
 	port map 	(empty => soutb_e, aclr => '0', clock => clk, rdreq 	=> soutb_ack, wrreq	=> soutb_w,	q => master_writedata, usedw	=> soutb_usedw,	almost_full => soutb_af, almost_empty => soutb_ae, data => soutb_d);
@@ -491,9 +542,11 @@ begin
 		--! Control de lectura de la cola de resultados.
 		if sres_e='0' then
 			--!Hay datos en la cola de resultados.
-			if (supload_chain=VZ and sreg_block(reg_ctrl)(reg_ctrl_sc)='0') or supload_chain=SC then
+			if (supload_chain=UPVZ and sreg_block(reg_ctrl)(reg_ctrl_sc)='0') or supload_chain=SC then
 				--!Se transfiere el ultimo componente vectorial y no se estan cargando resultados escalares.
 				sres_ack <= '1';
+			else
+				sres_ack <= '0';
 			end if;
 		else
 			sres_ack <= '0';
@@ -503,14 +556,14 @@ begin
 		--! Decodificar que salida de la cola de resultados se conecta a la entrada del otput buffer
 		--! DMA Path Control: Si se encuentra habilitado el modo dma entonces conectar la entrada del buffer de salida a la interconexi&oacute;n
 		case supload_chain is
-			when VX => 
-				soutb_d <= sres_q ((wd*1)-1 downto wd*0);
-			when VY => 
-				soutb_d <= sres_q ((wd*2)-1 downto wd*1);
-			when VZ => 
-				soutb_d <= sres_q ((wd*3)-1 downto wd*2);
+			when UPVX => 
+				soutb_d <= sres_q (32*qx+31 downto 32*qx);
+			when UPVY => 
+				soutb_d <= sres_q (32*qy+31 downto 32*qy);
+			when UPVZ => 
+				soutb_d <= sres_q (32*qz+31 downto 32*qz);
 			when SC => 
-				soutb_d <= sres_q ((wd*4)-1 downto wd*3);
+				soutb_d <= sres_q (32*qsc+31 downto 32*qsc);
 			when DMA => 
 				soutb_d <= master_readdata;
 		end case;
@@ -520,27 +573,27 @@ begin
 			when "01" => 
 				supload_start <= SC;
 			when others => 
-				supload_start <= VX;
+				supload_start <= UPVX;
 		end case;
 					
 			
 		--! M&aacute;quina de estados para el width adaptation RES(128) -> OUTPUTBUFFER(32). 	
 		if rst=rstMasterValue then
-			supload_chain <= VX;
+			supload_chain <= UPVX;
 		elsif clk'event and clk='1' and sreg_block(reg_ctrl)(reg_ctrl_dma)='0' then
 			--! Modo de operaci&oacute;n normal.
 			case supload_chain is
-				when VX => 
+				when UPVX => 
 					if sres_e='1' then 
 						supload_chain <= supload_start;
 					else
-						supload_chain <= VY;
+						supload_chain <= UPVY;
 					end if;
-				when VY =>
-					supload_chain <= VZ;
-				when VZ =>
+				when UPVY =>
+					supload_chain <= UPVZ;
+				when UPVZ =>
 					if sreg_block(reg_ctrl)(reg_ctrl_sc)='0' then 
-						supload_chain <= VX;
+						supload_chain <= UPVX;
 					else
 						supload_chain <= SC;
 					end if;
@@ -563,14 +616,14 @@ begin
 	process(clk,rst,master_readdatavalid,master_readdata,sreg_block(reg_ctrl)(reg_ctrl_dma downto reg_ctrl_s),sslave_write,sslave_address,supload_chain)
 	begin
 		--! Est&aacute; ocurriendo un evento de transici&oacute;n del estado TX al estado FETCH: Programar el enganche de par&aacute;metros que vienen de la interconexi&oacute;n.
-		--! Mirar como es la carga inicial. Si es Normalizacion o Magnitud (dcs=110) entonces cargar AXBX de lo contrario solo AX.
+		--! Mirar como es la carga inicial. Si es Normalizacion o Magnitud (dcs=110) entonces cargar DWAXBX de lo contrario solo DWAX.
 		case sreg_block(reg_ctrl)(reg_ctrl_d downto reg_ctrl_s) is 
-			when "110" | "100"	=>	sdownload_start	<= AXBX; 
-			when others			=>	sdownload_start	<= AX;
+			when "110" | "100"	=>	sdownload_start	<= DWAXBX; 
+			when others			=>	sdownload_start	<= DWAX;
 		end case;
 		if rst=rstMasterValue then
 			ssync_chain_1 <= '0';
-			sdownload_chain <= AX;
+			sdownload_chain <= DWAX;
 			for i in reg_bz downto reg_ax loop
 				sreg_block(i) <= (others => '0');
 			end loop;
@@ -579,55 +632,55 @@ begin
 			if master_readdatavalid='1' and sreg_block(reg_ctrl)(reg_ctrl_dma)='0' then 
 				--! El dato en la interconexi&oacute;n es valido, se debe enganchar. 
 				case sdownload_chain is 
-					when AX | AXBX  =>
+					when DWAX | DWAXBX  =>
 						--! Cargar el operando correspondiente al componente "X" del vector "A" 
 						ssync_chain_1 <= '0';
 						sreg_block(reg_ax) <= master_readdata;
-						if sdownload_start = AXBX then
+						if sdownload_start = DWAXBX then
 							--! Operaci&oacute;n Unaria por ejemplo magnitud de un vector
 							--! Escribir en el registro bx adicionalmente. 
 							sreg_block(reg_bx) <= master_readdata;
 							--! El siguiente estado es cargar el componente "Y" de del operando a ejecutar.	
-							sdownload_chain <= AYBY;
+							sdownload_chain <= DWAYBY;
 						else
 							--! Operaci&oacute;n de dos operandos. Por ejemplo Producto Cruz.
 							--! El siguiente estado es cargar el vector "Y" del operando "A".
-							sdownload_chain <= AY;
+							sdownload_chain <= DWAY;
 						end if;
-					when AY | AYBY =>
+					when DWAY | DWAYBY =>
 						sreg_block(reg_ay) <= master_readdata;
 						ssync_chain_1 <= '0';
-						if sdownload_chain = AYBY then
+						if sdownload_chain = DWAYBY then
 							sreg_block(reg_by) <= master_readdata;
-							sdownload_chain <= AZBZ;
+							sdownload_chain <= DWAZBZ;
 						else
-							sdownload_chain <= AZ;
+							sdownload_chain <= DWAZ;
 						end if;
-					when AZ  | AZBZ => 
+					when DWAZ  | DWAZBZ => 
 						sreg_block(reg_az) <= master_readdata;
-						if sdownload_chain=AZBZ then
+						if sdownload_chain=DWAZBZ then
 							ssync_chain_1 <= '1'; 
 							sreg_block(reg_bz) <= master_readdata;
-							sdownload_chain <= AXBX;
+							sdownload_chain <= DWAXBX;
 						else	
 							ssync_chain_1 <= '0';
-							sdownload_chain <= BX;
+							sdownload_chain <= DWBX;
 						end if;
-					when BX  => 
+					when DWBX  => 
 						ssync_chain_1 <= '0';
 						sreg_block(reg_bx) <= master_readdata;
-						sdownload_chain <= BY;
-					when BY => 
+						sdownload_chain <= DWBY;
+					when DWBY => 
 						ssync_chain_1 <= '0';
 						sreg_block(reg_by) <= master_readdata;
-						sdownload_chain <= BZ;
-					when BZ => 
+						sdownload_chain <= DWBZ;
+					when DWBZ => 
 						sreg_block(reg_bz) <= master_readdata;
 						ssync_chain_1 <= '1';
 						if sreg_block(reg_ctrl)(reg_ctrl_cmb)='1' then 
-							sdownload_chain <= BX;
+							sdownload_chain <= DWBX;
 						else
-							sdownload_chain <= AX;
+							sdownload_chain <= DWAX;
 						end if;
 					when others => 
 						null;
@@ -800,7 +853,7 @@ begin
 	--!---------|-----------|-------------------------------------------------------------------------------------------------------------------|
 	--! Data Write Start Address (reg_sinkstart) BASE_ADDRESS + 0x24																			|
 	--!---------|-----------|-------------------------------------------------------------------------------------------------------------------|
-	--! Parameter Ax component (reg_ax) BASE_ADDRESS + 0x28																						|
+	--! Parameter AX component (reg_ax) BASE_ADDRESS + 0x28																						|
 	--!---------|-----------|-------------------------------------------------------------------------------------------------------------------|
 	--! Parameter Ay component (reg_ay) BASE_ADDRESS + 0x2C																						|
 	--!---------|-----------|-------------------------------------------------------------------------------------------------------------------|

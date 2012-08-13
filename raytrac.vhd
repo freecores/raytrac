@@ -618,8 +618,8 @@ begin
 		--! Est&aacute; ocurriendo un evento de transici&oacute;n del estado TX al estado FETCH: Programar el enganche de par&aacute;metros que vienen de la interconexi&oacute;n.
 		--! Mirar como es la carga inicial. Si es Normalizacion o Magnitud (dcs=110) entonces cargar DWAXBX de lo contrario solo DWAX.
 		case sreg_block(reg_ctrl)(reg_ctrl_d downto reg_ctrl_s) is 
-			when "110" | "100"	=>	sdownload_start	<= DWAXBX; 
-			when others			=>	sdownload_start	<= DWAX;
+			when "110" 	=>	sdownload_start	<= DWAXBX; 
+			when others	=>	sdownload_start	<= DWAX;
 		end case;
 		if rst=rstMasterValue then
 			ssync_chain_1 <= '0';

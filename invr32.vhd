@@ -74,7 +74,7 @@ begin
 		clock_enable_input_a => "BYPASS",
 		clock_enable_output_a => "BYPASS",
 		--init_file => "X:/Tesis/Workspace/hw/rt_lib/arith/src/trunk/fpbranch/invr/meminvr.mif",
-		init_file => "//IMACJULIAN/imac/Code/Indigo/fp/fp/meminvr.mif",
+		init_file => "./meminvr.mif",
 		intended_device_family => "Cyclone III",
 		lpm_hint => "ENABLE_RUNTIME_MOD=NO",
 		lpm_type => "altsyncram",

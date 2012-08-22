@@ -53,7 +53,7 @@ architecture arithblock_arch of arithblock is
 	signal ssq32o : xfloat32;
 		
 	--! Componentes Aritm&eacute;ticos
-	component fadd32
+	component fadd32long
 	port (
 		clk : in std_logic;
 		dpc : in std_logic;
@@ -96,7 +96,7 @@ begin
 	add32blko(1) <= sadd32blko_01;
 
 	--!TBXINSTANCESTART
-	adder_i_0 : fadd32 
+	adder_i_0 : fadd32long 
 	port map (
 		clk => clk,
 		dpc => sign,
@@ -105,7 +105,7 @@ begin
 		c32 => add32blko(0)
 	);
 	--!TBXINSTANCESTART
-	adder_i_1 : fadd32 
+	adder_i_1 : fadd32long 
 	port map (
 		clk => clk,
 		dpc => sign,
@@ -114,7 +114,7 @@ begin
 		c32 => sadd32blko_01
 	);
 	--!TBXINSTANCESTART
-	adder_i_2 : fadd32 
+	adder_i_2 : fadd32long 
 	port map (
 		clk => clk,
 		dpc => sign,

@@ -51,6 +51,11 @@ entity ap_n_dpc is
 end entity;
 
 architecture ap_n_dpc_arch of ap_n_dpc is 
+	--!Constantes de apoyo
+	constant ssync_chain_max : integer :=27;
+	constant ssync_chain_min : integer :=2;
+	
+	
 	
 	--!TBXSTART:FACTORS_N_ADDENDS
 	signal sfactor		: vectorblock12;
@@ -71,15 +76,15 @@ architecture ap_n_dpc_arch of ap_n_dpc is
 	
 	
 	--!TBXSTART:SYNC_CHAIN
-	signal ssync_chain	: std_logic_vector(25 downto 2);
+	signal ssync_chain	: std_logic_vector(ssync_chain_max downto ssync_chain_min);
 	--!TBXEND
 
 	signal qxyzd		: std_logic_vector(95 downto 0);
 	signal qxyzq		: std_logic_vector(95 downto 0);
-	signal sq1_d		: std_logic_vector(31 downto 0);
-	signal sq1_q		: std_logic_vector(31 downto 0);
-	signal sq1_w		: std_logic;
-	signal sq1_e		: std_logic;
+	signal sq2_d		: std_logic_vector(31 downto 0);
+	signal sq2_q		: std_logic_vector(31 downto 0);
+	signal sq2_w		: std_logic;
+	signal sq2_e		: std_logic;
 
 
 	signal sadd32blko 	: vectorblock03;	--! Salidas de los 3 sumadores.
@@ -130,21 +135,21 @@ begin
 	);	
 	
 	--! Cadena de sincronizaci&oacute;n: 29 posiciones.
-	sync_chain_pending <= sync_chain_1 or not(sq1_e) or not(sqxyz_e);
+	sync_chain_pending <= sync_chain_1 or not(sq2_e) or not(sqxyz_e);
 	sync_chain_proc:
 	process(clk,rst,sync_chain_1)
 	begin
 		if rst=rstMasterValue then
 
-			ssync_chain(25 downto 2) <= (others => '0');
+			ssync_chain(ssync_chain_max downto ssync_chain_min) <= (others => '0');
 			
 		elsif clk'event and clk='1' then
 
 
-			for i in 25 downto 3 loop
+			for i in ssync_chain_max downto ssync_chain_min+1 loop
 				ssync_chain(i) <= ssync_chain(i-1);
 			end loop;
-			ssync_chain(2) <= sync_chain_1;
+			ssync_chain(ssync_chain_min) <= sync_chain_1;
 
 		end if;
 			
@@ -173,7 +178,7 @@ begin
 	end process;
 	
 	--! Decodificaci&oacute;n del Datapath.
-	datapathproc:process(s,d,c,paraminput,sinv32blk,sprd32blk,sadd32blk,sdpfifo_q,sqxyz_q,ssync_chain,ssqr32blk,sq1_q)
+	datapathproc:process(s,d,c,paraminput,sinv32blk,sprd32blk,sadd32blk,sdpfifo_q,sqxyz_q,ssync_chain,ssqr32blk,sq2_q)
 	begin
 		--Summador 0: DORC!
 		if (d or c)='1' then
@@ -255,26 +260,26 @@ begin
 		end if;				
 		--res3
 		
-		sresult(qsc) <= sq1_q;
+		sresult(qsc) <= sq2_q;
 		if c='1'  then
-			sq1_d <= ssqr32blk;
-			sq1_w <= ssync_chain(20) and d;
+			sq2_d <= ssqr32blk;
+			sq2_w <= ssync_chain(22) and d and not(s);
 		else
-			sq1_w <= ssync_chain(19) and d;
-			sq1_d <= sadd32blk(a1);
+			sq2_w <= ssync_chain(21) and d and not(s);
+			sq2_d <= sadd32blk(a1);
 		end if;
 		
 		if d='1' then
 			if s='1'then
 				qresult_w <= ssync_chain(5);
 			else
-				qresult_w<= ssync_chain(25);
+				qresult_w<= ssync_chain(27);
 			end if;			
 		else  
 			if c='1' and s='1' then
-				qresult_w <= ssync_chain(12);
+				qresult_w <= ssync_chain(13);
 			elsif c='0' then 
-				qresult_w <= ssync_chain(8);
+				qresult_w <= ssync_chain(9);
 			else
 				qresult_w <= '0';
 			end if;			
@@ -291,18 +296,18 @@ begin
 		lpm_width				=> 32,
 		overflow_checking		=> "ON",
 		underflow_checking		=> "ON",
-		use_eab					=> "OFF"
+		use_eab					=> "ON"
 	)
 	port	map (
 		sclr		=> '0',
 		clock		=> clk,
-		rdreq		=> ssync_chain(12),
+		rdreq		=> ssync_chain(13),
 		wrreq		=> ssync_chain(5),
 		data		=> sprd32blk(p2),
 		q			=> sdpfifo_q
 	);
 	--! Colas internas de producto punto, ubicada en el pipe line aritm&eacute;co. Paralelo a los sumadores a0 y a2.  
-	q1 : scfifo --! Debe ir registrada la salida.
+	q2 : scfifo --! Debe ir registrada la salida.
 	generic map (
 		allow_rwcycle_when_full	=> "ON",
 		lpm_widthu				=> 3,
@@ -312,16 +317,16 @@ begin
 		lpm_width				=> 32,
 		overflow_checking		=> "ON",
 		underflow_checking		=> "ON",
-		use_eab					=> "OFF"
+		use_eab					=> "ON"
 	)
 	port map (
-		rdreq		=> ssync_chain(25),
+		rdreq		=> ssync_chain(27),
 		sclr		=> '0',
 		clock		=> clk,
-		empty		=> sq1_e,
-		q			=> sq1_q,
-		wrreq		=> sq1_w,
-		data		=> sq1_d
+		empty		=> sq2_e,
+		q			=> sq2_q,
+		wrreq		=> sq2_w,
+		data		=> sq2_d
 	);
 	
 	--! Cola interna de normalizaci&oacute;n de vectores, ubicada entre el pipeline aritm&eacute;tico
@@ -332,7 +337,7 @@ begin
 	sqxyz_q(ay) <= qxyzq(ay*32+31 downto ay*32);
 	sqxyz_q(az) <= qxyzq(az*32+31 downto az*32);
 	
-	qxqyqz : scfifo
+	q1xyz : scfifo
 	generic map (
 		allow_rwcycle_when_full	=> "ON",
 		lpm_widthu				=> 5,
@@ -347,7 +352,7 @@ begin
 		aclr		=> '0',
 		clock		=> clk,
 		empty		=> sqxyz_e,
-		rdreq		=> ssync_chain(21),
+		rdreq		=> ssync_chain(23),
 		wrreq		=> sync_chain_1,
 		data		=> qxyzd,
 		q			=> qxyzq

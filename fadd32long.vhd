@@ -25,12 +25,15 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
-
 use work.arithpack.all;
+
+library lpm;
+use lpm.lpm_components.all;
+
 
 --! Esta entidad recibe dos n&uacutemeros en formato punto flotante IEEE 754, de precision simple y devuelve las mantissas signadas y corridas, y el exponente correspondiente al resultado antes de normalizarlo al formato float. 
 --!\nLas 2 mantissas y el exponente entran despues a la entidad add2 que suma las mantissas y entrega el resultado en formato IEEE 754.
-entity fadd32 is
+entity fadd32long is
 	
 	port (
 		clk,dpc	: in std_logic;
@@ -38,11 +41,11 @@ entity fadd32 is
 		c32		: out xfloat32
 	);
 end entity;
-architecture fadd32_arch of fadd32 is
+architecture fadd32_arch of fadd32long is
 	
 	
 	--!TBXSTART:STAGE0
-	signal s0delta	: std_logic_vector(7 downto 0);
+	signal s0delta	: std_logic_vector(8 downto 0);
 	signal s0a,s0b	: std_logic_vector(31 downto 0); -- Float 32 bit 
 
 	--!TBXEND
@@ -101,6 +104,10 @@ begin
 	begin
 		if clk'event and clk='1'  then 
 		
+			--! Debug Register.
+			--! datab <= s1zero&"000"&x"00000"&s0b(30 downto 23);
+			--! datab <= x"00"&s1exp&s0a(30 downto 23)&s0b(30 downto 23);
+			
 			--!Registro de entrada
 			s0a <= a32;
 			s0b(31) <= dpc xor b32(31);	--! Importante: Integrar el signo en el operando B
@@ -108,23 +115,29 @@ begin
 
 			--!Etapa 0,Escoger el mayor exponente que sera el resultado desnormalizado, calcula cuanto debe ser el corrimiento de la mantissa con menor exponente y reorganiza los operandos, si el mayor es b, intercambia las posici&oacute;n si el mayor es a las posiciones la mantiene. Zero check.
 			--!signo,exponente,mantissa
-			if (s0b(30 downto 23)&s0a(30 downto 23))=x"0000" then 
-				s1zero <= '0';
-			else
-				s1zero <= '1';
-			end if;
-			s1delta <= s0delta(7) & (s0delta(7) xor s0delta(4))&(s0delta(7) xor s0delta(3)) & s0delta(2 downto 0);			
-			case s0delta(7) is
-				when '1'  => 
-					s1exp <= s0b(30 downto 23);
-					s1umantshift <= s0a(31)&s0a(22 downto 0);
-					s1umantfixed <= s0b(31)&s0b(22 downto 0);
-				when others => 
-					s1exp <= s0a(30 downto 23);
-					s1umantshift <= s0b(31)&s0b(22 downto 0);
-					s1umantfixed <= s0a(31)&s0a(22 downto 0);
-			end case;
+				
 			
+			s1delta <= s0delta(8) & (s0delta(8) xor s0delta(4))&(s0delta(8) xor s0delta(3)) & s0delta(2 downto 0);			
+			if s0delta(8)='1' then 
+			
+				s1exp <= s0b(30 downto 23);
+				s1umantshift <= s0a(31)&s0a(22 downto 0);
+				s1umantfixed <= s0b(31)&s0b(22 downto 0);
+				if s0a(30 downto 23)=x"00" then
+					s1zero <= '0';
+				else
+					s1zero <= '1';
+				end if;
+			else
+				if s0b(30 downto 23)=x"00" then
+					s1zero <= '0';
+				else
+					s1zero <= '1';
+				end if;
+				s1exp <= s0a(30 downto 23);
+				s1umantshift <= s0b(31)&s0b(22 downto 0);
+				s1umantfixed <= s0a(31)&s0a(22 downto 0);
+			end if;
 			--! Etapa 1: Denormalizaci&oacute;n de la mantissas.
 			case s1delta(4 downto 3) is
 				when "00" =>	s2umantshift <= s1umantshift(23)&s1postshift(23 downto 0);
@@ -179,7 +192,7 @@ begin
 	end process;
 	--! Combinatorial gremlin, Etapa 0 el corrimiento de la mantissa con menor exponente y reorganiza los operandos,\n
 	--! si el mayor es b, intercambia las posici&oacute;n si el mayor es a las posiciones la mantiene. 
-	s0delta <=  s0a(30 downto 23)-s0b(30 downto 23);
+	s0delta <=  ('0'&s0a(30 downto 23))-('0'&s0b(30 downto 23));
 	--! Combinatorial Gremlin, Etapa 1 Codificar el factor de corrimiento de denormalizacion y denormalizar la mantissa no fija. Signar la mantissa que se queda fija.
 	decodeshiftfactor:
 	process (s1delta(2 downto 0))

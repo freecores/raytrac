@@ -33,14 +33,44 @@ entity arithblock is
 	
 		sign : in std_logic;
 	
-		prd32blki	: in vectorblock12;
-		add32blki	: in vectorblock06;
+		factor0		: in std_logic_vector(31 downto 0);
+		factor1		: in std_logic_vector(31 downto 0);
+		factor2		: in std_logic_vector(31 downto 0);
+		factor3		: in std_logic_vector(31 downto 0);
+		factor4		: in std_logic_vector(31 downto 0);
+		factor5		: in std_logic_vector(31 downto 0);
+		factor6		: in std_logic_vector(31 downto 0);
+		factor7		: in std_logic_vector(31 downto 0);
+		factor8		: in std_logic_vector(31 downto 0);
+		factor9		: in std_logic_vector(31 downto 0);
+		factor10	: in std_logic_vector(31 downto 0);
+		factor11	: in std_logic_vector(31 downto 0);
+		--factor	: in vectorblock06;
+	
+		sumando0	: in std_logic_vector(31 downto 0);
+		sumando1	: in std_logic_vector(31 downto 0);
+		sumando2	: in std_logic_vector(31 downto 0);
+		sumando3	: in std_logic_vector(31 downto 0);
+		sumando4	: in std_logic_vector(31 downto 0);
+		sumando5	: in std_logic_vector(31 downto 0);
+		--add32blki	: in vectorblock06;
 		
-		add32blko	: out vectorblock03;
-		prd32blko	: out vectorblock06;
+		a0			: out std_logic_vector(31 downto 0);
+		a1			: out std_logic_vector(31 downto 0);
+		a2			: out std_logic_vector(31 downto 0);
+		a3			: out std_logic_vector(31 downto 0);
+		--add32blko	: out vectorblock03;
 		
-		sq32o		: out xfloat32;
-		inv32o		: out xfloat32
+		p0			: out std_logic_vector(31 downto 0);
+		p1			: out std_logic_vector(31 downto 0);
+		p2			: out std_logic_vector(31 downto 0);
+		p3			: out std_logic_vector(31 downto 0);
+		p4			: out std_logic_vector(31 downto 0);
+		p5			: out std_logic_vector(31 downto 0);
+		--p	: out vectorblock06;
+		
+		sq32o		: out std_logic_vector(31 downto 0);
+		inv32o		: out std_logic_vector(31 downto 0)
 		
 		
 			
@@ -49,25 +79,25 @@ end entity;
 
 architecture arithblock_arch of arithblock is
 
-	signal sadd32blko_01 : xfloat32;
-	signal ssq32o : xfloat32;
+	signal sadd32blko_01 : std_logic_vector(31 downto 0);
+	signal ssq32o : std_logic_vector(31 downto 0);
 		
 	--! Componentes Aritm&eacute;ticos
 	component fadd32long
 	port (
 		clk : in std_logic;
 		dpc : in std_logic;
-		a32 : in xfloat32;
-		b32 : in xfloat32;
-		c32 : out xfloat32
+		a32 : in std_logic_vector(31 downto 0);
+		b32 : in std_logic_vector(31 downto 0);
+		c32 : out std_logic_vector(31 downto 0)
 	);
 	end component;
 	component fmul32 
 	port (
 		clk : in std_logic;
-		a32 : in xfloat32;
-		b32 : in xfloat32;
-		p32 : out xfloat32
+		a32 : in std_logic_vector(31 downto 0);
+		b32 : in std_logic_vector(31 downto 0);
+		p32 : out std_logic_vector(31 downto 0)
 	);
 	end component;
 	--! Bloque de Raiz Cuadrada
@@ -75,8 +105,8 @@ architecture arithblock_arch of arithblock is
 	port (
 		
 		clk	: in std_logic;
-		rd32: in xfloat32;		
-		sq32: out xfloat32
+		rd32: in std_logic_vector(31 downto 0);		
+		sq32: out std_logic_vector(31 downto 0)
 	);
 	end component;
 	--! Bloque de Inversores.
@@ -84,8 +114,8 @@ architecture arithblock_arch of arithblock is
 	port (
 		
 		clk		: in std_logic;
-		dvd32	: in xfloat32;		
-		qout32	: out xfloat32
+		dvd32	: in std_logic_vector(31 downto 0);		
+		qout32	: out std_logic_vector(31 downto 0)
 	);
 	end component;
 
@@ -93,24 +123,24 @@ architecture arithblock_arch of arithblock is
 begin 
 
 	sq32o <= ssq32o;
-	add32blko(1) <= sadd32blko_01;
+	a1 <= sadd32blko_01;
 
 	--!TBXINSTANCESTART
 	adder_i_0 : fadd32long 
 	port map (
 		clk => clk,
 		dpc => sign,
-		a32 => add32blki(0),
-		b32 => add32blki(1),
-		c32 => add32blko(0)
+		a32 => sumando0,
+		b32 => sumando1,
+		c32 => a0
 	);
 	--!TBXINSTANCESTART
 	adder_i_1 : fadd32long 
 	port map (
 		clk => clk,
 		dpc => sign,
-		a32 => add32blki(2),
-		b32 => add32blki(3),
+		a32 => sumando2,
+		b32 => sumando3,
 		c32 => sadd32blko_01
 	);
 	--!TBXINSTANCESTART
@@ -118,57 +148,65 @@ begin
 	port map (
 		clk => clk,
 		dpc => sign,
-		a32 => add32blki(4),
-		b32 => add32blki(5),
-		c32 => add32blko(2)
+		a32 => sumando4,
+		b32 => sumando5,
+		c32 => a2
+	);
+	adder_i_3 : fadd32long 
+	port map (
+		clk => clk,
+		dpc => sign,
+		a32 => sumando4,
+		b32 => sumando5,
+		c32 => a3
 	);
 	--!TBXINSTANCESTART
 	mul_i_0 : fmul32 
 	port map (
 		clk => clk,
-		a32 => prd32blki(0),
-		b32 => prd32blki(1),
-		p32 => prd32blko(0)
+		a32 => factor0,
+		b32 => factor1,
+		p32 => p0
 	);
 	--!TBXINSTANCESTART
 	mul_i_1 : fmul32 
 	port map (
 		clk => clk,
-		a32 => prd32blki(2),
-		b32 => prd32blki(3),
-		p32 => prd32blko(1)
+		a32 => factor2,
+		b32 => factor3,
+		p32 => p1
 	);
 	--!TBXINSTANCESTART
 	mul_i_2 : fmul32 
 	port map (
 		clk => clk,
-		a32 => prd32blki(4),
-		b32 => prd32blki(5),
-		p32 => prd32blko(2)
+		a32 => factor4,
+		b32 => factor5,
+		p32 => p2
 	);
 	--!TBXINSTANCESTART
 	mul_i_3 : fmul32 
 	port map (
 		clk => clk,
-		a32 => prd32blki(6),
-		b32 => prd32blki(7),
-		p32 => prd32blko(3)
+		a32 => factor6,
+		b32 => factor7,
+		p32 => p3
 	);
 	--!TBXINSTANCESTART
 	mul_i_4 : fmul32 
 	port map (
 		clk => clk,
-		a32 => prd32blki(8),
-		b32 => prd32blki(9),
-		p32 => prd32blko(4)
+		a32 => factor8,
+		b32 => factor9,
+		p32 => p4
 	);
 	--!TBXINSTANCESTART
 	mul_i_5 : fmul32 
 	port map (
 		clk => clk,
-		a32 => prd32blki(10),
-		b32 => prd32blki(11),
-		p32 => prd32blko(5)
+		a32 => factor10,
+		b32 => factor11,
+		p32 => p5
 	);
 	--!TBXINSTANCESTART
 	square_root : sqrt32

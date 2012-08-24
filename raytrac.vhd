@@ -74,9 +74,13 @@ end entity;
 
 architecture raytrac_arch of raytrac is
 
+	--! Debug
+	signal  ssumando5 :	xfloat32;
+	signal	sphantom_q: std_logic_vector(31 downto 0);
+
 	--! Altera Compiler Directive, to avoid m9k autoinferring thanks to the guys at http://www.alteraforum.com/forum/archive/index.php/t-30784.html .... 
-	attribute altera_attribute : string; 
-	attribute altera_attribute of raytrac_arch : architecture is "-name AUTO_SHIFT_REGISTER_RECOGNITION OFF";
+	--attribute altera_attribute : string; 
+	--attribute altera_attribute of raytrac_arch : architecture is "-name AUTO_SHIFT_REGISTER_RECOGNITION OFF";
 	
 
 	type	registerblock	is array (15 downto 0) of xfloat32;
@@ -123,12 +127,16 @@ architecture raytrac_arch of raytrac is
 	constant reg_ctrl_rlsc			:	integer:=14;	--! RLSC bit : Reload Load Sync Chain.
 	constant reg_ctrl_rom			:	integer:=15;	--! ROM bit : Read Only Mode bit.
 	
-	constant reg_ctrl_nfetch_low	:	integer:=16;	--! NFETCH_LOW : Lower bit to program the number of addresses to load in the interconnection.
+	constant reg_ctrl_alb			:	integer:=16;	--! Conditional Writing. A<B.
+	constant reg_ctrl_aeb			:	integer:=17;	--! A==B.
+	constant reg_ctrl_ageb			:	integer:=18;	--! A>=B.
+	constant reg_ctrl_nfetch_low	:	integer:=19;	--! NFETCH_LOW : Lower bit to program the number of addresses to load in the interconnection.
 	constant reg_ctrl_nfetch_high	:	integer:=30;	--! NFETCH_HIGH : Higher bit to program the number of addresses to load in the interconnection. 
 	constant reg_ctrl_irq			:	integer:=31;	--! IRQ bit : Interrupt Request Signal.
 			
 		
 	--! Avalon MM Slave
+	
 	signal	sreg_block			:	registerblock;
 	signal	sslave_read			:	std_logic;
 	signal	sslave_write		:	std_logic;
@@ -143,27 +151,24 @@ architecture raytrac_arch of raytrac is
 	--! State Machine and event signaling
 	signal sm					:	transferState;
 	
-	signal sres_ack				:	std_logic;
+	signal sr_e				:	std_logic;
+	signal sr_ack				:	std_logic;
 	signal soutb_ack			:	std_logic;
 	
-	signal sres_q				:	std_logic_vector (4*wd-1 downto 0);
 	
-	signal sres_d				:	vectorblock04;
+	
 	signal soutb_d				:	std_logic_vector(wd-1 downto 0);
 	
 	
-	signal sres_w				:	std_logic;
 	signal soutb_w				:	std_logic;
 	
-	signal sres_e				:	std_logic;
 	signal soutb_e				:	std_logic;
 	signal soutb_ae				:	std_logic;
 	signal soutb_af				:	std_logic;
-	
-	
 	signal soutb_usedw			:	std_logic_vector(fd-1 downto 0);
 
 	signal ssync_chain_1		:	std_logic;
+	
 	signal ssync_chain_pending	:	std_logic;
 	signal sfetch_data_pending	:	std_logic;
 	signal sload_add_pending	:	std_logic;
@@ -196,35 +201,50 @@ architecture raytrac_arch of raytrac is
 	--! Arithmetic Pipeline and Data Path Control
 	component ap_n_dpc
 	port (
+		
+		sumando5				: out	xfloat32;
+		
 		clk						: in	std_logic;
 		rst						: in	std_logic;
 		
-		paraminput				: in	vectorblock06;	--! Vectores A,B
+		dx						: out	std_logic_vector(31 downto 0);
+		dy						: out	std_logic_vector(31 downto 0);
+		dz						: out	std_logic_vector(31 downto 0);
+		dsc						: out	std_logic_vector(31 downto 0);
+		ax						: in	std_logic_vector(31 downto 0);
+		ay						: in	std_logic_vector(31 downto 0);
+		az						: in	std_logic_vector(31 downto 0);
+		bx						: in	std_logic_vector(31 downto 0);
+		by						: in	std_logic_vector(31 downto 0);
+		bz						: in	std_logic_vector(31 downto 0);
+		vx						: out	std_logic_vector(31 downto 0);
+		vy						: out	std_logic_vector(31 downto 0);
+		vz						: out	std_logic_vector(31 downto 0);
+		sc						: out	std_logic_vector(31 downto 0);
+		ack						: in	std_logic;
+		empty					: out	std_logic;
+		--paraminput			: in	vectorblock06;	--! Vectores A,B
 		
-		d,c,s					: in	std_logic;		--! Bit con el identificador del bloque AB vs CD e identificador del sub bloque (A/B) o (C/D). 
+		dcs						: in	std_logic_vector(2 downto 0);		--! Bit con el identificador del bloque AB vs CD e identificador del sub bloque (A/B) o (C/D). 
 		
 		sync_chain_1			: in	std_logic;		--! Se&ntilde;al de dato valido que se va por toda la cadena de sincronizacion.
-		sync_chain_pending		: out	std_logic;
+		pipeline_pending		: out	std_logic		--! Se&ntilde;al para indicar si hay datos en el pipeline aritm&eacute;tico.	
 		
-		qresult_w				: out	std_logic; --! Salidas de escritura y lectura en las colas de resultados.
-		qresult_d				: out	vectorblock04 --! 4 salidas de resultados, pues lo m&aacute;ximo que podr&aacute; calcularse por cada clock son 2 vectores. 
+		
+		
+		--qresult_d				: out	vectorblock04 	--! 4 salidas de resultados, pues lo m&aacute;ximo que podr&aacute; calcularse por cada clock son 2 vectores. 
 	
 	);
 	end component;
 	
-	signal sparaminput			: vectorblock06;
+	signal svx,svy,svz,ssc		: std_logic_vector(31 downto 0);
+	signal sdx,sdy,sdz,sdsc		: std_logic_vector(31 downto 0);
 	
 begin
 
 	--!Zero agreggate
 	zero	<= (others => '0');
 	
-	sparaminput(ax) <= sreg_block(reg_ax);
-	sparaminput(ay) <= sreg_block(reg_ay);
-	sparaminput(az) <= sreg_block(reg_az);
-	sparaminput(bx) <= sreg_block(reg_bx);
-	sparaminput(by) <= sreg_block(reg_by);
-	sparaminput(bz) <= sreg_block(reg_bz);
 	
 --! *************************************************************************************************************************************************************************************************************************************************************
 --! ARITHMETIC PIPELINE AND DATA PATH INSTANTIATION  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  =>  => 
@@ -233,18 +253,29 @@ begin
 	--! Arithpipeline and Datapath Control Instance
 	arithmetic_pipeline_and_datapath_controller : ap_n_dpc
 	port map (
+		sumando5			=> ssumando5,
+
 		clk 				=> clk,
 		rst 				=> rst,
-		paraminput			=> sparaminput,
-		d					=> sreg_block(reg_ctrl)(reg_ctrl_d),
-		c					=> sreg_block(reg_ctrl)(reg_ctrl_c),
-		s					=> sreg_block(reg_ctrl)(reg_ctrl_s),
+		dx					=> sdx,
+		dy					=> sdy,
+		dz					=> sdz,
+		dsc					=> sdsc,
+		ax					=> sreg_block(reg_ax),
+		ay					=> sreg_block(reg_ay),
+		az					=> sreg_block(reg_az),
+		bx					=> sreg_block(reg_bx),
+		by					=> sreg_block(reg_by),
+		bz					=> sreg_block(reg_bz),
+		vx					=> svx,
+		vy					=> svy,
+		vz					=> svz,
+		sc					=> ssc,
+		ack					=> sr_ack,
+		empty				=> sr_e,
+		dcs					=> sreg_block(reg_ctrl)(reg_ctrl_d downto reg_ctrl_s),
 		sync_chain_1		=> ssync_chain_1,
-		sync_chain_pending	=> ssync_chain_pending,
-		qresult_w			=> sres_w,
-		qresult_d			=> sres_d
-		
-		 
+		pipeline_pending	=> spipeline_pending
 	);
 	
 	
@@ -252,7 +283,7 @@ begin
 --! TRANSFER CONTROL RTL CODE
 --! ******************************************************************************************************************************************************						
 	TRANSFER_CONTROL:
-	process(clk,rst,master_waitrequest,sm,soutb_ae,soutb_usedw,spipeline_pending,soutb_e,zero,soutb_af,sfetch_data_pending,sreg_block,sslave_write,sslave_address,sslave_writedata,ssync_chain_pending,sres_e,smaster_read,smaster_write,sdata_fetch_counter,sload_add_pending,swrite_pending,sdownload_chain)
+	process(clk,rst,master_waitrequest,sm,soutb_ae,soutb_usedw,spipeline_pending,soutb_e,zero,soutb_af,sfetch_data_pending,sreg_block,sslave_write,sslave_address,sslave_writedata,ssync_chain_pending,smaster_read,smaster_write,sdata_fetch_counter,sload_add_pending,swrite_pending,sdownload_chain)
 	begin
 		
 		--! Conexi&oacuteln a se&ntilde;ales externas. 
@@ -270,12 +301,6 @@ begin
 		--! ELEMENTO DE SINCRONIZACION OUT QUEUE: Datos pendientes por cargar a la memoria a trav&eacute;s de la interconexi&oacute;n
 		swrite_pending <= not(soutb_e);
 		
-		--! ELEMENTO DE SINCRONIZACION ARITH PIPELINE: Hay datos transitando por el pipeline aritm&eacute;tico.
-		if ssync_chain_pending='1' or sres_e='0' then
-			spipeline_pending <= '1';
-		else
-			spipeline_pending <= '0';
-		end if;		 	
 		
 		--! ELEMENTO DE SINCRONIZACION DESCARGA DE DATOS: Hay datos pendientes por descargar desde la memoria a trav&eacute;s de la interconexi&oacute;n.
 		if sdata_fetch_counter=zero(reg_ctrl_nfetch_high downto reg_ctrl_nfetch_low) then
@@ -433,7 +458,7 @@ begin
 								sreg_block(reg_ctrl)(reg_ctrl_rom) <= '0';
 								sreg_block(reg_ctrl)(reg_ctrl_flags_dc downto reg_ctrl_flags_fc) <= sdrain_condition & sflood_condition;
 								sreg_block(reg_ctrl)(reg_ctrl_flags_ap downto reg_ctrl_flags_wp) <= sload_add_pending & sfetch_data_pending & sparamload_pending & spipeline_pending & swrite_pending;
-					
+							
 							else
 								
 								--! Flow Control: Cambiar a Source porque aun hay elementos transitando.
@@ -483,6 +508,8 @@ begin
 								if sreg_block(reg_ctrl)(reg_ctrl_irq)='0' or sslave_writedata(reg_ctrl_irq)='0' then 
 									sreg_block(reg_ctrl)(reg_ctrl_irq downto reg_ctrl_nfetch_low) <= sslave_writedata(reg_ctrl_irq downto reg_ctrl_nfetch_low);
 									sreg_block(reg_ctrl)(reg_ctrl_flags_wp-1 downto reg_ctrl_cmb) <= sslave_writedata(reg_ctrl_flags_wp-1 downto reg_ctrl_cmb);
+									sreg_block(reg_ctrl)(reg_ctrl_rlsc) <= sslave_writedata(reg_ctrl_rlsc);
+									sreg_block(reg_ctrl)(reg_ctrl_ageb downto reg_ctrl_alb) <=sslave_writedata(reg_ctrl_ageb downto reg_ctrl_alb); 		
 								end if;
 							when x"6" => sreg_block(reg_outputcounter) <= sslave_writedata; 
 							when x"7" => sreg_block(reg_inputcounter) <= sslave_writedata;
@@ -511,11 +538,8 @@ begin
 --! ******************************************************************************************************************************************************						
 --! FLOW CONTROL RTL CODE
 --! ******************************************************************************************************************************************************						
---! Colas de resultados y buffer de salida
+--! buffer de salida
 --! ******************************************************************************************************************************************************						
-	res:scfifo
-	generic map	(lpm_numwords => 2**fd, lpm_showahead => "ON", lpm_width => 128, lpm_widthu	=> fd, overflow_checking => "ON", underflow_checking => "ON", use_eab => "ON")
-	port map 	(rdreq => sres_ack, aclr => '0', empty => sres_e, clock => clk, q => sres_q,	wrreq => sres_w, data => sres_d(qsc)&sres_d(qx)&sres_d(qy)&sres_d(qz));
 	output_buffer:scfifo
 	generic map (almost_empty_value => 2**mb,almost_full_value => (2**fd)-52, lpm_widthu => fd, lpm_numwords => 2**fd, lpm_showahead => "ON", lpm_width => 32, overflow_checking => "ON", underflow_checking => "ON", use_eab => "ON")
 	port map 	(empty => soutb_e, aclr => '0', clock => clk, rdreq 	=> soutb_ack, wrreq	=> soutb_w,	q => master_writedata, usedw	=> soutb_usedw,	almost_full => soutb_af, almost_empty => soutb_ae, data => soutb_d);
@@ -524,7 +548,7 @@ begin
 --! ******************************************************************************************************************************************************						
 
 	FLOW_CONTROL_OUTPUT_STAGE:
-	process (clk,rst,master_readdata, master_readdatavalid,sres_e,sreg_block(reg_ctrl)(reg_ctrl_vt downto reg_ctrl_sc),sm,supload_chain,zero,ssync_chain_pending,sres_q,supload_start)
+	process (clk,rst,master_readdata, master_readdatavalid,sr_e,sreg_block(reg_ctrl)(reg_ctrl_vt downto reg_ctrl_sc),sm,supload_chain,zero,ssync_chain_pending,supload_start)
 	begin
 		
 
@@ -536,20 +560,20 @@ begin
 			soutb_w <= master_readdatavalid;
 		else
 			--!Modo Arithmetic Pipeline 
-			soutb_w <= not(sres_e);
+			soutb_w <= not(sr_e);
 		end if;
 		
 		--! Control de lectura de la cola de resultados.
-		if sres_e='0' then
+		if sr_e='0' then
 			--!Hay datos en la cola de resultados.
 			if (supload_chain=UPVZ and sreg_block(reg_ctrl)(reg_ctrl_sc)='0') or supload_chain=SC then
 				--!Se transfiere el ultimo componente vectorial y no se estan cargando resultados escalares.
-				sres_ack <= '1';
+				sr_ack <= '1';
 			else
-				sres_ack <= '0';
+				sr_ack <= '0';
 			end if;
 		else
-			sres_ack <= '0';
+			sr_ack <= '0';
 		end if;
 			
 			
@@ -557,13 +581,13 @@ begin
 		--! DMA Path Control: Si se encuentra habilitado el modo dma entonces conectar la entrada del buffer de salida a la interconexi&oacute;n
 		case supload_chain is
 			when UPVX => 
-				soutb_d <= sres_q (32*qx+31 downto 32*qx);
+				soutb_d <= svx;
 			when UPVY => 
-				soutb_d <= sres_q (32*qy+31 downto 32*qy);
+				soutb_d <= svy;
 			when UPVZ => 
-				soutb_d <= sres_q (32*qz+31 downto 32*qz);
+				soutb_d <= svz;
 			when SC => 
-				soutb_d <= sres_q (32*qsc+31 downto 32*qsc);
+				soutb_d <= ssc;
 			when DMA => 
 				soutb_d <= master_readdata;
 		end case;
@@ -584,7 +608,7 @@ begin
 			--! Modo de operaci&oacute;n normal.
 			case supload_chain is
 				when UPVX => 
-					if sres_e='1' then 
+					if sr_e='1' then 
 						supload_chain <= supload_start;
 					else
 						supload_chain <= UPVY;
@@ -701,7 +725,7 @@ begin
 --! *************************************************************************************************************************************************************************************************************************************************************
 	--! Master Slave Process: Proceso para la escritura y lectura de registros desde el NIOS II.
 	low_register_bank:
-	process (clk,rst,sreg_block)
+	process (clk,rst,sreg_block,soutb_w,supload_chain)
 	begin
 		if rst=rstMasterValue then
 			for i in reg_scratch00 downto reg_vz loop
@@ -720,7 +744,33 @@ begin
 			sslave_write		<= slave_write;
 			sslave_read			<= slave_read; 
 			sslave_writedata	<= slave_writedata;
-			for i in reg_scratch00 downto reg_vz loop
+			
+			if soutb_w='1' and supload_chain=DMA then
+				sreg_block(reg_vx) <= sdx;
+			else
+				sreg_block(reg_vx) <= sdx;
+			
+			end if;
+			if soutb_w='1' and supload_chain=DMA then
+				sreg_block(reg_vy) <= sdy;
+			else
+				sreg_block(reg_vy) <= sdy;
+			
+			end if;
+			if soutb_w='1' and supload_chain=DMA then
+				sreg_block(reg_scratch00) <= sdz;
+				sreg_block(reg_vz)	<= sdz;
+			else
+				sreg_block(reg_scratch00) <= sdz;
+				sreg_block(reg_vz)	<= sdz;
+			end if;
+			if soutb_w='1' and supload_chain=DMA then
+				sreg_block(reg_scalar)	<= sdsc;
+			else
+				sreg_block(reg_scalar) <= sdsc; 
+			end if;
+			
+			for i in reg_scratch00-5 downto reg_vz loop
 				if sslave_address=i then
 					if sslave_write='1' then
 						sreg_block(i) <= sslave_writedata;

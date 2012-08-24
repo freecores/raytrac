@@ -32,19 +32,39 @@ use altera_mf.altera_mf_components.all;
 entity ap_n_dpc is 
 	
 	port (
+		sumando5				: out	std_logic_vector(31 downto 0);
+		
 		clk						: in	std_logic;
 		rst						: in	std_logic;
 		
-		paraminput				: in	vectorblock06;	--! Vectores A,B
+		dx						: out	std_logic_vector(31 downto 0);
+		dy						: out	std_logic_vector(31 downto 0);
+		dz						: out	std_logic_vector(31 downto 0);
+		dsc						: out	std_logic_vector(31 downto 0);
+		ax						: in	std_logic_vector(31 downto 0);
+		ay						: in	std_logic_vector(31 downto 0);
+		az						: in	std_logic_vector(31 downto 0);
+		bx						: in	std_logic_vector(31 downto 0);
+		by						: in	std_logic_vector(31 downto 0);
+		bz						: in	std_logic_vector(31 downto 0);
+		vx						: out	std_logic_vector(31 downto 0);
+		vy						: out	std_logic_vector(31 downto 0);
+		vz						: out	std_logic_vector(31 downto 0);
+		sc						: out	std_logic_vector(31 downto 0);
+		ack						: in	std_logic;
+		empty					: out	std_logic;
 		
-		d,c,s					: in	std_logic;		--! Bit con el identificador del bloque AB vs CD e identificador del sub bloque (A/B) o (C/D). 
+		 --paraminput				: in	vectorblock06;	--! Vectores A,B
+		
+		dcs						: in	std_logic_vector(2 downto 0);		--! Bit con el identificador del bloque AB vs CD e identificador del sub bloque (A/B) o (C/D). 
 		
 		sync_chain_1			: in	std_logic;		--! Se&ntilde;al de dato valido que se va por toda la cadena de sincronizacion.
-		sync_chain_pending		: out	std_logic;		--! Se&ntilde;al para indicar si hay datos en el pipeline aritm&eacute;tico.	
+		pipeline_pending		: out	std_logic		--! Se&ntilde;al para indicar si hay datos en el pipeline aritm&eacute;tico.	
 		
-		qresult_w				: out	std_logic;		--! Salidas de escritura y lectura en las colas de resultados.
-		qresult_d				: out	vectorblock04 	--! 4 salidas de resultados, pues lo m&aacute;ximo que podr&aacute; calcularse por cada clock son 2 vectores. 
-
+		
+		
+		--qresult_d				: out	vectorblock04 	--! 4 salidas de resultados, pues lo m&aacute;ximo que podr&aacute; calcularse por cada clock son 2 vectores. 
+	
 
 
 	);
@@ -58,20 +78,58 @@ architecture ap_n_dpc_arch of ap_n_dpc is
 	
 	
 	--!TBXSTART:FACTORS_N_ADDENDS
-	signal sfactor		: vectorblock12;
-	signal ssumando		: vectorblock06;
-	signal sdpfifo_q	: xfloat32;
+	signal sfactor0		: std_logic_vector(31 downto 0);
+	signal sfactor1		: std_logic_vector(31 downto 0);
+	signal sfactor2		: std_logic_vector(31 downto 0);
+	signal sfactor3		: std_logic_vector(31 downto 0);
+	signal sfactor4		: std_logic_vector(31 downto 0);
+	signal sfactor5		: std_logic_vector(31 downto 0);
+	signal sfactor6		: std_logic_vector(31 downto 0);
+	signal sfactor7		: std_logic_vector(31 downto 0);
+	signal sfactor8		: std_logic_vector(31 downto 0);
+	signal sfactor9		: std_logic_vector(31 downto 0);
+	signal sfactor10	: std_logic_vector(31 downto 0);
+	signal sfactor11	: std_logic_vector(31 downto 0);
+	--signal sfactor		: vectorblock12;
+	
+	signal ssumando0	: std_logic_vector(31 downto 0);
+	signal ssumando1	: std_logic_vector(31 downto 0);
+	signal ssumando2	: std_logic_vector(31 downto 0);
+	signal ssumando3	: std_logic_vector(31 downto 0);
+	signal ssumando4	: std_logic_vector(31 downto 0);
+	signal ssumando5	: std_logic_vector(31 downto 0);
+	--signal ssumando		: vectorblock06;
+	
+	signal sq0_q		: std_logic_vector(31 downto 0);
 	--!TBXEND
 	
 	
 	--!TBXSTART:ARITHMETIC_RESULTS
-	signal sresult 		: vectorblock04;
-	signal sprd32blk	: vectorblock06;
-	signal sadd32blk	: vectorblock03;
-	signal ssqr32blk	: xfloat32;
-	signal sinv32blk	: xfloat32;
-	signal sqxyz_q		: vectorblock03;
-	signal sqxyz_e		: std_logic;
+
+	signal sp0			: std_logic_vector(31 downto 0);
+	signal sp1			: std_logic_vector(31 downto 0);
+	signal sp2			: std_logic_vector(31 downto 0);
+	signal sp3			: std_logic_vector(31 downto 0);
+	signal sp4			: std_logic_vector(31 downto 0);
+	signal sp5			: std_logic_vector(31 downto 0);
+	--signal sprd32blk	: vectorblock06;
+	
+	signal sa0			: std_logic_vector(31 downto 0);
+	signal sa1			: std_logic_vector(31 downto 0);
+	signal sa2			: std_logic_vector(31 downto 0);
+	signal sa3			: std_logic_vector(31 downto 0);
+	
+	--signal sadd32blk	: vectorblock03;
+	
+	signal ssq32	: std_logic_vector(31 downto 0);
+	signal sinv32	: std_logic_vector(31 downto 0);
+	
+	signal sqx_q		: std_logic_vector(31 downto 0);
+	signal sqy_q		: std_logic_vector(31 downto 0);
+	signal sqz_q		: std_logic_vector(31 downto 0);
+	--signal sqxyz_q		: vectorblock03;
+	
+	signal sq1_e		: std_logic;
 	--!TBXEND
 	
 	
@@ -79,19 +137,40 @@ architecture ap_n_dpc_arch of ap_n_dpc is
 	signal ssync_chain	: std_logic_vector(ssync_chain_max downto ssync_chain_min);
 	--!TBXEND
 
-	signal qxyzd		: std_logic_vector(95 downto 0);
-	signal qxyzq		: std_logic_vector(95 downto 0);
+	--signal qxyzd		: std_logic_vector(95 downto 0);
+	
+	--signal qxyzq		: std_logic_vector(95 downto 0);
+	
 	signal sq2_d		: std_logic_vector(31 downto 0);
 	signal sq2_q		: std_logic_vector(31 downto 0);
 	signal sq2_w		: std_logic;
 	signal sq2_e		: std_logic;
 
+	signal sqr_e		: std_logic;
+	signal sqr_w		: std_logic;		--! Salidas de escritura y lectura en las colas de resultados.
+	signal sqr_dx		: std_logic_vector(31 downto 0);
+	signal sqr_dy		: std_logic_vector(31 downto 0);
+	signal sqr_dz		: std_logic_vector(31 downto 0);
+	signal sqr_dsc		: std_logic_vector(31 downto 0);
+	
 
-	signal sadd32blko 	: vectorblock03;	--! Salidas de los 3 sumadores.
-	signal sprd32blko	: vectorblock06;	--! Salidas de los 6 multiplicadores.
 
-	signal sinv32blko	: xfloat32;		--! Salidas de la raiz cuadradas y el inversor.
-	signal ssqr32blko	: xfloat32;		--! Salidas de la raiz cuadradas y el inversor.
+	signal sa0o			: std_logic_vector(31 downto 0);
+	signal sa1o			: std_logic_vector(31 downto 0);
+	signal sa2o			: std_logic_vector(31 downto 0);
+	signal sa3o			: std_logic_vector(31 downto 0);
+	--signal sadd32blko 	: vectorblock03;	--! Salidas de los 3 sumadores.
+	
+	signal sp0o			: std_logic_vector(31 downto 0);
+	signal sp1o			: std_logic_vector(31 downto 0);
+	signal sp2o			: std_logic_vector(31 downto 0);
+	signal sp3o			: std_logic_vector(31 downto 0);
+	signal sp4o			: std_logic_vector(31 downto 0);
+	signal sp5o			: std_logic_vector(31 downto 0);
+	--signal sprd32blko	: vectorblock06;	--! Salidas de los 6 multiplicadores.
+	
+	signal sinv32o	: std_logic_vector(31 downto 0);		--! Salidas de la raiz cuadradas y el inversor.
+	signal ssq32o	: std_logic_vector(31 downto 0);		--! Salidas de la raiz cuadradas y el inversor.
 	
 	--! Bloque Aritmetico de Sumadores y Multiplicadores (madd)
 	component arithblock
@@ -101,20 +180,52 @@ architecture ap_n_dpc_arch of ap_n_dpc is
 		rst : in std_logic;
 	
 		sign 		: in std_logic;
+		
+		factor0		: in std_logic_vector(31 downto 0);
+		factor1		: in std_logic_vector(31 downto 0);
+		factor2		: in std_logic_vector(31 downto 0);
+		factor3		: in std_logic_vector(31 downto 0);
+		factor4		: in std_logic_vector(31 downto 0);
+		factor5		: in std_logic_vector(31 downto 0);
+		factor6		: in std_logic_vector(31 downto 0);
+		factor7		: in std_logic_vector(31 downto 0);
+		factor8		: in std_logic_vector(31 downto 0);
+		factor9		: in std_logic_vector(31 downto 0);
+		factor10	: in std_logic_vector(31 downto 0);
+		factor11	: in std_logic_vector(31 downto 0);
+		--prd32blki	: in vectorblock06;
 	
-		prd32blki	: in vectorblock12;
-		add32blki	: in vectorblock06;
+		sumando0	: in std_logic_vector(31 downto 0);
+		sumando1	: in std_logic_vector(31 downto 0);
+		sumando2	: in std_logic_vector(31 downto 0);
+		sumando3	: in std_logic_vector(31 downto 0);
+		sumando4	: in std_logic_vector(31 downto 0);
+		sumando5	: in std_logic_vector(31 downto 0);
+		--add32blki	: in vectorblock06;
 		
-		add32blko	: out vectorblock03;
-		prd32blko	: out vectorblock06;
+		a0			: out std_logic_vector(31 downto 0);
+		a1			: out std_logic_vector(31 downto 0);
+		a2			: out std_logic_vector(31 downto 0);
+		a3			: out std_logic_vector(31 downto 0);
+		--add32blko	: out vectorblock03;
 		
-		sq32o		: out xfloat32;
-		inv32o		: out xfloat32
+		p0			: out std_logic_vector(31 downto 0);
+		p1			: out std_logic_vector(31 downto 0);
+		p2			: out std_logic_vector(31 downto 0);
+		p3			: out std_logic_vector(31 downto 0);
+		p4			: out std_logic_vector(31 downto 0);
+		p5			: out std_logic_vector(31 downto 0);
+		--prd32blko	: out vectorblock06;
+		
+		sq32o		: out std_logic_vector(31 downto 0);
+		inv32o		: out std_logic_vector(31 downto 0)
 			
 	);
 	end component;
 	
 begin
+	--! Debug
+	sumando5 <= sa2o;
 
 	--! Bloque Aritm&eacute;tico
 	ap : arithblock
@@ -122,44 +233,77 @@ begin
 		clk 		=> clk,
 		rst	 		=> rst,
 		
-		sign 		=> s,
+		sign 		=> dcs(0),
 		
-		prd32blki 	=> sfactor,
-		add32blki	=> ssumando,
+		factor0	=>sfactor0,
+		factor1	=>sfactor1,
+		factor2	=>sfactor2,
+		factor3	=>sfactor3,
+		factor4	=>sfactor4,
+		factor5	=>sfactor5,
+		factor6	=>sfactor6,
+		factor7	=>sfactor7,
+		factor8	=>sfactor8,
+		factor9	=>sfactor9,
+		factor10=>sfactor10,
+		factor11=>sfactor11,
+		--prd32blki 	=> sfactor,
+
+		sumando0=>ssumando0,
+		sumando1=>ssumando1,
+		sumando2=>ssumando2,
+		sumando3=>ssumando3,
+		sumando4=>ssumando4,
+		sumando5=>ssumando5,
+		--add32blki	=> ssumando,
 		
-		add32blko 	=> sadd32blko, 
-		prd32blko	=> sprd32blko,
+		a0=>sa0o,
+		a1=>sa1o,
+		a2=>sa2o,
+		a3=>sa3o,
+		--add32blko 	=> sadd32blko, 
 		
-		sq32o		=> ssqr32blko,
-		inv32o		=> sinv32blko
+		p0=>sp0o,
+		p1=>sp1o,
+		p2=>sp2o,
+		p3=>sp3o,
+		p4=>sp4o,
+		p5=>sp5o,
+		--prd32blko	=> sprd32blko,
+		
+		sq32o=> ssq32o,
+		inv32o=> sinv32o
 	);	
 	
 	--! Cadena de sincronizaci&oacute;n: 29 posiciones.
-	sync_chain_pending <= sync_chain_1 or not(sq2_e) or not(sqxyz_e);
+	pipeline_pending <= sync_chain_1 or not(sq2_e) or not(sq1_e) or not(sqr_e);
+	empty <= sqr_e;
 	sync_chain_proc:
 	process(clk,rst,sync_chain_1)
 	begin
 		if rst=rstMasterValue then
-
 			ssync_chain(ssync_chain_max downto ssync_chain_min) <= (others => '0');
-			
+			dx <= (others => '0');
+			dy <= (others => '0');
+			dz <= (others => '0');
+			dsc <= (others => '0');
 		elsif clk'event and clk='1' then
-
-
+			
+			if sqr_w='1' then
+				dx <= ssumando4;
+				dy <= ssumando5;
+				dz <= sa3;
+				dsc <= sqr_dsc;
+			end if;
+				
+		
 			for i in ssync_chain_max downto ssync_chain_min+1 loop
 				ssync_chain(i) <= ssync_chain(i-1);
 			end loop;
 			ssync_chain(ssync_chain_min) <= sync_chain_1;
-
 		end if;
-			
-	
 	end process sync_chain_proc;
 	
-		
-	
-	--! El siguiente c&oacute;digo sirve para conectar arreglos a se&ntilde;ales std_logic_1164, simplemente son abstracciones a nivel de c&oacute;digo y no representar&aacute; cambios en la s&iacute;ntesis.
-	qresult_d <= sresult;
 	
 	
 	
@@ -169,129 +313,174 @@ begin
 	process (clk)
 	begin
 		if clk'event and clk='1' then
-			sprd32blk <= sprd32blko;
-			sadd32blk <= sadd32blko;
-			sinv32blk <= sinv32blko;
-			--! Raiz Cuadrada.
-			ssqr32blk <= ssqr32blko;
+			sp0 <= sp0o;
+			sp1 <= sp1o;
+			sp2 <= sp2o;
+			sp3 <= sp3o;
+			sp4 <= sp4o;
+			sp5 <= sp5o;
+			sa0 <= sa0o;
+			sa1 <= sa1o;
+			sa2 <= sa2o;
+			sa3 <= sa3o;
+			sinv32 <= sinv32o;
+			ssq32 <= ssq32o;
 		end if;
 	end process;
 	
 	--! Decodificaci&oacute;n del Datapath.
-	datapathproc:process(s,d,c,paraminput,sinv32blk,sprd32blk,sadd32blk,sdpfifo_q,sqxyz_q,ssync_chain,ssqr32blk,sq2_q)
+	datapathproc:process(dcs,ax,bx,ay,by,az,bz,sinv32,sp0,sp1,sp2,sp3,sp4,sp5,sa0,sa1,sa2,sq0_q,sqx_q,sqy_q,sqz_q,ssync_chain,ssq32,sq2_q)
 	begin
-		--Summador 0: DORC!
-		if (d or c)='1' then
-			ssumando(s0) <= sprd32blk(p0);
-			ssumando(s1) <= sprd32blk(p1);
-		else
-			ssumando(s0) <= paraminput(ax);
-			ssumando(s1) <= paraminput(bx);
-		end if;
-		--Sumador 1:
-		if d='1' then
-			ssumando(s2) <= sadd32blk(a0);
-			ssumando(s3) <= sdpfifo_q;		
-		elsif c='0' then
-			ssumando(s2) <= paraminput(ay);
-			ssumando(s3) <= paraminput(by);
-		else
-			ssumando(s2) <= sprd32blk(p2);
-			ssumando(s3) <= sprd32blk(p3);
-		end if;			
-		--S2
-		if c='0' then 
-			ssumando(s4) <= paraminput(az);
-			ssumando(s5) <= paraminput(bz);
-		else
-			ssumando(s4) <= sprd32blk(p4);
-			ssumando(s5) <= sprd32blk(p5);
-		end if;		
-		--P0,P1,P2
-		sfactor(f4) <= paraminput(az);
-		if (not(d) and c)='1' then
-			sfactor(f0) <= paraminput(ay);
-			sfactor(f1) <= paraminput(bz);
-			sfactor(f2) <= paraminput(az);
-			sfactor(f3) <= paraminput(by);
-			sfactor(f5) <= paraminput(bx);
-		else
-			sfactor(f0) <= paraminput(ax);
-			sfactor(f2) <= paraminput(ay);
-			sfactor(f1) <= paraminput(bx) ;
-			sfactor(f3) <= paraminput(by) ;
-			sfactor(f5) <= paraminput(bz) ;
-		end if;		
-		--P3 P4 P5
-		if (c and s)='1' then
-			sfactor(f6) <= paraminput(ax);
-			sfactor(f9) <= paraminput(by);
-		else
-			sfactor(f6) <= sinv32blk;
-			sfactor(f9) <= sqxyz_q(qy);
-		end if;
-		if d='1' then
-			if s='0' then
-				sfactor(f7) <= sqxyz_q(qx);
-				sfactor(f8) <= sinv32blk;
-				sfactor(f10) <= sinv32blk;			
-				sfactor(f11) <= sqxyz_q(qz);
-			else
-				sfactor(f7) <= paraminput(bx);
-				sfactor(f8) <= paraminput(ay);
-				sfactor(f10) <= paraminput(az);
-				sfactor(f11) <= paraminput(bz);
-			end if;
-		else  
-			sfactor(f7) <= paraminput(bz);
-			sfactor(f8) <= paraminput(ax);
-			sfactor(f10) <= paraminput(ay);
-			sfactor(f11) <= paraminput(bx);
-		end if;		
-		--res0,1,2			
-		if d='1' then
-			sresult(qx) <= sprd32blk(p3);
-			sresult(qy) <= sprd32blk(p4);
-			sresult(qz) <= sprd32blk(p5);
-		else
-			sresult(qx) <= sadd32blk(a0);
-			sresult(qy) <= sadd32blk(a1);
-			sresult(qz) <= sadd32blk(a2);
-		end if;				
-		--res3
-		
-		sresult(qsc) <= sq2_q;
-		if c='1'  then
-			sq2_d <= ssqr32blk;
-			sq2_w <= ssync_chain(22) and d and not(s);
-		else
-			sq2_w <= ssync_chain(21) and d and not(s);
-			sq2_d <= sadd32blk(a1);
-		end if;
-		
-		if d='1' then
-			if s='1'then
-				qresult_w <= ssync_chain(5);
-			else
-				qresult_w<= ssync_chain(27);
-			end if;			
-		else  
-			if c='1' and s='1' then
-				qresult_w <= ssync_chain(13);
-			elsif c='0' then 
-				qresult_w <= ssync_chain(9);
-			else
-				qresult_w <= '0';
-			end if;			
-		end if;
+	
+		case dcs is
+			when "011"  => 
+
+				sq2_w <= '0';
+				sq2_d <= ssq32;
+				
+				sfactor0 <= ay;
+				sfactor1 <= bz;
+				sfactor2 <= az;
+				sfactor3 <= by;
+				sfactor4 <= az;
+				sfactor5 <= bx;
+				sfactor6 <= ax;
+				sfactor7 <= bz;
+				sfactor8 <= ax;
+				sfactor9 <= by;
+				sfactor10 <= ay;
+				sfactor11 <= bx;
+				
+				ssumando0 <= sp0;
+				ssumando1 <= sp1;
+				ssumando2 <= sp2;
+				ssumando3 <= sp3;
+				ssumando4 <= sp4;
+				ssumando5 <= sp5;
+				
+				sqr_dx <= sa0;
+				sqr_dy <= sa1;
+				sqr_dz <= sa2;
+				
+				sqr_w <= ssync_chain(13);
+			
+			when"000"|"001" => 
+
+				sq2_w <= '0';
+				sq2_d <= ssq32;
+
+				sfactor0 <= ay;
+				sfactor1 <= bz;
+				sfactor2 <= az;
+				sfactor3 <= by;
+				sfactor4 <= az;
+				sfactor5 <= bx;
+				sfactor6 <= ax;
+				sfactor7 <= bz;
+				sfactor8 <= ax;
+				sfactor9 <= by;
+				sfactor10 <= ay;
+				sfactor11 <= bx;
+
+				
+				ssumando0 <= ax;
+				ssumando1 <= bx;
+				ssumando2 <= ay;
+				ssumando3 <= by;
+				ssumando4 <= az;
+				ssumando5 <= bz;
+				
+				sqr_dx <= sa0;
+				sqr_dy <= sa1;
+				sqr_dz <= sa2;
+				
+				sqr_w <= ssync_chain(9);
+			
+			when"110" |"100" => 
+				
+			
+				
+				sfactor0 <= ax;
+				sfactor1 <= bx;
+				sfactor2 <= ay;
+				sfactor3 <= by;
+				sfactor4 <= az;
+				sfactor5 <= bz;
+				
+				sfactor6 <= sinv32;
+				sfactor7 <= sqx_q;
+				sfactor8 <= sinv32;
+				sfactor9 <= sqy_q;
+				sfactor10 <= sinv32;
+				sfactor11 <= sqz_q;
+				
+				
+				ssumando0 <= sp0;
+				ssumando1 <= sp1;
+				ssumando2 <= sa0;
+				ssumando3 <= sq0_q;
+				ssumando4 <= az;
+				ssumando5 <= bz;
+				
+				if dcs(1)='1' then 
+					sq2_d <= ssq32;
+					sq2_w <= ssync_chain(22);
+				else
+					sq2_d <= sa1;
+					sq2_w <= ssync_chain(21);
+				end if;
+				
+				sqr_dx <= sp3;
+				sqr_dy <= sp4;
+				sqr_dz <= sp5;
+				
+				sqr_w <= ssync_chain(27);
+			
+			when others => 
+				
+				sq2_w <= '0';
+				sq2_d <= ssq32;
+				
+				sfactor0 <= ax;
+				sfactor1 <= bx;
+				sfactor2 <= ay;
+				sfactor3 <= by;
+				sfactor4 <= az;
+				sfactor5 <= bz;
+				
+				sfactor6 <= ax;
+				sfactor7 <= bx;
+				sfactor8 <= ay;
+				sfactor9 <= by;
+				sfactor10 <= az;
+				sfactor11 <= bz;
+				
+				ssumando0 <= sp0;
+				ssumando1 <= sp1;
+				ssumando2 <= sa0;
+				ssumando3 <= sq0_q;
+				ssumando4 <= az;
+				ssumando5 <= bz;
+
+				sqr_dx <= sp3;
+				sqr_dy <= sp4;
+				sqr_dz <= sp5;
+
+				sqr_w <= ssync_chain(5);
+						
+		end case;
+				
+			
+						
+	
 	end process;
 	
 	--! Colas internas de producto punto, ubicada en el pipe line aritm&eacute;co. Paralelo a los sumadores a0 y a2.  
 	q0 : scfifo --! Debe ir registrada la salida.
 	generic map (
 		allow_rwcycle_when_full	=> "ON",
-		lpm_widthu				=> 3,
-		lpm_numwords			=> 6,
+		lpm_widthu				=> 4,
+		lpm_numwords			=> 16,
 		lpm_showahead			=> "ON",
 		lpm_width				=> 32,
 		overflow_checking		=> "ON",
@@ -303,15 +492,15 @@ begin
 		clock		=> clk,
 		rdreq		=> ssync_chain(13),
 		wrreq		=> ssync_chain(5),
-		data		=> sprd32blk(p2),
-		q			=> sdpfifo_q
+		data		=> sp2,
+		q			=> sq0_q
 	);
 	--! Colas internas de producto punto, ubicada en el pipe line aritm&eacute;co. Paralelo a los sumadores a0 y a2.  
 	q2 : scfifo --! Debe ir registrada la salida.
 	generic map (
 		allow_rwcycle_when_full	=> "ON",
-		lpm_widthu				=> 3,
-		lpm_numwords			=> 5,
+		lpm_widthu				=> 4,
+		lpm_numwords			=> 16,
 		lpm_showahead			=> "ON",
 		lpm_type				=> "SCIFIFO",
 		lpm_width				=> 32,
@@ -324,26 +513,19 @@ begin
 		sclr		=> '0',
 		clock		=> clk,
 		empty		=> sq2_e,
-		q			=> sq2_q,
+		q			=> sqr_dsc,
 		wrreq		=> sq2_w,
 		data		=> sq2_d
 	);
 	
 	--! Cola interna de normalizaci&oacute;n de vectores, ubicada entre el pipeline aritm&eacute;tico
-	qxyzd(ax*32+31 downto ax*32) <= paraminput(ax);
-	qxyzd(ay*32+31 downto ay*32) <= paraminput(ay);
-	qxyzd(az*32+31 downto az*32) <= paraminput(az);
-	sqxyz_q(ax) <= qxyzq(ax*32+31 downto ax*32);
-	sqxyz_q(ay) <= qxyzq(ay*32+31 downto ay*32);
-	sqxyz_q(az) <= qxyzq(az*32+31 downto az*32);
-	
-	q1xyz : scfifo
+	qx : scfifo
 	generic map (
 		allow_rwcycle_when_full	=> "ON",
 		lpm_widthu				=> 5,
 		lpm_numwords			=> 32,
 		lpm_showahead			=> "ON",
-		lpm_width				=> 96,
+		lpm_width				=> 32,
 		overflow_checking		=> "ON",
 		underflow_checking		=> "ON",
 		use_eab					=> "ON"
@@ -351,14 +533,132 @@ begin
 	port	map (
 		aclr		=> '0',
 		clock		=> clk,
-		empty		=> sqxyz_e,
+		empty		=> sq1_e,
 		rdreq		=> ssync_chain(23),
 		wrreq		=> sync_chain_1,
-		data		=> qxyzd,
-		q			=> qxyzq
+		data		=> ax,
+		q			=> sqx_q
 	);
-
+	qy : scfifo
+	generic map (
+		allow_rwcycle_when_full	=> "ON",
+		lpm_widthu				=> 5,
+		lpm_numwords			=> 32,
+		lpm_showahead			=> "ON",
+		lpm_width				=> 32,
+		overflow_checking		=> "ON",
+		underflow_checking		=> "ON",
+		use_eab					=> "ON"
+	)
+	port	map (
+		aclr		=> '0',
+		clock		=> clk,
+		rdreq		=> ssync_chain(23),
+		wrreq		=> sync_chain_1,
+		data		=> ay,
+		q			=> sqy_q
+	);
+	qz : scfifo
+	generic map (
+		allow_rwcycle_when_full	=> "ON",
+		lpm_widthu				=> 5,
+		lpm_numwords			=> 32,
+		lpm_showahead			=> "ON",
+		lpm_width				=> 32,
+		overflow_checking		=> "ON",
+		underflow_checking		=> "ON",
+		use_eab					=> "ON"
+	)
+	port	map (
+		aclr		=> '0',
+		clock		=> clk,
+		rdreq		=> ssync_chain(23),
+		wrreq		=> sync_chain_1,
+		data		=> az,
+		q			=> sqz_q
+	);
+--!***********************************************************************************************************
+--!Q RESULT
+--!***********************************************************************************************************
 	
+	--Colas de resultados
+	rx : scfifo
+	generic map (
+		allow_rwcycle_when_full	=> "ON",
+		lpm_widthu				=> 5,
+		lpm_numwords			=> 32,
+		lpm_showahead			=> "ON",
+		lpm_width				=> 32,
+		overflow_checking		=> "ON",
+		underflow_checking		=> "ON",
+		use_eab					=> "ON"
+	)
+	port	map (
+		aclr		=> '0',
+		clock		=> clk,
+		empty		=> sqr_e,
+		rdreq		=> ack,
+		wrreq		=> sqr_w,
+		data		=> sqr_dx,
+		q			=> vx
+	);
+	ry : scfifo
+	generic map (
+		allow_rwcycle_when_full	=> "ON",
+		lpm_widthu				=> 5,
+		lpm_numwords			=> 32,
+		lpm_showahead			=> "ON",
+		lpm_width				=> 32,
+		overflow_checking		=> "ON",
+		underflow_checking		=> "ON",
+		use_eab					=> "ON"
+	)
+	port	map (
+		aclr		=> '0',
+		clock		=> clk,
+		rdreq		=> ack,
+		wrreq		=> sqr_w,
+		data		=> sqr_dy,
+		q			=> vy
+	);
+	rz : scfifo
+	generic map (
+		allow_rwcycle_when_full	=> "ON",
+		lpm_widthu				=> 5,
+		lpm_numwords			=> 32,
+		lpm_showahead			=> "ON",
+		lpm_width				=> 32,
+		overflow_checking		=> "ON",
+		underflow_checking		=> "ON",
+		use_eab					=> "ON"
+	)
+	port	map (
+		aclr		=> '0',
+		clock		=> clk,
+		rdreq		=> ack,
+		wrreq		=> sqr_w,
+		data		=> sqr_dz,
+		q			=> vz
+	);
+	rsc : scfifo
+	generic map (
+		allow_rwcycle_when_full	=> "ON",
+		lpm_widthu				=> 5,
+		lpm_numwords			=> 32,
+		lpm_showahead			=> "ON",
+		lpm_width				=> 32,
+		overflow_checking		=> "ON",
+		underflow_checking		=> "ON",
+		use_eab					=> "ON"
+	)
+	port	map (
+		aclr		=> '0',
+		clock		=> clk,
+		rdreq		=> ack,
+		wrreq		=> sqr_w,
+		data		=> sqr_dsc,
+		q			=> sc
+	);
 	
 	
 end architecture;

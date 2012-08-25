@@ -74,13 +74,10 @@ end entity;
 
 architecture raytrac_arch of raytrac is
 
-	--! Debug
-	signal  ssumando5 :	xfloat32;
-	signal	sphantom_q: std_logic_vector(31 downto 0);
 
 	--! Altera Compiler Directive, to avoid m9k autoinferring thanks to the guys at http://www.alteraforum.com/forum/archive/index.php/t-30784.html .... 
-	--attribute altera_attribute : string; 
-	--attribute altera_attribute of raytrac_arch : architecture is "-name AUTO_SHIFT_REGISTER_RECOGNITION OFF";
+	attribute altera_attribute : string; 
+	attribute altera_attribute of raytrac_arch : architecture is "-name AUTO_SHIFT_REGISTER_RECOGNITION OFF";
 	
 
 	type	registerblock	is array (15 downto 0) of xfloat32;
@@ -151,7 +148,7 @@ architecture raytrac_arch of raytrac is
 	--! State Machine and event signaling
 	signal sm					:	transferState;
 	
-	signal sr_e				:	std_logic;
+	signal sr_e					:	std_logic;
 	signal sr_ack				:	std_logic;
 	signal soutb_ack			:	std_logic;
 	
@@ -201,16 +198,8 @@ architecture raytrac_arch of raytrac is
 	--! Arithmetic Pipeline and Data Path Control
 	component ap_n_dpc
 	port (
-		
-		sumando5				: out	xfloat32;
-		
 		clk						: in	std_logic;
 		rst						: in	std_logic;
-		
-		dx						: out	std_logic_vector(31 downto 0);
-		dy						: out	std_logic_vector(31 downto 0);
-		dz						: out	std_logic_vector(31 downto 0);
-		dsc						: out	std_logic_vector(31 downto 0);
 		ax						: in	std_logic_vector(31 downto 0);
 		ay						: in	std_logic_vector(31 downto 0);
 		az						: in	std_logic_vector(31 downto 0);
@@ -223,22 +212,14 @@ architecture raytrac_arch of raytrac is
 		sc						: out	std_logic_vector(31 downto 0);
 		ack						: in	std_logic;
 		empty					: out	std_logic;
-		--paraminput			: in	vectorblock06;	--! Vectores A,B
-		
 		dcs						: in	std_logic_vector(2 downto 0);		--! Bit con el identificador del bloque AB vs CD e identificador del sub bloque (A/B) o (C/D). 
-		
 		sync_chain_1			: in	std_logic;		--! Se&ntilde;al de dato valido que se va por toda la cadena de sincronizacion.
 		pipeline_pending		: out	std_logic		--! Se&ntilde;al para indicar si hay datos en el pipeline aritm&eacute;tico.	
-		
-		
-		
-		--qresult_d				: out	vectorblock04 	--! 4 salidas de resultados, pues lo m&aacute;ximo que podr&aacute; calcularse por cada clock son 2 vectores. 
-	
 	);
 	end component;
 	
+	--! Nets para la salida de la cola de resultados y entrada del multiplexor del upload state machine.
 	signal svx,svy,svz,ssc		: std_logic_vector(31 downto 0);
-	signal sdx,sdy,sdz,sdsc		: std_logic_vector(31 downto 0);
 	
 begin
 
@@ -253,14 +234,8 @@ begin
 	--! Arithpipeline and Datapath Control Instance
 	arithmetic_pipeline_and_datapath_controller : ap_n_dpc
 	port map (
-		sumando5			=> ssumando5,
-
 		clk 				=> clk,
 		rst 				=> rst,
-		dx					=> sdx,
-		dy					=> sdy,
-		dz					=> sdz,
-		dsc					=> sdsc,
 		ax					=> sreg_block(reg_ax),
 		ay					=> sreg_block(reg_ay),
 		az					=> sreg_block(reg_az),
@@ -745,32 +720,8 @@ begin
 			sslave_read			<= slave_read; 
 			sslave_writedata	<= slave_writedata;
 			
-			if soutb_w='1' and supload_chain=DMA then
-				sreg_block(reg_vx) <= sdx;
-			else
-				sreg_block(reg_vx) <= sdx;
 			
-			end if;
-			if soutb_w='1' and supload_chain=DMA then
-				sreg_block(reg_vy) <= sdy;
-			else
-				sreg_block(reg_vy) <= sdy;
-			
-			end if;
-			if soutb_w='1' and supload_chain=DMA then
-				sreg_block(reg_scratch00) <= sdz;
-				sreg_block(reg_vz)	<= sdz;
-			else
-				sreg_block(reg_scratch00) <= sdz;
-				sreg_block(reg_vz)	<= sdz;
-			end if;
-			if soutb_w='1' and supload_chain=DMA then
-				sreg_block(reg_scalar)	<= sdsc;
-			else
-				sreg_block(reg_scalar) <= sdsc; 
-			end if;
-			
-			for i in reg_scratch00-5 downto reg_vz loop
+			for i in reg_scratch00 downto reg_vz loop
 				if sslave_address=i then
 					if sslave_write='1' then
 						sreg_block(i) <= sslave_writedata;

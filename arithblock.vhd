@@ -58,7 +58,6 @@ entity arithblock is
 		a0			: out std_logic_vector(31 downto 0);
 		a1			: out std_logic_vector(31 downto 0);
 		a2			: out std_logic_vector(31 downto 0);
-		a3			: out std_logic_vector(31 downto 0);
 		--add32blko	: out vectorblock03;
 		
 		p0			: out std_logic_vector(31 downto 0);
@@ -151,14 +150,6 @@ begin
 		a32 => sumando4,
 		b32 => sumando5,
 		c32 => a2
-	);
-	adder_i_3 : fadd32long 
-	port map (
-		clk => clk,
-		dpc => sign,
-		a32 => sumando4,
-		b32 => sumando5,
-		c32 => a3
 	);
 	--!TBXINSTANCESTART
 	mul_i_0 : fmul32 

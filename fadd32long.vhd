@@ -38,11 +38,11 @@ entity fadd32long is
 		c32		: out std_logic_vector(31 downto 0)
 	);
 end entity;
-architecture fadd32_arch of fadd32long is
+architecture fadd32long_arch of fadd32long is
 	
 	--! Altera Compiler Directive, to avoid m9k autoinferring thanks to the guys at http://www.alteraforum.com/forum/archive/index.php/t-30784.html .... 
-	--attribute altera_attribute : string; 
-	--attribute altera_attribute of fadd32_arch : architecture is "-name AUTO_SHIFT_REGISTER_RECOGNITION OFF";	
+	attribute altera_attribute : string; 
+	attribute altera_attribute of fadd32long_arch : architecture is "-name AUTO_SHIFT_REGISTER_RECOGNITION OFF";	
 	
 	--!TBXSTART:STAGE0
 	signal s0delta	: std_logic_vector(8 downto 0);

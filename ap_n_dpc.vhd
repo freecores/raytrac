@@ -32,15 +32,10 @@ use altera_mf.altera_mf_components.all;
 entity ap_n_dpc is 
 	
 	port (
-		sumando5				: out	std_logic_vector(31 downto 0);
 		
 		clk						: in	std_logic;
 		rst						: in	std_logic;
 		
-		dx						: out	std_logic_vector(31 downto 0);
-		dy						: out	std_logic_vector(31 downto 0);
-		dz						: out	std_logic_vector(31 downto 0);
-		dsc						: out	std_logic_vector(31 downto 0);
 		ax						: in	std_logic_vector(31 downto 0);
 		ay						: in	std_logic_vector(31 downto 0);
 		az						: in	std_logic_vector(31 downto 0);
@@ -117,7 +112,7 @@ architecture ap_n_dpc_arch of ap_n_dpc is
 	signal sa0			: std_logic_vector(31 downto 0);
 	signal sa1			: std_logic_vector(31 downto 0);
 	signal sa2			: std_logic_vector(31 downto 0);
-	signal sa3			: std_logic_vector(31 downto 0);
+	constant adder2_delay: integer := 2; 
 	
 	--signal sadd32blk	: vectorblock03;
 	
@@ -158,7 +153,6 @@ architecture ap_n_dpc_arch of ap_n_dpc is
 	signal sa0o			: std_logic_vector(31 downto 0);
 	signal sa1o			: std_logic_vector(31 downto 0);
 	signal sa2o			: std_logic_vector(31 downto 0);
-	signal sa3o			: std_logic_vector(31 downto 0);
 	--signal sadd32blko 	: vectorblock03;	--! Salidas de los 3 sumadores.
 	
 	signal sp0o			: std_logic_vector(31 downto 0);
@@ -206,7 +200,6 @@ architecture ap_n_dpc_arch of ap_n_dpc is
 		a0			: out std_logic_vector(31 downto 0);
 		a1			: out std_logic_vector(31 downto 0);
 		a2			: out std_logic_vector(31 downto 0);
-		a3			: out std_logic_vector(31 downto 0);
 		--add32blko	: out vectorblock03;
 		
 		p0			: out std_logic_vector(31 downto 0);
@@ -224,8 +217,6 @@ architecture ap_n_dpc_arch of ap_n_dpc is
 	end component;
 	
 begin
-	--! Debug
-	sumando5 <= sa2o;
 
 	--! Bloque Aritm&eacute;tico
 	ap : arithblock
@@ -260,7 +251,6 @@ begin
 		a0=>sa0o,
 		a1=>sa1o,
 		a2=>sa2o,
-		a3=>sa3o,
 		--add32blko 	=> sadd32blko, 
 		
 		p0=>sp0o,
@@ -283,20 +273,8 @@ begin
 	begin
 		if rst=rstMasterValue then
 			ssync_chain(ssync_chain_max downto ssync_chain_min) <= (others => '0');
-			dx <= (others => '0');
-			dy <= (others => '0');
-			dz <= (others => '0');
-			dsc <= (others => '0');
+
 		elsif clk'event and clk='1' then
-			
-			if sqr_w='1' then
-				dx <= ssumando4;
-				dy <= ssumando5;
-				dz <= sa3;
-				dsc <= sqr_dsc;
-			end if;
-				
-		
 			for i in ssync_chain_max downto ssync_chain_min+1 loop
 				ssync_chain(i) <= ssync_chain(i-1);
 			end loop;
@@ -322,7 +300,6 @@ begin
 			sa0 <= sa0o;
 			sa1 <= sa1o;
 			sa2 <= sa2o;
-			sa3 <= sa3o;
 			sinv32 <= sinv32o;
 			ssq32 <= ssq32o;
 		end if;
@@ -362,7 +339,7 @@ begin
 				sqr_dy <= sa1;
 				sqr_dz <= sa2;
 				
-				sqr_w <= ssync_chain(13);
+				sqr_w <= ssync_chain(13+adder2_delay);
 			
 			when"000"|"001" => 
 
@@ -394,7 +371,7 @@ begin
 				sqr_dy <= sa1;
 				sqr_dz <= sa2;
 				
-				sqr_w <= ssync_chain(9);
+				sqr_w <= ssync_chain(9+adder2_delay);
 			
 			when"110" |"100" => 
 				

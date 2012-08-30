@@ -43,7 +43,7 @@ entity raytrac is
 		rst:	in std_logic;
 		
 		--! Avalon MM Slave
-		slave_address			:	in 	std_logic_vector(3 downto 0);
+		slave_address				:	in 	std_logic_vector(3 downto 0);
 		slave_read				:	in 	std_logic;
 		slave_write				:	in 	std_logic;
 		slave_readdata			:	out std_logic_vector(31 downto 0);
@@ -51,13 +51,13 @@ entity raytrac is
 	
 		--! Avalon MM Master (Read & Write common signals)	
 		master_address			:	out std_logic_vector(31 downto 0);
-		master_burstcount		:	out std_logic_vector(4 downto 0);
-		master_waitrequest		:	in	std_logic;
+		master_burstcount			:	out std_logic_vector(4 downto 0);
+		master_waitrequest			:	in	std_logic;
 		
 		--! Avalon MM Master (Read Stage)
 		master_read				:	out	std_logic;
 		master_readdata			:	in	std_logic_vector(31 downto 0);
-		master_readdatavalid	:	in	std_logic;	
+		master_readdatavalid		:	in	std_logic;	
 
 		--! Avalon MM Master (Write Stage)
 		master_write			:	out	std_logic;

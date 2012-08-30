@@ -82,32 +82,32 @@ architecture raytrac_arch of raytrac is
 
 	type	registerblock	is array (15 downto 0) of xfloat32;
 	type	transferState	is (IDLE,SINK,SOURCE);
-	type 	upload_chain 	is (UPVX,UPVY,UPVZ,SC,DMA);
+	type upload_chain 	is (UPVX,UPVY,UPVZ,SC,DMA);
 	type	download_chain  is (DWAX,DWAY,DWAZ,DWBX,DWBY,DWBZ,DWAXBX,DWAYBY,DWAZBZ);
 	
 	constant reg_ctrl 				:	integer:=00;
-	constant reg_vz					:	integer:=01;
-	constant reg_vy					:	integer:=02;
-	constant reg_vx					:	integer:=03;
-	constant reg_scalar				:	integer:=04;
-	constant reg_scratch00			:	integer:=05;
+	constant reg_vz				:	integer:=01;
+	constant reg_vy				:	integer:=02;
+	constant reg_vx				:	integer:=03;
+	constant reg_scalar			:	integer:=04;
+	constant reg_nfetch			:	integer:=05;
 	constant reg_outputcounter		:	integer:=06;
 	constant reg_inputcounter		:	integer:=07;
 	constant reg_fetchstart			:	integer:=08;
 	constant reg_sinkstart			:	integer:=09;
-	constant reg_ax					:	integer:=10;
-	constant reg_ay					:	integer:=11;
-	constant reg_az					:	integer:=12;
-	constant reg_bx					:	integer:=13;
-	constant reg_by					:	integer:=14;
-	constant reg_bz					:	integer:=15;
+	constant reg_ax				:	integer:=10;
+	constant reg_ay				:	integer:=11;
+	constant reg_az				:	integer:=12;
+	constant reg_bx				:	integer:=13;
+	constant reg_by				:	integer:=14;
+	constant reg_bz				:	integer:=15;
 
 
 	
 	constant reg_ctrl_cmb			:	integer:=00;	--! CMB bit : Combinatorial Instruction.
-	constant reg_ctrl_s				:	integer:=01;	--! S bit of the DCS field.
-	constant reg_ctrl_c				:	integer:=02;	--! C bit of the DCS field.
-	constant reg_ctrl_d				:	integer:=03;	--! D bit of the DCS field.
+	constant reg_ctrl_s			:	integer:=01;	--! S bit of the DCS field.
+	constant reg_ctrl_c			:	integer:=02;	--! C bit of the DCS field.
+	constant reg_ctrl_d			:	integer:=03;	--! D bit of the DCS field.
 	
 	constant reg_ctrl_sc			:	integer:=04;	--! SC bit of the VTSC field.
 	constant reg_ctrl_vt			:	integer:=05;	--! VT bit of the VTSC field.
@@ -127,9 +127,10 @@ architecture raytrac_arch of raytrac is
 	constant reg_ctrl_alb			:	integer:=16;	--! Conditional Writing. A<B.
 	constant reg_ctrl_aeb			:	integer:=17;	--! A==B.
 	constant reg_ctrl_ageb			:	integer:=18;	--! A>=B.
-	constant reg_ctrl_nfetch_low	:	integer:=19;	--! NFETCH_LOW : Lower bit to program the number of addresses to load in the interconnection.
-	constant reg_ctrl_nfetch_high	:	integer:=30;	--! NFETCH_HIGH : Higher bit to program the number of addresses to load in the interconnection. 
 	constant reg_ctrl_irq			:	integer:=31;	--! IRQ bit : Interrupt Request Signal.
+
+	--! Nfetch Reg Mask
+	constant reg_nfetch_high	:	integer:=11;	--! NFETCH_HIGH : Higher bit to program the number of addresses to load in the interconnection. 
 			
 		
 	--! Avalon MM Slave
@@ -189,7 +190,7 @@ architecture raytrac_arch of raytrac is
 	--!State Machine Hysteresis Control Signals
 	signal sdrain_condition 	: std_logic;
 	signal sdrain_burstcount	: std_logic_vector(mb downto 0);
-	signal sdata_fetch_counter	: std_logic_vector(reg_ctrl_nfetch_high downto reg_ctrl_nfetch_low);
+	signal sdata_fetch_counter	: std_logic_vector(reg_nfetch_high downto 0);
 	signal sburstcount_sink		: std_logic_vector(mb downto 0);
 	
 	signal sflood_condition 	: std_logic;
@@ -278,14 +279,14 @@ begin
 		
 		
 		--! ELEMENTO DE SINCRONIZACION DESCARGA DE DATOS: Hay datos pendientes por descargar desde la memoria a trav&eacute;s de la interconexi&oacute;n.
-		if sdata_fetch_counter=zero(reg_ctrl_nfetch_high downto reg_ctrl_nfetch_low) then
+		if sdata_fetch_counter=zero(reg_nfetch_high downto 0) then
 			sfetch_data_pending <= '0';
 		else
 			sfetch_data_pending <= '1';
 		end if;		 	
 			
 		--! ELEMENTO DE SINCRONIZACION CARGA DE DIRECCIONES: Hay direcciones pendientes por cargar a la interconexi&oacute;n?
-		if sreg_block(reg_ctrl)(reg_ctrl_nfetch_high downto reg_ctrl_nfetch_low)=zero(reg_ctrl_nfetch_high downto reg_ctrl_nfetch_low) then
+		if sreg_block(reg_nfetch)(reg_nfetch_high downto 0)=zero(reg_nfetch_high downto 0) then
 			sload_add_pending <= '0';
 		else
 			sload_add_pending <= '1';
@@ -306,12 +307,12 @@ begin
 			--! Flow Control : La saturaci&oacute;n de la cola de resultados debe parar porque est&aacute; cas&iacute; llena. 	
 			sflood_condition <= '0';	 
 		end if;	
-		if sreg_block(reg_ctrl)(reg_ctrl_nfetch_high downto reg_ctrl_nfetch_low+mb)/=zero(reg_ctrl_nfetch_high downto reg_ctrl_nfetch_low+mb) then
+		if sreg_block(reg_nfetch)(reg_nfetch_high downto 0+mb)/=zero(reg_nfetch_high downto 0+mb) then
 			--! Flow Control: Si el n&uacute;mero de descargas pendientes es mayor o igual al max burst length, entonces cargar max burst en el contador.
 			sflood_burstcount <= '1'&zero(mb-1 downto 0); 		
 		else
 			--! Flow Control: Si le n&uacute;mero de descargas pendientes es inferior a Max Burst Count entonces cargar los bits menos significativos del registro de descargas pendientes.
-			sflood_burstcount <= '0'&sreg_block(reg_ctrl)(reg_ctrl_nfetch_low+mb-1 downto reg_ctrl_nfetch_low);
+			sflood_burstcount <= '0'&sreg_block(reg_ctrl)(0+mb-1 downto 0);
 		end if;	
 		
 		--! Se debe iniciar una transacci&oacute;n de carga de datos hacia la memoria externa?
@@ -368,6 +369,8 @@ begin
 			--! Contador Overall
 			sreg_block(reg_inputcounter) <= (others => '0');
 			sreg_block(reg_outputcounter) <= (others => '0');
+			--! Address Fetch Counter 
+			sreg_block(reg_nfetch) <= (others => '0');
 			
 			
 		elsif clk'event and clk='1' then
@@ -396,7 +399,7 @@ begin
 							sdata_fetch_counter <= sdata_fetch_counter+sflood_burstcount-master_readdatavalid;
 							--! Context Saving:
 							sreg_block(reg_fetchstart) <= sreg_block(reg_fetchstart) + (sflood_burstcount&"00");
-							sreg_block(reg_ctrl)(reg_ctrl_nfetch_high downto reg_ctrl_nfetch_low) <= sreg_block(reg_ctrl)(reg_ctrl_nfetch_high downto reg_ctrl_nfetch_low) - sflood_burstcount;
+							sreg_block(reg_nfetch)(reg_nfetch_high downto 0) <= sreg_block(reg_nfetch)(reg_nfetch_high downto 0) - sflood_burstcount;
 						else
 							--! Flow Control : Cambiar al estado SINK, porque o est&aacute; muy llena la cola de salida o no hay descargas pendientes por realizar.
 							sm <= SINK;
@@ -481,11 +484,12 @@ begin
 							when x"0" =>
 								--! Solo se permitira escribir en el registro de control si no hay una interrupci&oacute;n activa o si la hay solamente si se esta intentando desactivar la interrupci&acute;n 
 								if sreg_block(reg_ctrl)(reg_ctrl_irq)='0' or sslave_writedata(reg_ctrl_irq)='0' then 
-									sreg_block(reg_ctrl)(reg_ctrl_irq downto reg_ctrl_nfetch_low) <= sslave_writedata(reg_ctrl_irq downto reg_ctrl_nfetch_low);
+									sreg_block(reg_ctrl)(reg_ctrl_irq downto 0) <= sslave_writedata(reg_ctrl_irq downto 0);
 									sreg_block(reg_ctrl)(reg_ctrl_flags_wp-1 downto reg_ctrl_cmb) <= sslave_writedata(reg_ctrl_flags_wp-1 downto reg_ctrl_cmb);
 									sreg_block(reg_ctrl)(reg_ctrl_rlsc) <= sslave_writedata(reg_ctrl_rlsc);
-									sreg_block(reg_ctrl)(reg_ctrl_ageb downto reg_ctrl_alb) <=sslave_writedata(reg_ctrl_ageb downto reg_ctrl_alb); 		
+									sreg_block(reg_ctrl)(reg_ctrl_ageb downto reg_ctrl_alb) <=sslave_writedata(reg_ctrl_ageb downto reg_ctrl_alb); 
 								end if;
+							when x"5" => sreg_block(reg_nfetch) <= sslave_writedata;							
 							when x"6" => sreg_block(reg_outputcounter) <= sslave_writedata; 
 							when x"7" => sreg_block(reg_inputcounter) <= sslave_writedata;
 							when x"8" => sreg_block(reg_fetchstart) <= sslave_writedata;
@@ -703,7 +707,7 @@ begin
 	process (clk,rst,sreg_block,soutb_w,supload_chain)
 	begin
 		if rst=rstMasterValue then
-			for i in reg_scratch00 downto reg_vz loop
+			for i in reg_scalar downto reg_vz loop
 				sreg_block(i) <= (others => '0');
 			end loop;
 
@@ -721,7 +725,7 @@ begin
 			sslave_writedata	<= slave_writedata;
 			
 			
-			for i in reg_scratch00 downto reg_vz loop
+			for i in reg_scalar downto reg_vz loop
 				if sslave_address=i then
 					if sslave_write='1' then
 						sreg_block(i) <= sslave_writedata;
@@ -844,7 +848,7 @@ begin
 	--!---------|-----------|-------------------------------------------------------------------------------------------------------------------|
 	--! Result Vector Scalar component (reg_scalar) BASE_ADDRESS + 0x10																			|
 	--!---------|-----------|-------------------------------------------------------------------------------------------------------------------|
-	--! Scratch Vector 00	(reg_scratch00) BASE_ADDRESS + 	0x14																				|
+	--! Scratch Vector 00	(reg_nfetch) BASE_ADDRESS + 	0x14																				|
 	--!---------|-----------|-------------------------------------------------------------------------------------------------------------------|
 	--! output Data Counter (reg_outputcounter) BASE_ADDRESS + 0x18																				|
 	--!---------|-----------|-------------------------------------------------------------------------------------------------------------------|

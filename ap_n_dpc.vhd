@@ -72,7 +72,7 @@ architecture ap_n_dpc_arch of ap_n_dpc is
 	
 	--! Tunnning delay
 	constant adder2_delay: integer := 1; 
-	
+	constant prod3_delay : integer := 2;
 	
 	--!TBXSTART:FACTORS_N_ADDENDS
 	signal sfactor0		: std_logic_vector(31 downto 0);

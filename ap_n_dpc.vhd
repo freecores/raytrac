@@ -70,6 +70,8 @@ architecture ap_n_dpc_arch of ap_n_dpc is
 	constant ssync_chain_max : integer :=27;
 	constant ssync_chain_min : integer :=2;
 	
+	--! Tunnning delay
+	constant adder2_delay: integer := 1; 
 	
 	
 	--!TBXSTART:FACTORS_N_ADDENDS
@@ -112,7 +114,6 @@ architecture ap_n_dpc_arch of ap_n_dpc is
 	signal sa0			: std_logic_vector(31 downto 0);
 	signal sa1			: std_logic_vector(31 downto 0);
 	signal sa2			: std_logic_vector(31 downto 0);
-	constant adder2_delay: integer := 2; 
 	
 	--signal sadd32blk	: vectorblock03;
 	
@@ -468,7 +469,7 @@ begin
 		sclr		=> '0',
 		clock		=> clk,
 		rdreq		=> ssync_chain(13),
-		wrreq		=> ssync_chain(5),
+		wrreq		=> ssync_chain(5+adder2_delay),
 		data		=> sp2,
 		q			=> sq0_q
 	);

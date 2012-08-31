@@ -307,12 +307,13 @@ begin
 			--! Flow Control : La saturaci&oacute;n de la cola de resultados debe parar porque est&aacute; cas&iacute; llena. 	
 			sflood_condition <= '0';	 
 		end if;	
-		if sreg_block(reg_nfetch)(reg_nfetch_high downto 0+mb)/=zero(reg_nfetch_high downto 0+mb) then
+		
+		if sreg_block(reg_nfetch)(reg_nfetch_high downto mb)/=zero(reg_nfetch_high downto mb) then
 			--! Flow Control: Si el n&uacute;mero de descargas pendientes es mayor o igual al max burst length, entonces cargar max burst en el contador.
 			sflood_burstcount <= '1'&zero(mb-1 downto 0); 		
 		else
 			--! Flow Control: Si le n&uacute;mero de descargas pendientes es inferior a Max Burst Count entonces cargar los bits menos significativos del registro de descargas pendientes.
-			sflood_burstcount <= '0'&sreg_block(reg_ctrl)(0+mb-1 downto 0);
+			sflood_burstcount <= '0'&sreg_block(reg_nfetch)(mb-1 downto 0);
 		end if;	
 		
 		--! Se debe iniciar una transacci&oacute;n de carga de datos hacia la memoria externa?
@@ -474,7 +475,8 @@ begin
 						end if;
 					end if;
 					
-				when IDLE => 
+				when IDLE =>
+					
 					--! ******************************************************************************************************************************************************						
 					--! Programming the pipeline
 					--! ******************************************************************************************************************************************************						
@@ -484,10 +486,7 @@ begin
 							when x"0" =>
 								--! Solo se permitira escribir en el registro de control si no hay una interrupci&oacute;n activa o si la hay solamente si se esta intentando desactivar la interrupci&acute;n 
 								if sreg_block(reg_ctrl)(reg_ctrl_irq)='0' or sslave_writedata(reg_ctrl_irq)='0' then 
-									sreg_block(reg_ctrl)(reg_ctrl_irq downto 0) <= sslave_writedata(reg_ctrl_irq downto 0);
-									sreg_block(reg_ctrl)(reg_ctrl_flags_wp-1 downto reg_ctrl_cmb) <= sslave_writedata(reg_ctrl_flags_wp-1 downto reg_ctrl_cmb);
-									sreg_block(reg_ctrl)(reg_ctrl_rlsc) <= sslave_writedata(reg_ctrl_rlsc);
-									sreg_block(reg_ctrl)(reg_ctrl_ageb downto reg_ctrl_alb) <=sslave_writedata(reg_ctrl_ageb downto reg_ctrl_alb); 
+									sreg_block(reg_ctrl)<= sslave_writedata;
 								end if;
 							when x"5" => sreg_block(reg_nfetch) <= sslave_writedata;							
 							when x"6" => sreg_block(reg_outputcounter) <= sslave_writedata; 

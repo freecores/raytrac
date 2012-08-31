@@ -98,6 +98,7 @@ architecture arithblock_arch of arithblock is
 	end component;
 	component fmul32 
 	port (
+		clk : std_logic;
 		factor0 : in std_logic_vector(31 downto 0);
 		factor1 : in std_logic_vector(31 downto 0);
 		factor2 : in std_logic_vector(31 downto 0);
@@ -115,7 +116,7 @@ architecture arithblock_arch of arithblock is
 		p2: out std_logic_vector(31 downto 0);
 		p3: out std_logic_vector(31 downto 0);
 		p4: out std_logic_vector(31 downto 0);
-		p5: out std_logic_vector(31 downto 0);
+		p5: out std_logic_vector(31 downto 0)
 		
 	);
 	end component;

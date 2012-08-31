@@ -50,7 +50,7 @@ entity fmul32 is
 		p2: out std_logic_vector(31 downto 0);
 		p3: out std_logic_vector(31 downto 0);
 		p4: out std_logic_vector(31 downto 0);
-		p5: out std_logic_vector(31 downto 0);
+		p5: out std_logic_vector(31 downto 0)
 		
 		
 	);

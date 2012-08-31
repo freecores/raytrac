@@ -295,7 +295,7 @@ begin
 		end if;
 		if s2umu_p1(24) ='1' then
 			p1(22 downto 0) <= s2umu_p1(23 downto 1);
-		elsd
+		else
 			p1(22 downto 0) <= s2umu_p1(22 downto 0);
 		end if;
 		if s2umu_p2(24) ='1' then

@@ -33,6 +33,9 @@ entity ap_n_dpc is
 	
 	port (
 		
+		p0,p1,p2					: out std_logic_vector(31 downto 0);
+		
+		
 		clk						: in	std_logic;
 		rst						: in	std_logic;
 		
@@ -72,19 +75,19 @@ architecture ap_n_dpc_arch of ap_n_dpc is
 	
 	--! Tunnning delay
 	constant adder2_delay: integer := 1; 
-	constant prod3_delay : integer := 2;
+	constant adder1_delay : integer := 1;
 	
 	--!TBXSTART:FACTORS_N_ADDENDS
-	signal sfactor0		: std_logic_vector(31 downto 0);
-	signal sfactor1		: std_logic_vector(31 downto 0);
-	signal sfactor2		: std_logic_vector(31 downto 0);
-	signal sfactor3		: std_logic_vector(31 downto 0);
-	signal sfactor4		: std_logic_vector(31 downto 0);
-	signal sfactor5		: std_logic_vector(31 downto 0);
-	signal sfactor6		: std_logic_vector(31 downto 0);
-	signal sfactor7		: std_logic_vector(31 downto 0);
-	signal sfactor8		: std_logic_vector(31 downto 0);
-	signal sfactor9		: std_logic_vector(31 downto 0);
+	signal sfactor0	: std_logic_vector(31 downto 0);
+	signal sfactor1	: std_logic_vector(31 downto 0);
+	signal sfactor2	: std_logic_vector(31 downto 0);
+	signal sfactor3	: std_logic_vector(31 downto 0);
+	signal sfactor4	: std_logic_vector(31 downto 0);
+	signal sfactor5	: std_logic_vector(31 downto 0);
+	signal sfactor6	: std_logic_vector(31 downto 0);
+	signal sfactor7	: std_logic_vector(31 downto 0);
+	signal sfactor8	: std_logic_vector(31 downto 0);
+	signal sfactor9	: std_logic_vector(31 downto 0);
 	signal sfactor10	: std_logic_vector(31 downto 0);
 	signal sfactor11	: std_logic_vector(31 downto 0);
 	--signal sfactor		: vectorblock12;
@@ -275,11 +278,25 @@ begin
 		if rst=rstMasterValue then
 			ssync_chain(ssync_chain_max downto ssync_chain_min) <= (others => '0');
 
+			p0 <= (others => '0');
+			p1 <= (others => '0');
+			p2 <= (others => '0');
+
 		elsif clk'event and clk='1' then
 			for i in ssync_chain_max downto ssync_chain_min+1 loop
 				ssync_chain(i) <= ssync_chain(i-1);
 			end loop;
 			ssync_chain(ssync_chain_min) <= sync_chain_1;
+			
+			--! Salida de los multiplicadores p0 p1 p2 
+			if ssync_chain(21)='1' then
+				p0 <= sa0; -- El resultado quedara consignado en VZ1=BASE+1
+ 			elsif ssync_chain(22)='1' then
+				p1 <= sa0; -- El resutlado quedara consignado en VY1=BASE+2
+			elsif ssync_chain(23)='1' then 
+				p2 <= sa0; -- El resultado quedara consignado en VX1=BASE+3
+			end if;
+			
 		end if;
 	end process sync_chain_proc;
 	
@@ -402,10 +419,10 @@ begin
 				
 				if dcs(1)='1' then 
 					sq2_d <= ssq32;
-					sq2_w <= ssync_chain(22);
+					sq2_w <= ssync_chain(22+adder1_delay);
 				else
 					sq2_d <= sa1;
-					sq2_w <= ssync_chain(21);
+					sq2_w <= ssync_chain(21+adder1_delay);
 				end if;
 				
 				sqr_dx <= sp3;
@@ -469,7 +486,7 @@ begin
 		sclr		=> '0',
 		clock		=> clk,
 		rdreq		=> ssync_chain(13),
-		wrreq		=> ssync_chain(5+adder2_delay),
+		wrreq		=> ssync_chain(5),
 		data		=> sp2,
 		q			=> sq0_q
 	);

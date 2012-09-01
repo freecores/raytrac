@@ -196,9 +196,12 @@ architecture raytrac_arch of raytrac is
 	signal sflood_condition 	: std_logic;
 	signal sflood_burstcount 	: std_logic_vector(mb downto 0);
 
+	signal sp0,sp1,sp2			: std_logic_vector(31 downto 0);
 	--! Arithmetic Pipeline and Data Path Control
 	component ap_n_dpc
 	port (
+		
+		p0,p1,p2					: out std_logic_vector(31 downto 0);
 		clk						: in	std_logic;
 		rst						: in	std_logic;
 		ax						: in	std_logic_vector(31 downto 0);
@@ -235,6 +238,9 @@ begin
 	--! Arithpipeline and Datapath Control Instance
 	arithmetic_pipeline_and_datapath_controller : ap_n_dpc
 	port map (
+		p0				=> sp0,
+		p1				=> sp1,
+		p2				=> sp2,
 		clk 				=> clk,
 		rst 				=> rst,
 		ax					=> sreg_block(reg_ax),
@@ -723,8 +729,10 @@ begin
 			sslave_read			<= slave_read; 
 			sslave_writedata	<= slave_writedata;
 			
-			
-			for i in reg_scalar downto reg_vz loop
+			sreg_block(reg_vz) <= sp0;
+			sreg_block(reg_vy) <= sp1;
+			sreg_block(reg_vx) <= sp2;
+			for i in reg_scalar downto reg_scalar loop
 				if sslave_address=i then
 					if sslave_write='1' then
 						sreg_block(i) <= sslave_writedata;
@@ -740,6 +748,7 @@ begin
 			end loop;
 		end if;
 	end process;
+	
 --! *************************************************************************************************************************************************************************************************************************************************************
 --! AVALON MEMORY MAPPED SLAVE FINISHED
 --! *************************************************************************************************************************************************************************************************************************************************************

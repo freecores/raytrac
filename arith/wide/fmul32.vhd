@@ -560,7 +560,7 @@ begin
 		result => s0bc_p0
 	);
 	
-	mult18x6bc0:lpm_mult
+	mult18x6bc1:lpm_mult
 	generic	map (
 		lpm_hint => "DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9",
 		lpm_pipeline => 0,
@@ -571,12 +571,12 @@ begin
 		lpm_widthp => 24
 	)
 	port map (
-		dataa => s0dataa_gama_p0,
-		datab => s0uma_p0(5 downto 0),
-		result => s0bc_p0
+		dataa => s0dataa_gama_p1,
+		datab => s0uma_p1(5 downto 0),
+		result => s0bc_p1
 	);
 	
-	mult18x6bc0:lpm_mult
+	mult18x6bc2:lpm_mult
 	generic	map (
 		lpm_hint => "DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9",
 		lpm_pipeline => 0,
@@ -587,12 +587,12 @@ begin
 		lpm_widthp => 24
 	)
 	port map (
-		dataa => s0dataa_gama_p0,
-		datab => s0uma_p0(5 downto 0),
-		result => s0bc_p0
+		dataa => s0dataa_gama_p2,
+		datab => s0uma_p2(5 downto 0),
+		result => s0bc_p2
 	);
 	
-	mult18x6bc0:lpm_mult
+	mult18x6bc3:lpm_mult
 	generic	map (
 		lpm_hint => "DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9",
 		lpm_pipeline => 0,
@@ -603,12 +603,12 @@ begin
 		lpm_widthp => 24
 	)
 	port map (
-		dataa => s0dataa_gama_p0,
-		datab => s0uma_p0(5 downto 0),
-		result => s0bc_p0
+		dataa => s0dataa_gama_p4,
+		datab => s0uma_p4(5 downto 0),
+		result => s0bc_p4
 	);
 	
-	mult18x6bc0:lpm_mult
+	mult18x6bc5:lpm_mult
 	generic	map (
 		lpm_hint => "DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9",
 		lpm_pipeline => 0,
@@ -619,26 +619,11 @@ begin
 		lpm_widthp => 24
 	)
 	port map (
-		dataa => s0dataa_gama_p0,
-		datab => s0uma_p0(5 downto 0),
-		result => s0bc_p0
+		dataa => s0dataa_gama_p5,
+		datab => s0uma_p5(5 downto 0),
+		result => s0bc_p5
 	);
 	
-	mult18x6bc0:lpm_mult
-	generic	map (
-		lpm_hint => "DEDICATED_MULTIPLIER_CIRCUITRY=YES,MAXIMIZE_SPEED=9",
-		lpm_pipeline => 0,
-		lpm_representation => "UNSIGNED",
-		lpm_type => "LPM_MULT",
-		lpm_widtha => 18,
-		lpm_widthb => 6,
-		lpm_widthp => 24
-	)
-	port map (
-		dataa => s0dataa_gama_p0,
-		datab => s0uma_p0(5 downto 0),
-		result => s0bc_p0
-	);
 	
 	--! Exponent Addition 
 	process (

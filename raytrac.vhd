@@ -46,12 +46,12 @@ entity raytrac is
 		slave_address				:	in 	std_logic_vector(3 downto 0);
 		slave_read				:	in 	std_logic;
 		slave_write				:	in 	std_logic;
-		slave_readdata			:	out std_logic_vector(31 downto 0);
+		slave_readdata			:	out	std_logic_vector(31 downto 0);
 		slave_writedata			:	in	std_logic_vector(31 downto 0);
 	
 		--! Avalon MM Master (Read & Write common signals)	
-		master_address			:	out std_logic_vector(31 downto 0);
-		master_burstcount			:	out std_logic_vector(4 downto 0);
+		master_address			:	out	std_logic_vector(31 downto 0);
+		master_burstcount			:	out	std_logic_vector(4 downto 0);
 		master_waitrequest			:	in	std_logic;
 		
 		--! Avalon MM Master (Read Stage)
@@ -125,8 +125,12 @@ architecture raytrac_arch of raytrac is
 	constant reg_ctrl_rom			:	integer:=15;	--! ROM bit : Read Only Mode bit.
 	
 	constant reg_ctrl_alb			:	integer:=16;	--! Conditional Writing. A<B.
-	constant reg_ctrl_aeb			:	integer:=17;	--! A==B.
-	constant reg_ctrl_ageb			:	integer:=18;	--! A>=B.
+	constant reg_ctrl_ageb			:	integer:=17;	--! A>=B.
+	constant reg_ctrl_aeb			:	integer:=18;	--! A==B.
+	constant reg_ctrl_aneb			:	integer:=19;	--! A!=B.
+	
+	constant reg_ctrl_accum_op		:	integer:=20;	--! Acummulative Addition/Sub. User must write in the high word of nfetch how many time should be executed the addition/sub.
+	
 	constant reg_ctrl_irq			:	integer:=31;	--! IRQ bit : Interrupt Request Signal.
 
 	--! Nfetch Reg Mask

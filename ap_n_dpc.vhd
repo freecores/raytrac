@@ -33,7 +33,7 @@ entity ap_n_dpc is
 	
 	port (
 		
-		p0,p1,p2					: out std_logic_vector(31 downto 0);
+		p0,p1,p2,p3,p4,p5,p6,p7,p8: out std_logic_vector(31 downto 0);
 		
 		
 		clk						: in	std_logic;
@@ -70,7 +70,7 @@ end entity;
 
 architecture ap_n_dpc_arch of ap_n_dpc is 
 	--!Constantes de apoyo
-	constant ssync_chain_max : integer :=27;
+	constant ssync_chain_max : integer :=32;
 	constant ssync_chain_min : integer :=2;
 	
 	--! Tunnning delay
@@ -289,12 +289,19 @@ begin
 			ssync_chain(ssync_chain_min) <= sync_chain_1;
 			
 			--! Salida de los multiplicadores p0 p1 p2 
-			if ssync_chain(21)='1' then
-				p0 <= sa0; -- El resultado quedara consignado en VZ1=BASE+1
- 			elsif ssync_chain(22)='1' then
-				p1 <= sa0; -- El resutlado quedara consignado en VY1=BASE+2
-			elsif ssync_chain(23)='1' then 
-				p2 <= sa0; -- El resultado quedara consignado en VX1=BASE+3
+			if ssync_chain(23)='1' then
+				p0 <= ssq32; -- El resultado quedara consignado en VZ1=BASE+1
+			elsif ssync_chain(28)='1' then 
+				p1 <= sq2_q; -- El resultado quedara consignado en VX1=BASE+3
+ 			elsif ssync_chain(24)='1' then
+				p2 <= sinv32; -- El resutlado quedara consignado en VY1=BASE+2
+				p3 <= sqx_q;
+				p4 <= sqy_q;
+				p5 <= sqz_q;
+			elsif ssync_chain(28)='1' then 
+				p6 <= sp3o;
+				p7 <= sp4o;	
+				p8 <= sp5o;	
 			end if;
 			
 		end if;
@@ -429,7 +436,7 @@ begin
 				sqr_dy <= sp4;
 				sqr_dz <= sp5;
 				
-				sqr_w <= ssync_chain(27);
+				sqr_w <= ssync_chain(27+adder1_delay);
 			
 			when others => 
 				
@@ -504,7 +511,7 @@ begin
 		use_eab					=> "ON"
 	)
 	port map (
-		rdreq		=> ssync_chain(27),
+		rdreq		=> ssync_chain(28),
 		sclr		=> '0',
 		clock		=> clk,
 		empty		=> sq2_e,
@@ -529,7 +536,7 @@ begin
 		aclr		=> '0',
 		clock		=> clk,
 		empty		=> sq1_e,
-		rdreq		=> ssync_chain(23),
+		rdreq		=> ssync_chain(23+adder1_delay),
 		wrreq		=> sync_chain_1,
 		data		=> ax,
 		q			=> sqx_q
@@ -548,7 +555,7 @@ begin
 	port	map (
 		aclr		=> '0',
 		clock		=> clk,
-		rdreq		=> ssync_chain(23),
+		rdreq		=> ssync_chain(23+adder1_delay),
 		wrreq		=> sync_chain_1,
 		data		=> ay,
 		q			=> sqy_q
@@ -567,7 +574,7 @@ begin
 	port	map (
 		aclr		=> '0',
 		clock		=> clk,
-		rdreq		=> ssync_chain(23),
+		rdreq		=> ssync_chain(23+adder1_delay),
 		wrreq		=> sync_chain_1,
 		data		=> az,
 		q			=> sqz_q

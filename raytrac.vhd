@@ -200,12 +200,12 @@ architecture raytrac_arch of raytrac is
 	signal sflood_condition 	: std_logic;
 	signal sflood_burstcount 	: std_logic_vector(mb downto 0);
 
-	signal sp0,sp1,sp2			: std_logic_vector(31 downto 0);
+	signal sp0,sp1,sp2,sp3,sp4,sp5,sp6,sp7,sp8: std_logic_vector(31 downto 0);
 	--! Arithmetic Pipeline and Data Path Control
 	component ap_n_dpc
 	port (
 		
-		p0,p1,p2					: out std_logic_vector(31 downto 0);
+		p0,p1,p2,p3,p4,p5,p6,p7,p8	: out std_logic_vector(31 downto 0);
 		clk						: in	std_logic;
 		rst						: in	std_logic;
 		ax						: in	std_logic_vector(31 downto 0);
@@ -221,8 +221,8 @@ architecture raytrac_arch of raytrac is
 		ack						: in	std_logic;
 		empty					: out	std_logic;
 		dcs						: in	std_logic_vector(2 downto 0);		--! Bit con el identificador del bloque AB vs CD e identificador del sub bloque (A/B) o (C/D). 
-		sync_chain_1			: in	std_logic;		--! Se&ntilde;al de dato valido que se va por toda la cadena de sincronizacion.
-		pipeline_pending		: out	std_logic		--! Se&ntilde;al para indicar si hay datos en el pipeline aritm&eacute;tico.	
+		sync_chain_1				: in	std_logic;		--! Se&ntilde;al de dato valido que se va por toda la cadena de sincronizacion.
+		pipeline_pending			: out	std_logic		--! Se&ntilde;al para indicar si hay datos en el pipeline aritm&eacute;tico.	
 	);
 	end component;
 	
@@ -245,6 +245,13 @@ begin
 		p0				=> sp0,
 		p1				=> sp1,
 		p2				=> sp2,
+		p3				=> sp3,
+		p4				=> sp4,
+		p5				=> sp5,
+		p6				=> sp6,
+		p7				=> sp7,
+		p8				=> sp8,
+		
 		clk 				=> clk,
 		rst 				=> rst,
 		ax					=> sreg_block(reg_ax),
@@ -733,9 +740,6 @@ begin
 			sslave_read			<= slave_read; 
 			sslave_writedata	<= slave_writedata;
 			
-			sreg_block(reg_vz) <= sp0;
-			sreg_block(reg_vy) <= sp1;
-			sreg_block(reg_vx) <= sp2;
 			for i in reg_scalar downto reg_scalar loop
 				if sslave_address=i then
 					if sslave_write='1' then
@@ -746,7 +750,29 @@ begin
 			for i in 15 downto 0 loop
 				if sslave_address=i then
 					if sslave_read='1' then
-						slave_readdata <= sreg_block(i);
+					
+						if (i<10 and i>3) or i=0 then
+							slave_readdata <= sreg_block(i);
+						elsif i=1 then 
+							slave_readdata <= sp0;
+						elsif i=2 then 
+							slave_readdata <= sp1;
+						elsif i=3 then
+							slave_readdata <= sp2;
+						elsif i=10 then
+							slave_readdata <= sp3;
+						elsif i=11 then
+							slave_readdata <= sp4;
+						elsif i=12 then
+							slave_readdata <= sp5;
+						elsif i=13 then
+							slave_readdata <= sp6;
+						elsif i=14 then
+							slave_readdata <= sp7;
+						elsif i=15 then
+							slave_readdata <= sp8;
+						end if;
+							
 					end if;
 				end if;
 			end loop;

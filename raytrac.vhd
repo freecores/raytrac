@@ -91,7 +91,7 @@ architecture raytrac_arch of raytrac is
 	constant reg_vx				:	integer:=03;
 	constant reg_scalar			:	integer:=04;
 	constant reg_nfetch			:	integer:=05;
-	constant reg_outputcounter		:	integer:=06;
+	constant reg_timercounter		:	integer:=06;
 	constant reg_inputcounter		:	integer:=07;
 	constant reg_fetchstart			:	integer:=08;
 	constant reg_sinkstart			:	integer:=09;
@@ -190,7 +190,6 @@ architecture raytrac_arch of raytrac is
 	--!High Register Bank Control Signals or AKA Load Sync Chain Control
 	signal sdownload_chain	: download_chain;
 	signal sdownload_start	: download_chain; 
-	signal srestart_chain	: std_logic;
 	--!State Machine Hysteresis Control Signals
 	signal sdrain_condition 	: std_logic;
 	signal sdrain_burstcount	: std_logic_vector(mb downto 0);
@@ -346,9 +345,6 @@ begin
 			sdrain_condition <= '1';
 		end if;
 		
-		--! Restart param load chain
-		srestart_chain <= sreg_block(reg_ctrl)(reg_ctrl_irq) and sreg_block(reg_ctrl)(reg_ctrl_rlsc);
-		
 		--! Data dumpster: Descaratar dato de upload una vez la interconexi&oacute;n haya enganchado el dato.
 		if sm=SINK and master_waitrequest='0' and smaster_write='1' then 
 			soutb_ack <= '1';
@@ -386,7 +382,7 @@ begin
 			sreg_block(reg_ctrl) <= (others => '0');
 			--! Contador Overall
 			sreg_block(reg_inputcounter) <= (others => '0');
-			sreg_block(reg_outputcounter) <= (others => '0');
+--			sreg_block(reg_timercounter) <= (others => '0');
 			--! Address Fetch Counter 
 			sreg_block(reg_nfetch) <= (others => '0');
 			
@@ -398,7 +394,14 @@ begin
 			
 			--! Debug Counter.
 			sreg_block(reg_inputcounter) <= sreg_block(reg_inputcounter) + master_readdatavalid;
-			sreg_block(reg_outputcounter) <= sreg_block(reg_outputcounter) + soutb_ack;
+			
+			--!Timer Counter.
+--			case sm is
+--				when IDLE =>
+--					sreg_block(reg_timercounter) <= sreg_block(reg_timercounter) + 0;
+--				when others => 
+--					sreg_block(reg_timercounter) <= sreg_block(reg_timercounter) + 1;
+--			end case;				 
 
 			--! Flags
 			
@@ -506,7 +509,7 @@ begin
 									sreg_block(reg_ctrl)<= sslave_writedata;
 								end if;
 							when x"5" => sreg_block(reg_nfetch) <= sslave_writedata;							
-							when x"6" => sreg_block(reg_outputcounter) <= sslave_writedata; 
+--							when x"6" => sreg_block(reg_timercounter) <= sslave_writedata; 
 							when x"7" => sreg_block(reg_inputcounter) <= sslave_writedata;
 							when x"8" => sreg_block(reg_fetchstart) <= sslave_writedata;
 							when x"9" => sreg_block(reg_sinkstart) <= sslave_writedata;
@@ -521,7 +524,6 @@ begin
 							--! Ir al estado Source.
 							sm <= SOURCE;
 							sreg_block(reg_ctrl)(reg_ctrl_rom) <= '1';
-						
 						else
 							sreg_block(reg_ctrl)(reg_ctrl_rom) <= '0';
 						
@@ -648,7 +650,7 @@ begin
 			end loop;
 		elsif clk'event and clk='1' then
 			ssync_chain_1	<= '0';
-			if master_readdatavalid='1' and sreg_block(reg_ctrl)(reg_ctrl_dma)='0' then 
+			if master_readdatavalid='1' and sreg_block(reg_ctrl)(reg_ctrl_dma)='0' and (sreg_block(reg_ctrl)(reg_ctrl_irq)='0' or sreg_block(reg_ctrl)(reg_ctrl_rlsc)='0') then 
 				--! El dato en la interconexi&oacute;n es valido, se debe enganchar. 
 				case sdownload_chain is 
 					when DWAX | DWAXBX  =>
@@ -704,11 +706,9 @@ begin
 					when others => 
 						null;
 				end case;
-				
-				if srestart_chain='1' then
-					sdownload_chain <= sdownload_start;
-				end if;				
-				
+			--! Ok operation check if operation has ended.	If that's the case.
+			elsif sreg_block(reg_ctrl)(reg_ctrl_irq)='1' and sreg_block(reg_ctrl)(reg_ctrl_rlsc)='1' then
+				sdownload_chain <= sdownload_start;
 			end if;
 		end if;
 	end process;
@@ -726,7 +726,7 @@ begin
 			for i in reg_scalar downto reg_vz loop
 				sreg_block(i) <= (others => '0');
 			end loop;
-
+			sreg_block(reg_timercounter) <= (others => '0');
 			slave_readdata <= (others => '0');
 			sslave_address <= (others => '0');
 			sslave_writedata <= (others => '0');
@@ -740,13 +740,25 @@ begin
 			sslave_read			<= slave_read; 
 			sslave_writedata	<= slave_writedata;
 			
-			for i in reg_scalar downto reg_scalar loop
-				if sslave_address=i then
-					if sslave_write='1' then
-						sreg_block(i) <= sslave_writedata;
-					end if;
-				end if;
-			end loop;
+			if sslave_write='1' and sslave_address=reg_timercounter then
+				sreg_block(reg_timercounter) <= sslave_writedata;
+			else
+				sreg_block(reg_timercounter) <= sreg_block(reg_timercounter)+1;
+			end if;				
+			
+			if sslave_write='1' and sslave_address=reg_scalar then
+				sreg_block(reg_scalar) <= sslave_writedata;
+			else
+				sreg_block(reg_scalar) <= sreg_block(reg_scalar);
+			end if;			
+			
+--			for i in reg_scalar downto reg_scalar loop
+--				if sslave_address=i then
+--					if sslave_write='1' then
+--						sreg_block(i) <= sslave_writedata;
+--					end if;
+--				end if;
+--			end loop;
 			for i in 15 downto 0 loop
 				if sslave_address=i then
 					if sslave_read='1' then
@@ -888,7 +900,7 @@ begin
 	--!---------|-----------|-------------------------------------------------------------------------------------------------------------------|
 	--! Scratch Vector 00	(reg_nfetch) BASE_ADDRESS + 	0x14																				|
 	--!---------|-----------|-------------------------------------------------------------------------------------------------------------------|
-	--! output Data Counter (reg_outputcounter) BASE_ADDRESS + 0x18																				|
+	--! output Data Counter (reg_timercounter) BASE_ADDRESS + 0x18																				|
 	--!---------|-----------|-------------------------------------------------------------------------------------------------------------------|
 	--! Input Data Counter	(reg_inputcounter) BASE_ADDRESS + 0x1C																				|
 	--!---------|-----------|-------------------------------------------------------------------------------------------------------------------|

@@ -128,9 +128,20 @@ architecture raytrac_arch of raytrac is
 	constant reg_ctrl_ageb			:	integer:=17;	--! A>=B.
 	constant reg_ctrl_aeb			:	integer:=18;	--! A==B.
 	constant reg_ctrl_aneb			:	integer:=19;	--! A!=B.
+	constant reg_ctrl_reference		:	integer:=20;	--! If one of the 
 	
-	constant reg_ctrl_accum_op		:	integer:=20;	--! Acummulative Addition/Sub. User must write in the high word of nfetch how many time should be executed the addition/sub.
+	constant reg_ctrl_accum_op		:	integer:=21;	--! Acummulative Addition/Sub. User must write in the high word of nfetch how many time should be executed the addition/sub.
 	
+	constant reg_ctrl_sign_switcheroo		:	integer:=22;	--! Sphere distance, magnitude like expression sign switch.
+	
+	constant reg_ctrl_dma_ncntg_mode	:	integer:=23; --! Dma Transfer Non Contigous Mode
+	constant reg_ctrl_chunk_size_l	:	integer:=24; --! Dma Transfer Non Contigous Mode chunk size lower bit;
+	constant reg_ctrl_chunk_size_h	:	integer:=25; --! Dma Transfer Non Contigous Mode chunk size higher bit;
+	constant reg_ctrl_hop_len_low	:	integer:=26; --! Dma Transfer Non Contigous Mode hop length lower bit;
+	constant reg_ctrl_hop_len_high	:	integer:=28; --! Dma Transfer Non Contigous Mode hop length 
+	
+	constant reg_ctrl_use_sw		:	integer:=29; --! Its ok to use a SW raytrac. This bit is ignored here, in the HW implementation.
+	constant reg_ctrl_use_hw		:	integer:=30; --! Its ok to use a HW raytrac. This bit is is ignored here, in the HW implementation.
 	constant reg_ctrl_irq			:	integer:=31;	--! IRQ bit : Interrupt Request Signal.
 
 	--! Nfetch Reg Mask
@@ -219,6 +230,7 @@ architecture raytrac_arch of raytrac is
 		sc						: out	std_logic_vector(31 downto 0);
 		ack						: in	std_logic;
 		empty					: out	std_logic;
+		sign_switcheroo			: in		std_logic;
 		dcs						: in	std_logic_vector(2 downto 0);		--! Bit con el identificador del bloque AB vs CD e identificador del sub bloque (A/B) o (C/D). 
 		sync_chain_1				: in	std_logic;		--! Se&ntilde;al de dato valido que se va por toda la cadena de sincronizacion.
 		pipeline_pending			: out	std_logic		--! Se&ntilde;al para indicar si hay datos en el pipeline aritm&eacute;tico.	
@@ -265,6 +277,7 @@ begin
 		sc					=> ssc,
 		ack					=> sr_ack,
 		empty				=> sr_e,
+		sign_switcheroo		=> sreg_block(reg_ctrl)(reg_ctrl_sign_switcheroo),
 		dcs					=> sreg_block(reg_ctrl)(reg_ctrl_d downto reg_ctrl_s),
 		sync_chain_1		=> ssync_chain_1,
 		pipeline_pending	=> spipeline_pending

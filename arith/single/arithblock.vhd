@@ -32,6 +32,7 @@ entity arithblock is
 		rst : in std_logic;
 	
 		sign : in std_logic;
+		sign_switch	: in std_logic;
 	
 		factor0		: in std_logic_vector(31 downto 0);
 		factor1		: in std_logic_vector(31 downto 0);
@@ -80,6 +81,7 @@ architecture arithblock_arch of arithblock is
 
 	signal sadd32blko_01 : std_logic_vector(31 downto 0);
 	signal ssq32o : std_logic_vector(31 downto 0);
+	signal ssigna1 : std_logic;
 		
 	--! Componentes Aritm&eacute;ticos
 	component fadd32long
@@ -123,6 +125,7 @@ begin
 
 	sq32o <= ssq32o;
 	a1 <= sadd32blko_01;
+	ssigna1 <= sign_switch or sign; 
 
 	--!TBXINSTANCESTART
 	adder_i_0 : fadd32long 
@@ -137,7 +140,7 @@ begin
 	adder_i_1 : fadd32long 
 	port map (
 		clk => clk,
-		dpc => sign,
+		dpc => ssigna1,
 		a32 => sumando2,
 		b32 => sumando3,
 		c32 => sadd32blko_01

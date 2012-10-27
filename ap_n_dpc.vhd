@@ -51,6 +51,7 @@ entity ap_n_dpc is
 		sc						: out	std_logic_vector(31 downto 0);
 		ack						: in	std_logic;
 		empty					: out	std_logic;
+		sign_switcheroo			: in		std_logic;
 		
 		 --paraminput				: in	vectorblock06;	--! Vectores A,B
 		
@@ -178,6 +179,7 @@ architecture ap_n_dpc_arch of ap_n_dpc is
 		rst : in std_logic;
 	
 		sign 		: in std_logic;
+		sign_switch	: in std_logic;
 		
 		factor0		: in std_logic_vector(31 downto 0);
 		factor1		: in std_logic_vector(31 downto 0);

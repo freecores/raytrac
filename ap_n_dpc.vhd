@@ -231,6 +231,7 @@ begin
 		rst	 		=> rst,
 		
 		sign 		=> dcs(0),
+		sign_switch	=> sign_switcheroo,
 		
 		factor0	=>sfactor0,
 		factor1	=>sfactor1,
